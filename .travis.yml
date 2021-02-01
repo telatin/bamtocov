@@ -1,0 +1,8 @@
+sudo: required
+service: docker
+
+before_install:
+  - docker pull nimlang/nim:1.2.4
+script:
+  - docker run nimlang/nim nim --version
+  - docker run -v "$(pwd):/project" -w /project --rm nimlang/nim:1.2.4 sh -c "apt install -y zip zlib1g-dev && nimble install -y zip uuids docopt terminaltables && nimble install -y --verbose"
