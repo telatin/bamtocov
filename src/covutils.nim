@@ -7,7 +7,7 @@ import os, posix
 signal(SIG_PIPE, SIG_IGN)
 
 const
-  version* = "2.0.001"
+  version* = "2.0.000"
 
 type
   region_t* = ref object
