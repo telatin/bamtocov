@@ -10,7 +10,7 @@ license       = "MIT"
 requires "hts >= 0.3.1", "docopt >= 0.6.8", "nim >= 1.0.0", "lapper"
 srcDir = "src"
 binDir = "bin"
-bin = @["covtotarget", "bamtocounts", "bamtocov"]
+bin = @["covtotarget", "bamtocounts", "bamtocov", "bamcountrefs"]
 skipDirs = @["tests", "docs"]
 skipFiles = @["example.bam"]
 
