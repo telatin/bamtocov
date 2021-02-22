@@ -2,12 +2,13 @@ import strutils
 import tables
 import hts
 import algorithm
-import os, posix
+import posix
 
 signal(SIG_PIPE, SIG_IGN)
+const NimblePkgVersion {.strdefine.} = "undef"
 
-const
-  version* = "2.0.001"
+let
+  version* = NimblePkgVersion
 
 type
   region_t* = ref object
@@ -29,6 +30,8 @@ type
 proc inc_count*(r:region_t) = inc(r.count)
 proc start*(r: region_t): int {.inline.} = return r.start
 proc stop*(r: region_t): int {.inline.} = return r.stop
+proc chrom*(r: region_t): string {.inline.} = return r.chrom
+proc name*(r: region_t): string {.inline.} = return r.name
 
 
 proc tostring*(r: region_t, s:var string) {.inline.} =

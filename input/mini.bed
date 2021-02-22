@@ -1,0 +1,6 @@
+seq1	200	400	target1_8X
+seq1	600	650	target2_0X
+seq1	700	900	target3_1X
+seq2	530	540	for_rev_10Xa
+seq2	570	580	for_rev_10Xb
+seq2	590	610	for_rev_10Xc
