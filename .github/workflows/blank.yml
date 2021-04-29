@@ -29,6 +29,6 @@ jobs:
         uses: jiro4989/setup-nim-action@v1.1.4
         with:
           # The Nim version to download (if necessary) and use. Example: 1.0.2
-          nim-version: 1.4
-          command: uname -a
+          nim-version: "1.4.0"
+      - run: uname -a
           
