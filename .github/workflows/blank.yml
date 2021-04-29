@@ -58,7 +58,7 @@ jobs:
         git clone --recursive https://github.com/samtools/htslib.git
         cd htslib && git checkout 1.11 && autoheader && autoconf && ./configure --enable-libcurl
         cd
-        make -j 4 -C htslib install
+        sudo make -j 4 -C htslib install
         echo "::set-env name=LD_LIBRARY_PATH::${LD_LIBRARY_PATH}:${HOME}/htslib"
         ls -lh $HOME/htslib/*.so
  
