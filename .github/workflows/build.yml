@@ -71,7 +71,7 @@ jobs:
 
     - uses: iffy/install-nim@v3.2.0
       with:
-        nimversion: ${{ matrix.nimversion }}
+        version: ${{ matrix.nimversion }}
 
     - uses: actions-rs/toolchain@v1
       with:
