@@ -1,5 +1,5 @@
 # copied from Daniel Cook's Seq collection
-name: Build
+name: "Build Bamtocov"
 
 on: 
   - push
@@ -80,5 +80,19 @@ jobs:
 
 
     # Build and Test
-    - name: Build test executable
-      run: nimble build -Y bamtocov.nimble
+    - name: Build macOS executable
+      if: runner.os == 'macOS'
+      run: |
+        nimble build -Y bamtocov.nimble && mv bin/bamtocov bin/bamtocov_${{ matrix.os }}
+        
+    - name: Build Linux executable
+      if: runner.os == 'Linux'
+      run: |
+        nimble build -Y bamtocov.nimble && mv bin/bamtocov bin/bamtocov_${{ matrix.os }}
+      
+    - name: Upload Artifact
+      if: success()
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: bamtocov_${{ matrix.os }}
+        path: bin/
