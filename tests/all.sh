@@ -25,7 +25,8 @@ for testFile in mini.bam mini.bed; do
 done
 
 $BamToCov $DATA/mini.bam > $TMP/mini.BamToCov
-$BamToCov -r $DATA/mini.bed $DATA/mini.bam > $TMP/mini.BamToCov
-
+tail -n 4 $TMP/mini.BamToCov
+$BamToCov -r $DATA/mini.bed -o $TMP/report.txt $DATA/mini.bam > $TMP/mini.BamToCov
+tail -n 4 $TMP/mini.BamToCov $TMP/report.txt
 
 rm -rf $TMP

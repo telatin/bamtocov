@@ -5,7 +5,7 @@ import algorithm
 import posix
 
 signal(SIG_PIPE, SIG_IGN)
-const NimblePkgVersion {.strdefine.} = "undef"
+const NimblePkgVersion {.strdefine.} = "<NimblePkgVersion>"
 
 let
   version* = NimblePkgVersion

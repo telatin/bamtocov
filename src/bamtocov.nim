@@ -6,14 +6,20 @@ import strutils
 import tables
 import algorithm 
 import ./covutils
+import sets
+
+# ✅ FIXME total min/max coverage cannot be computed from the two strands! - DONE
+# ✅ FIXME per la cronaca ho trovato un mini “bachetto”, se il BED non ha nomi, giustamente, ficca tutto in un mega intervallo immaginario. Ora,  potrebbe essere la cosa giusta da fare, l’alternativa è che se il nome non c’è lo creiamo noi tipo “chr2:100-200" e cosi li manteniamo forzatamente separati e se uno vuole il megatarget specifica lo stesso nome in tutto il file
+# ✅ FIXME mini2.bam coverage went backwards error - DONE era il check troppo zelante!
+# FIXME report without target
 
 # FEATURES paper
-# TODO multi-bam report
-# TODO quantized output
+# ✅ TODO multi-bam report 
+# ✅ TODO quantized output 
 # TODO max-min coverage?
 # TODO number of bases under X per target
-# TODO no output option, if one only wants the report
-# TODO WIG
+# ✅ TODO no output option, if one only wants the report
+# 🟡 TODO WIG 
 
 # FEATURES piu' tardi
 # TODO multi-bam coverage?
@@ -22,7 +28,7 @@ import ./covutils
 # TODO output_t fa un po' un pasticcio con intervalli target sovrapposti perche' cerca di appiccicarli, non mi e' chiaro cosa vogliamo ottenere comunque
 # TODO usare Record tid (numeric id of contig) instead of chromosome string, may be faster?
 # TODO add explicit check for sortedness
-# TODO use array for coverage?
+# TODO use array for coverage? not so easy
 
 
 ################################
@@ -88,6 +94,14 @@ proc db(things: varargs[string, `$`]) =
         stderr.write(" " & t)
     stderr.write("\n")
 
+proc dev(things: varargs[string, `$`]) =
+  stderr.write("dev:")
+  for t in things:
+    if t[0] == ',':
+      stderr.write(t)
+    else:
+      stderr.write(" " & t)
+  stderr.write("\n")
 
 
 type
@@ -104,7 +118,7 @@ proc convertTarget(orig: TableRef[string, seq[region_t]]): target_t =
       doAssert(i.chrom == chrom, "bad target")
       doAssert(i.start >= last_start)
       let name = if i.name == "": ($i.chrom & ":" & $i.start & "-" & $i.stop) else: i.name
-      conv[chrom].add((pos_t(i.start), pos_t(i.stop), i.name))
+      conv[chrom].add((pos_t(i.start), pos_t(i.stop), name))
       last_start = i.start
   conv
 
@@ -266,7 +280,7 @@ proc coverage_iter(bam: Bam, opts: input_option_t): iterator(): coverage_interva
         db("Aln:", if more_alignments: $aln else: "no more", "in", refname)
 
         
-        # calculate next change
+        # calculate the position of the next coverage change
         if more_alignments_for_ref:
           if coverage_ends.empty():
             next_change = aln.start
@@ -279,14 +293,15 @@ proc coverage_iter(bam: Bam, opts: input_option_t): iterator(): coverage_interva
             next_change = coverage_ends.topStop()
 
         if debug: stderr.writeLine("Last pos: " & $last_pos & ", next pos: " & $next_change)
-        doAssert(last_pos < next_change, "coverage went backwards from " & $last_pos & " to " & $next_change)   
+        # check that we are advancing, this should always be the case if the bam is sorted (except when there is an alignment right at the beginning of a chromosome, hence the alternative condition)
+        doAssert(last_pos < next_change or (last_pos == 0 and next_change == 0), "coverage went backwards from " & $last_pos & " to " & $next_change)   
         # output coverage ...
         doAssert(coverage_ends.len() == cov.tot(), "coverage not equal to queue size")
         #let cov_inter: genomic_interval_t[coverage_t] = 
         if len(opts.target) == 0:
-          #yield cov_inter
           yield (refname, last_pos, next_change, (cov, refname))
         else:
+          db("pre-intersection coverage:", (refname, last_pos, next_change, cov))
           for i in intersections((refname, last_pos, next_change, cov), opts.target, target_idx):
             yield i
 
@@ -308,12 +323,10 @@ proc coverage_iter(bam: Bam, opts: input_option_t): iterator(): coverage_interva
           more_alignments = not finished(next_alignment) # we need to check this after each next_alignment
           more_alignments_for_ref = more_alignments and aln.chrom == refname
           
-        #decrement coverage with alignments that end here
+        # decrement coverage with alignments that end here
         while not coverage_ends.empty() and next_change == coverage_ends.topStop():
           cov.dec(coverage_ends.topReverse())
           discard coverage_ends.pop()
-        
-        
 
         # End chromosome loop
         if last_pos == reflen:
@@ -330,25 +343,74 @@ proc coverage_iter(bam: Bam, opts: input_option_t): iterator(): coverage_interva
     doAssert(not more_alignments, "Is the BAM sorted?") # FIXME put more explicit check for sortednees
 
 
+#output_coverage_types = enum
+#  oc_int_strand,    # integer strand-specific coverage output
+#  oc_quant_strand,  # quantized strand-specific coverage output
+#  oc_int_tot,       # integer total coverage output
+#  oc_quant_tot      # quantized total coverage output
+#type
+#  output_coverage_t = object
+#  case output_strand: bool
+#  of true: tuple[forward, reverse: int64]
+#  of false: total: int64]
+
+#  output_coverage_t = tuple[total, forward, reverse: int64]
+
 type
+  output_format_t = enum of_bed
+  output_option_t = tuple[
+    strand: bool, # output strand-specific coverage and stats
+    # coverage specific options
+    no_coverage: bool, # do not output coverage, only stats
+    quantization: string, # 
+    output_format: output_format_t, # not implemented
+    # stats specific options
+    low_cov: int64 # report length of regions under low_cov in stats
+  ]
+
   output_t = object
     queued: genomic_interval_t[coverage_t]
-    output_strand: bool
+    opts: output_option_t
+    #output_strand: bool
+    #wiggle_format: bool # if false the use bed format
+    quantization_index2label: seq[string]
+    quantization_coverage2index: seq[int]
 
 proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
   if i.start < i.stop: # skip empty intervals
-    if o.output_strand:
-      echo $i.chrom & "\t" & $i.start & "\t" & $i.stop & "\t" & $i.label.forward & "\t" & $i.label.reverse
-    else:
-      echo $i.chrom & "\t" & $i.start & "\t" & $i.stop & "\t" & $(i.label.forward + i.label.reverse)
-
+    #if o.wiggle_format:
+    #  echo "wig not implemented"
+    if true: # bed format output
+      let interval_str = $i.chrom & "\t" & $i.start & "\t" & $i.stop & "\t"
+      let coverage_str =
+        if o.opts.strand:
+          if len(o.quantization_index2label) > 0:
+            "\t" & o.quantization_index2label[i.label.forward] & "\t" & o.quantization_index2label[i.label.reverse]
+          else:
+            $i.label.forward & "\t" & $i.label.reverse
+        else:
+          if len(o.quantization_index2label) > 0:
+            o.quantization_index2label[i.label.forward]
+          else:
+            $i.label.forward
+      echo interval_str & coverage_str
 
 proc push_interval(o: var output_t, i: coverage_interval_t) =
-  let
-    q = o.queued
-    c: coverage_t = i.label.l1
-  #let debug=true
-  if debug: stderr.writeLine("push_interval: " & $i)
+  let q = o.queued
+  var c: coverage_t = i.label.l1
+
+  db("push_interval: ", i)
+  # handle stranded output
+  if not o.opts.strand:
+    c.forward = c.forward + c.reverse
+    c.reverse = 0
+  # handle quantized output
+  let qmax_cov = len(o.quantization_coverage2index)
+  if qmax_cov > 0:
+    c.forward = o.quantization_coverage2index[min(c.forward, qmax_cov - 1)]
+    if o.opts.strand:
+      c.reverse = o.quantization_coverage2index[min(c.reverse, qmax_cov - 1)]
+
   if q.label == c and q.stop == i.start and q.chrom == i.chrom: # extend previous interval
     if debug: stderr.writeLine("push_inteval: extend " & $q)
     o.queued.stop = i.stop # FIXME se setto direttamente q.stop la modifica viene persa?
@@ -359,68 +421,194 @@ proc push_interval(o: var output_t, i: coverage_interval_t) =
 proc `=destroy`(o: var output_t) =
   o.write_output(o.queued)
 
-proc newOutput(output_strand: bool): output_t = 
-  output_t(
+import sequtils
+# output quantization
+proc parse_quantization(o: var output_t, breaks: string) =
+  var bb: seq[int] = @[0]
+  for b in split(breaks, ','):
+    bb.add(parse_int(b))
+  bb = deduplicate(sorted(bb), isSorted=true)
+  let
+    max_right = max(bb)
+  for i in 0..(len(bb) - 2):
+    let
+      left = bb[i]
+      right = bb[i + 1] - 1
+    o.quantization_index2label.add($left & "-" & $right)
+    for c in left..right:
+      o.quantization_coverage2index.add(i)
+  o.quantization_index2label.add($max_right & "-")
+  o.quantization_coverage2index.add(len(o.quantization_index2label) - 1)
+  #dev("index2label:", $o.quantization_index2label)
+  #dev("coverage2index:", $o.quantization_coverage2index)
+
+proc newOutput(opts: output_option_t): output_t = 
+  var o = output_t(
+    opts: opts,
     queued: (chrom_t(""), pos_t(0), pos_t(0), newCov()),
-    output_strand: output_strand
+    quantization_index2label: @[],
+    quantization_coverage2index: @[]
   )
+  if opts.quantization != "nil":
+    o.parse_quantization(opts.quantization)
+  o
+
 
 type cov_t = array[0..1, int64]
 proc to_array(c: coverage_t): cov_t = [int64(c.forward), int64(c.reverse)]
 
-type #FIXME statistics for rev and for
-  stats_t = tuple[tot_bases, min_cov, max_cov: cov_t, tot_length: pos_t]
-  target_stat_t = TableRef[string, stats_t]
+type
+  coverage_stats_t[T] = tuple[total, forward, reverse: T]
+  interval_stats_t = tuple[bases, min_cov, max_cov: coverage_stats_t[int64], low_length: coverage_stats_t[pos_t], length: pos_t]
+  target_stat_t = ref object
+    opts: output_option_t
+    stats: TableRef[string, interval_stats_t]
 
-proc `*`(c: cov_t, l: pos_t): cov_t = [c[0]*l, c[1]*l]
-proc `/`(c: cov_t, l: pos_t): array[2, float] = [float(c[0])/float(l), float(c[1])/float(l)]
-proc `+`(c1, c2: cov_t): cov_t = [c1[0] + c2[0], c1[1] + c2[1]]
-proc min(c1, c2: cov_t): cov_t = [min(c1[0], c2[0]), min(c1[1], c2[1])]
-proc max(c1, c2: cov_t): cov_t = [max(c1[0], c2[0]), max(c1[1], c2[1])]
-proc tot(c: cov_t): int64 = c[0] + c[1]
-proc tot(c: array[2, float]): float = c[0] + c[1]
+#proc bin_apply[T](f: proc (T, T) -> T, s1, s2: coverage_stats_t[T]): coverage_stats_t[T] =
+#  (f(s1.total, s2.total), f(s1.forward, s2.forward), f(s1.reverse, s2.reverse))
+#proc `*`[T](s: coverage_stats_t[T], x: T): coverage_stats_t[T] =
+#  (s.total*x, s.forward*x, s.reverse*x)
+
+proc `max`[T](s1, s2: coverage_stats_t[T]): coverage_stats_t[T] =
+  (max(s1.total, s2.total), max(s1.forward, s2.forward), max(s1.reverse, s2.reverse))
+proc `min`[T](s1, s2: coverage_stats_t[T]): coverage_stats_t[T] =
+  (min(s1.total, s2.total), min(s1.forward, s2.forward), min(s1.reverse, s2.reverse))
+proc `+`[T](s1, s2: coverage_stats_t[T]): coverage_stats_t[T] =
+  (s1.total + s2.total, s1.forward + s2.forward, s1.reverse + s2.reverse)
+proc `+`[T](s: coverage_stats_t[T], x: T): coverage_stats_t[T] =
+  (s.total + x, s.forward + x, s.reverse + x)
+proc `*`[T](s: coverage_stats_t[T], x: T): coverage_stats_t[T] =
+  (s.total*x, s.forward*x, s.reverse*x)
+ 
+proc new_stats(opts: output_option_t): target_stat_t =
+  target_stat_t(opts: opts, stats: newTable[string, interval_stats_t]())
 
 proc push_interval(self: var target_stat_t, i: coverage_interval_t) =
+  # update coverage statistics
   let
     l = len(i)
     name: string = i.label.l2 # target interval name
-    cov: cov_t = to_array(i.label.l1)
-  #let o = if i.label in self: self[i.label] else: (0, c, c, 0)
-  if name in self:
-    let o = self[name]
-    self[name] = (o.tot_bases + cov*l, min(o.min_cov, cov), max(o.max_cov, cov), o.tot_length + l)
-  else:
-    self[name] = (cov*l, cov, cov, l)
-proc `$`(c: cov_t): string =
-  $c[0] & "+/" & $c[1] & "-"
+    cov: coverage_stats_t[int64] = (int64(i.label.l1.forward + i.label.l1.reverse), int64(i.label.l1.forward), int64(i.label.l1.reverse))
+    low_cov = self.opts.low_cov
+    low_length: coverage_stats_t[int64] = (
+      (if cov.total   < low_cov: int64(l) else: 0),
+      (if cov.forward < low_cov: int64(l) else: 0),
+      (if cov.reverse < low_cov: int64(l) else: 0)
+    )
+  #let prev: interval_stats_t =
+  #  if name in self.stats:
+  #    self.stats[name]
+  #  else:
+  #    (bases: )
+  self.stats[name] = 
+    if name in self.stats:
+      let o = self.stats[name]
+      (
+        bases: o.bases + (cov*l), 
+        min_cov: min(o.min_cov, cov), 
+        max_cov: max(o.max_cov, cov), 
+        low_length: o.low_length + low_length,
+        length: o.length + l
+      )
+    else:
+      (
+        bases: cov*l, 
+        min_cov: cov,
+        max_cov: cov,
+        low_length: low_length,
+        length: l
+      )
 
-proc `$`(s: stats_t): string =
-  #$s.min_cov & " " & $(float(s.tot_bases)/float(s.tot_length)) & " " & $s.max_cov & " " & $s.tot_length
-  $s.min_cov & " " & $(s.tot_bases/s.tot_length) & " " & $s.max_cov & " " & $s.tot_length
-proc to_string(s: stats_t, strand: bool): string =
+proc mean(s: interval_stats_t): coverage_stats_t[float] = 
+  let l = float(s.length)
+  (float(s.bases.total)/l, float(s.bases.forward)/l, float(s.bases.reverse)/l)
+
+proc to_string[T](s: coverage_stats_t[T], strand: bool = true, sep: string=" "): string =
   if strand:
-    $s.min_cov & " " & $(s.tot_bases/s.tot_length) & " " & $s.max_cov & " " & $s.tot_length
+    $s.total & sep & $s.forward & sep & $s.reverse
   else:
-    $tot(s.min_cov) & " " & $tot(s.tot_bases/s.tot_length) & " " & $tot(s.max_cov) & " " & $s.tot_length
+    $s.total
+
+proc stat_columns(self: target_stat_t, sep: string = " ", prefix: string=""): string =
+  let
+    cov_cols = @["bases", "mean", "min", "max"] & (if self.opts.low_cov > 0: @["low" & $self.opts.low_cov] else: @[])
+    strand_suffixes = if self.opts.strand: @["", "_forward", "_reverse"] else: @[""]
+  var r: string = ""
+  for mid in cov_cols:
+    for suf in strand_suffixes:
+      r = r & sep & prefix & mid & suf
+      #dev("report: header cols:", r)
+  r & sep & prefix & "length"
+
+proc to_string(self: target_stat_t, name: string, sep: string = " "): string =
+  let strand = self.opts.strand
+  if name in self.stats:
+    let s = self.stats[name]
+    var r =
+      to_string(s.bases, strand, sep) & sep & 
+      to_string(s.mean, strand, sep) & sep & 
+      to_string(s.min_cov, strand, sep) & sep & 
+      to_string(s.max_cov, strand, sep) & sep
+    if self.opts.low_cov > 0:
+      r = r & to_string(s.low_length, strand, sep) & sep
+    r & $s.length
+  else: # FIXME this should not be happening if we do things correctly in main
+    var r = ""
+    for i in 1..(1 + (if self.opts.low_cov > 0: 5 else: 4)*(if strand: 3 else: 1)):
+      r = r & sep & "." # TODO vedere se c'e' un modo di ripetere una string invece di stamparla tutte queste volte
+    r
+
+# process coverage from a single file
+# open bam, compute coverage, print coverage output (based on outopts) and return coverage stats
+proc bam2stats(bam_path: string, inopts: input_option_t, outopts: output_option_t, bam_threads: int = 0): target_stat_t =
+  var
+    bam: Bam
+    target_stats: target_stat_t = new_stats(outopts) # FIXME
+    output: output_t = newOutput(outopts)
+
+  if bam_path == "-":
+    stderr.writeLine("Reading from STDIN [Ctrl-C to break]")
+  open(bam, bam_path, threads=bam_threads)
+
+# TODO copiato da mosdepth, serve a sveltire il parsing per i CRAM
+#  var opts = SamField.SAM_FLAG.int or SamField.SAM_RNAME.int or SamField.SAM_POS.int or SamField.SAM_MAPQ.int or SamField.SAM_CIGAR.int
+#  if not fast_mode:
+#      opts = opts or SamField.SAM_QNAME.int or SamField.SAM_RNEXT.int or SamField.SAM_PNEXT.int #or SamField.SAM_TLEN.int
+#  discard bam.set_option(FormatOption.CRAM_OPT_REQUIRED_FIELDS, opts)
+#  discard bam.set_option(FormatOption.CRAM_OPT_DECODE_MD, 0)
+
+  var cov_iter = coverage_iter(bam, inopts)
+  for cov_inter in cov_iter():
+    db("coverage:", cov_inter)
+    target_stats.push_interval(cov_inter)
+    if not outopts.no_coverage:
+      output.push_interval(cov_inter)
+  target_stats
+
 
 proc main(argv: var seq[string]): int =
   let doc = format("""
   BamToCov $version
 
-  Usage: bamtocov [options] [<BAM>]
+  Usage: bamtocov [options] [<BAM>]...
 
 Arguments:                                                                                                                                                 
-  <BAM>          the alignment file for which to calculate depth (default: STDIN)
+  <BAM>         the alignment file for which to calculate depth (default: STDIN)
 
 Core options:
   -p, --physical               Calculate physical coverage
   -s, --stranded               Report coverage separate by strand
+  -q, --quantize <breaks>      Comma separated list of breaks for quantized output
   -w, --wig <SPAN>             Output in wig format (using fixed <SPAN>)
+  -o, --report <TXT>           Output coverage report
+  --skip-output                Do not output per-base coverage
+  --report-low <min>
 
 Target files:
   -r, --regions <bed>          Target file in BED or GFF format (detected with the extension)
-  -t, --type <feat>            GFF feature type to parse [default: CDS]
+  -t, --gff-type <feat>        GFF feature type to parse [default: CDS]
   -i, --id <ID>                GFF identifier [default: ID]
+  --gff                        Force GFF input (otherwise assumed by extension .gff)
 
 BAM reading options:
   -T, --threads <threads>      BAM decompression threads [default: 0]
@@ -428,7 +616,7 @@ BAM reading options:
   -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
 
 Other options:
-  --debug                      Enable diagnostics    
+  --debug                      Enable diagnostics
   -h, --help                   Show help
   """ % ["version", version])
 
@@ -436,72 +624,113 @@ Other options:
 
 
   debug = args["--debug"]
-  let output_strand: bool     = args["--stranded"] # FIXME e' giusto covertirlo cosi'?
 
   let
     threads = parse_int($args["--threads"])
     target_file       = $args["--regions"]
   var
-    bam:Bam
-    format_gff : bool # FIXME metterci un valore sensato?
+    bams: seq[BAM]
+    format_gff = false # FIXME metterci un valore sensato?
+  
+  # Set target format (GFF/BED) using extension or forced by the user
+  if ($args["--regions"]).contains(".gff") or args["--gff"]:
+    db("Parsing target as GFF")
+    format_gff = true
+  else:
+    db("Parsing target as BED")
+  
 
   let
+    input_paths =
+      if len(@(args["<BAM>"])) > 0:
+        @(args["<BAM>"])
+      else:
+        @["-"]
+    target = convertTarget(
+      if format_gff: gff_to_table(target_file)
+      else: bed_to_table(target_file)
+    )
     input_opts: input_option_t = (
       min_mapping_quality: uint8(parse_int($args["--mapq"])),
       eflag: uint16(parse_int($args["--flag"])),
       physical: bool(args["--physical"]), # FIXME e' giusto convertirlo cosi'?
-      target: convertTarget(
-        if format_gff: gff_to_table(target_file)
-        else: bed_to_table(target_file)
-      )
+      target: target
     )
-    
-  if $args["<BAM>"] != "nil":
-    # Read from FILE
-    try:
-      if not fileExists($args["<BAM>"]):
-        stderr.writeLine("FATAL ERROR: File <", $args["<BAM>"], "> not found")
-        quit(1)
-      open(bam, $args["<BAM>"], threads=threads)
-    except:
-      stderr.writeLine("FATAL ERROR: Unable to read input file: ", $args["<BAM>"]) 
-      quit(1)
-  else:
-    # Read STDIN
-    stderr.writeLine("Reading from STDIN [Ctrl-C to break]")
-    open(bam, "-", threads=threads)
+    output_opts: output_option_t = (
+      strand: bool(args["--stranded"]),
+      no_coverage: bool(args["--skip-output"]) or len(input_paths) > 1,
+      quantization: $args["--quantize"],
+      output_format: of_bed,
+      low_cov:
+        if args["--report-low"]: int64(parse_int($args["--report-low"]))
+        else: 0 # FIXME c'e' una maniera migliore di mettere i default con docopt? YES: [default: 0]
+    )
 
-  # TODO copiato da mosdepth, serve a sveltire il parsing per i CRAM
-#  var opts = SamField.SAM_FLAG.int or SamField.SAM_RNAME.int or SamField.SAM_POS.int or SamField.SAM_MAPQ.int or SamField.SAM_CIGAR.int
-#  if not fast_mode:
-#      opts = opts or SamField.SAM_QNAME.int or SamField.SAM_RNEXT.int or SamField.SAM_PNEXT.int #or SamField.SAM_TLEN.int
-#  discard bam.set_option(FormatOption.CRAM_OPT_REQUIRED_FIELDS, opts)
-#  discard bam.set_option(FormatOption.CRAM_OPT_DECODE_MD, 0)
+  if not bool(args["--skip-output"]) and len(input_paths) > 1:
+    stderr.writeLine("WARNING: coverage output for multiple input files is not implemented, so it will not be produced; use --skip-output to suppress this warning")
 
-
-
-  try:
-    var
-      output: output_t = newOutput(output_strand) 
-      target_stats: target_stat_t = newTable[string, tuple[tot_bases, min_cov, max_cov: cov_t, tot_length: pos_t]]()
-      cov_iter = coverage_iter(bam, input_opts)
-    db("target:", input_opts.target)
-    for cov_inter in cov_iter():
-      db("coverage:", cov_inter)
-      target_stats.push_interval(cov_inter)
-      output.push_interval(cov_inter)
-
-    #var order = newOrderedSet()
-    #for chrom, intervals:
-    #  order.incl()
-    for name, stats in target_stats:
-      stderr.writeLine( name & "\t" & to_string(stats, true) )
- 
-
-  except:
-    stderr.writeLine("FATAL ERROR: Unable to read input input: ", $args["<BAM>"] )
-    stderr.writeLine( () )
+  #Preflight check input files
+  var
+    missing_files = 0
+  # FIXME warn about not output for multiple bams (if --no-ouput is not given)
+  for inputBam in input_paths:
+    if inputBam == "-":
+      db("Will read STDIN")
+    elif not fileExists(inputBam):
+      missing_files += 1
+      stderr.writeLine("ERROR: Input file <", inputBam, "> not found.")
+  if missing_files > 0:
     quit(1)
+  
+  # CIAO ho condensato qui tutta la ciccia dei calcoli, in bam2stats, cosi' dovrebbe essere piu' semplice da mettere in threads
+  var bam_stats: seq[target_stat_t]
+  for p in input_paths:
+    db("running", p)
+    bam_stats.add(bam2stats(p, input_opts, output_opts, bam_threads=1))
+     
+  
+  if args["--report"]: # print report table
+    db("stats reporting")
+    # assemble table index
+    var index = initOrderedSet[string]()
+    let sample_names = input_paths # TODO qui forse possiamo fare un po' meglio che mettere tutto il path ;-)
+
+    # get interval names from target in the order they appear
+    for chrom, intervals in input_opts.target: # FIXME do this for chromosomes if there is no target!
+      for t in intervals:
+        index.incl(t.label)
+    # check that each interval in stats has benn put in index
+    for s in bam_stats:
+      for t in s.stats.keys():
+        if not (t in index):
+          dev("t not in index: " & t) #FIXME questo mi aspetto che non succeda!
+        #doAssert(t in index, "ciiao")
+    db("target:", input_opts.target)
+    db("index:", index)
+
+    # print header
+    db("report: header")
+    let
+      report = open($args["--report"], fmWrite)
+      sep = "\t"
+    report.write("interval")
+    for x in zip(sample_names, bam_stats):
+      report.write(stat_columns(x[1], sep=sep, prefix=x[0] & "_"))
+    report.write("\n")
+
+    # print body
+    db("report: body")
+    for t in index:
+      report.write(t)
+      for stats in bam_stats:
+        report.write(sep & to_string(stats, t, sep=sep))
+      report.write("\n")
+
+  #except:
+  #  stderr.writeLine("FATAL ERROR: Unable to read input input: ", $args["<BAM>"] ) # FIXME handle multiple bams here!
+  #  stderr.writeLine( () )
+  #  quit(1)
+  db("exiting successfully!")
   return 0
 
 type EKeyboardInterrupt = object of CatchableError

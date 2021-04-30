@@ -4,3 +4,4 @@ htmldocs/
 bin/*
 *.bai
 profiling
+multiqc/

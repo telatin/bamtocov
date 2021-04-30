@@ -1,0 +1,6 @@
+NC_001422.1	50	221	PhiX_01	.	+	Prodigal:002006	CDS	0	ID=PhiX_01;inference=ab initio prediction:Prodigal:002006;locus_tag=PhiX_01;product=hypothetical protein
+NC_001422.1	389	848	PhiX_02	.	+	Prodigal:002006	CDS	0	ID=PhiX_02;inference=ab initio prediction:Prodigal:002006;locus_tag=PhiX_02;product=hypothetical protein
+NC_001422.1	847	964	PhiX_03	.	+	Prodigal:002006	CDS	0	ID=PhiX_03;inference=ab initio prediction:Prodigal:002006;locus_tag=PhiX_03;product=hypothetical protein
+NC_001422.1	1000	2284	PhiX_04	.	+	Prodigal:002006	CDS	0	ID=PhiX_04;inference=ab initio prediction:Prodigal:002006;locus_tag=PhiX_04;product=hypothetical protein
+NC_001422.1	2394	2922	PhiX_05	.	+	Prodigal:002006	CDS	0	ID=PhiX_05;inference=ab initio prediction:Prodigal:002006;locus_tag=PhiX_05;product=hypothetical protein
+NC_001422.1	2930	3917	PhiX_06	.	+	Prodigal:002006	CDS	0	ID=PhiX_06;inference=ab initio prediction:Prodigal:002006;locus_tag=GINNEHPO_00006;product=hypothetical protein

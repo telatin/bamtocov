@@ -1,0 +1,33 @@
+@HD	VN:1.6	SO:coordinate
+@SQ	SN:seq1	LN:1000
+@SQ	SN:seq2	LN:1000
+@SQ	SN:seq0	LN:1000
+@PG	ID:samtools	PN:samtools	VN:1.10	CL:samtools view -bS /local/giovanni/covtools/src/../input/mini.sam
+@PG	ID:samtools.1	PN:samtools	PP:samtools	VN:1.10	CL:samtools sort -o /local/giovanni/covtools/src/../input/mini.bam -
+@PG	ID:samtools.2	PN:samtools	PP:samtools.1	VN:1.11	CL:samtools view -h mini.bam
+read11	0	seq1	10	60	100M	*	0	0	*	*
+read12	0	seq1	10	60	100M	*	0	0	*	*
+t1_out1	0	seq1	190	60	100M	*	0	0	*	*
+t1_out2	0	seq1	190	60	100M	*	0	0	*	*
+t1_in1	0	seq1	201	60	100M	*	0	0	*	*
+t1_in2	0	seq1	201	60	100M	*	0	0	*	*
+t1_mid1	0	seq1	251	60	100M	*	0	0	*	*
+t1_mid2	0	seq1	251	60	100M	*	0	0	*	*
+t1_edge	0	seq1	300	60	100M	*	0	0	*	*
+t1_end	0	seq1	380	60	100M	*	0	0	*	*
+over_t1	0	seq1	401	60	100M	*	0	0	*	*
+just_1X	0	seq1	651	60	100M	*	0	0	*	*
+s2for1	0	seq2	500	60	100M	*	0	0	*	*
+s2for2	0	seq2	500	60	100M	*	0	0	*	*
+s2for3	0	seq2	500	60	100M	*	0	0	*	*
+s2for4	0	seq2	500	60	100M	*	0	0	*	*
+s4for_	0	seq2	500	60	100M	*	0	0	*	*
+s2rev1	16	seq2	500	60	100M	*	0	0	*	*
+s2rev2	16	seq2	500	60	100M	*	0	0	*	*
+s2rev3	16	seq2	500	60	100M	*	0	0	*	*
+s2rev4	16	seq2	500	60	100M	*	0	0	*	*
+s2rev1b	16	seq2	500	60	100M	*	0	0	*	*
+s2rev2b	16	seq2	500	60	100M	*	0	0	*	*
+s2rev3b	16	seq2	500	60	100M	*	0	0	*	*
+s2rev4b	16	seq2	500	60	100M	*	0	0	*	*
+s2rev4	16	seq2	500	60	100M	*	0	0	*	*
