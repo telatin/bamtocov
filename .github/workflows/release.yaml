@@ -1,0 +1,25 @@
+on:
+  release:
+    types: [created]
+name: Handle Release
+jobs:
+  generate:
+    name: Create release-artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@master
+      - name: Collect
+        uses: actions/download-artifact@v2
+        with:
+          name: 'bamtocov_*'
+
+      - name: Display structure of downloaded files
+        run: ls -R
+        
+      - name: Upload the artifacts
+        uses: skx/github-action-publish-binaries@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: 'bamtocov_*'
