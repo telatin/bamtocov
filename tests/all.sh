@@ -30,3 +30,7 @@ $BamToCov -r $DATA/mini.bed -o $TMP/report.txt $DATA/mini.bam > $TMP/mini.BamToC
 tail -n 4 $TMP/mini.BamToCov $TMP/report.txt
 
 rm -rf $TMP
+VER=$(grep version bamtocov.nimble  | cut -f2 -d\")
+for i in bin/*; do 
+  $i --version | grep $VER; 
+done
