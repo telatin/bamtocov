@@ -9,12 +9,12 @@ and uses a _memory-efficient algorithm_.
 
 ## :book: Documentation
 
-Full documentation is available online at the **[:book: dedicated website](https://telatin.github.io/bamtocov/)**, or in
+Full documentation is available online at the :book: **[ dedicated website](https://telatin.github.io/bamtocov/)**, or in
 this repository under `docs`.
 
 ## Installation
 
-The BamToCov package is available from [:package: BioConda](https://bioconda.github.io/recipes/bamtocov/README.html)
+The BamToCov package is available from :package: [BioConda](https://bioconda.github.io/recipes/bamtocov/README.html)
 
 ```bash
 conda install -y -c bioconda bamtocov
