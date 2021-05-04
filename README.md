@@ -1,18 +1,20 @@
 # bamtocov
 
+[![bamtocov logo](docs/bamtocov.png)](https://telatin.github.io/bamtocov/)
+
 Tools to extract coverage informations from BAM (and CRAM) files, based on the
-[covtobed](https://github.com/telatin/covtobed) algorithm that supports stranded
-coverage and physical coverage, input from streams 
-and uses a memory-efficient algorithm.
+[covtobed](https://github.com/telatin/covtobed) algorithm that supports 
+_stranded coverage_ and _physical coverage_, input from _streams_ 
+and uses a _memory-efficient algorithm_. 
 
 ## :book: Documentation
 
-Full documentation is available online at the **[dedicated website](https://telatin.github.io/bamtocov/)**, or in
+Full documentation is available online at the **[:book: dedicated website](https://telatin.github.io/bamtocov/)**, or in
 this repository under `docs`.
 
 ## Installation
 
-The BamToCov package is available from [BioConda](https://bioconda.github.io/recipes/bamtocov/README.html)
+The BamToCov package is available from [:package: BioConda](https://bioconda.github.io/recipes/bamtocov/README.html)
 
 ```bash
 conda install -y -c bioconda bamtocov

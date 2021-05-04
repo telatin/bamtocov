@@ -5,3 +5,4 @@ bin/*
 *.bai
 profiling
 multiqc/
+.DS_Store
