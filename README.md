@@ -1,5 +1,10 @@
 # bamtocov
 
+[![Build Bamtocov](https://github.com/telatin/bamtocov/actions/workflows/build.yml/badge.svg)](https://github.com/telatin/bamtocov/actions/workflows/build.yml)
+[![Downloads](https://img.shields.io/conda/dn/bioconda/bamtocov)](https://anaconda.org/bioconda/bamtocov)
+[![Platforms](https://anaconda.org/bioconda/bamtocov/badges/platforms.svg)](https://bioconda.github.io/recipes/bamtocov/README.html)
+
+
 [![bamtocov logo](docs/bamtocov.png)](https://telatin.github.io/bamtocov/)
 
 Tools to extract coverage informations from BAM (and CRAM) files, based on the
