@@ -6,3 +6,5 @@ bin/*
 profiling
 multiqc/
 .DS_Store
+local
+nimbledeps/
