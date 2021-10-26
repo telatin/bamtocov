@@ -8,3 +8,4 @@ multiqc/
 .DS_Store
 local
 nimbledeps/
+test/

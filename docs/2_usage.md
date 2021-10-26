@@ -6,7 +6,7 @@ permalink: /usage
 # bamtocov
 
 ```text
-BamToCov 2.0.2
+BamToCov 
 
   Usage: bamtocov [options] [<BAM>]
 

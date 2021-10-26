@@ -7,6 +7,7 @@ import tables
 import algorithm 
 import ./covutils
 import sets
+#import nimprof
 
 # ✅ FIXME total min/max coverage cannot be computed from the two strands! - DONE
 # ✅ FIXME per la cronaca ho trovato un mini “bachetto”, se il BED non ha nomi, giustamente, ficca tutto in un mega intervallo immaginario. Ora,  potrebbe essere la cosa giusta da fare, l’alternativa è che se il nome non c’è lo creiamo noi tipo “chr2:100-200" e cosi li manteniamo forzatamente separati e se uno vuole il megatarget specifica lo stesso nome in tutto il file
