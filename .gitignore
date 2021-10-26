@@ -9,3 +9,4 @@ multiqc/
 local
 nimbledeps/
 test/
+src/macrotest*

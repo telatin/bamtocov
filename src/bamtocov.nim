@@ -9,9 +9,9 @@ import ./covutils
 import sets
 #import nimprof
 
-# ✅ FIXME total min/max coverage cannot be computed from the two strands! - DONE
-# ✅ FIXME per la cronaca ho trovato un mini “bachetto”, se il BED non ha nomi, giustamente, ficca tutto in un mega intervallo immaginario. Ora,  potrebbe essere la cosa giusta da fare, l’alternativa è che se il nome non c’è lo creiamo noi tipo “chr2:100-200" e cosi li manteniamo forzatamente separati e se uno vuole il megatarget specifica lo stesso nome in tutto il file
-# ✅ FIXME mini2.bam coverage went backwards error - DONE era il check troppo zelante!
+# ✅ Fixed: total min/max coverage cannot be computed from the two strands! - DONE
+# ✅ Fixed: per la cronaca ho trovato un mini “bachetto”, se il BED non ha nomi, giustamente, ficca tutto in un mega intervallo immaginario. Ora,  potrebbe essere la cosa giusta da fare, l’alternativa è che se il nome non c’è lo creiamo noi tipo “chr2:100-200" e cosi li manteniamo forzatamente separati e se uno vuole il megatarget specifica lo stesso nome in tutto il file
+# ✅ Fixed: mini2.bam coverage went backwards error - DONE era il check troppo zelante!
 # FIXME report without target
 
 # FEATURES paper
@@ -84,9 +84,10 @@ type
 
 var
   debug = false
+  developer = false
 
 proc db(things: varargs[string, `$`]) =
-  if debug:
+  #if debug:
     stderr.write("debug:")
     for t in things:
       if t[0] == ',':
@@ -104,7 +105,13 @@ proc dev(things: varargs[string, `$`]) =
       stderr.write(" " & t)
   stderr.write("\n")
 
+template devEcho(things: varargs[string, `$`]) =
+  if developer:
+    dev(things)
 
+template dbEcho(things: varargs[string, `$`]) =
+  if debug:
+    db(things)
 type
   target_t = TableRef[chrom_t, seq[interval_t[string]]]
 
@@ -132,7 +139,7 @@ type
 
 # seek target to the right, return true when there is an intersection and move index to the leftmost intersercting interval of the target
 iterator intersections[T](query: genomic_interval_t[T], target: target_t, idx: var target_index_t): genomic_interval_t[tuple[l1: T, l2: string]] =
-  db("target intersection for query interval:", query, ", starting from:", idx)
+  dbEcho("target intersection for query interval:", query, ", starting from:", idx)
   let chrom = query.chrom
   if chrom in target:
     let
@@ -140,19 +147,19 @@ iterator intersections[T](query: genomic_interval_t[T], target: target_t, idx: v
       max_idx = len(intervals) - 1
     # if the chrom changes, start from leftmost interval
     if idx.chrom != chrom:
-      db("target seeking: change chrom to:", idx)
+      dbEcho("target seeking: change chrom to:", idx)
       idx = (chrom, 0)
     # advance target interval until we reach the query interval
     while intervals[idx.interval] << query and idx.interval < max_idx:
       idx.interval += 1
-      db("target seeking: advance target index to:", idx.interval, "at target interval:", intervals[idx.interval])
+      dbEcho("target seeking: advance target index to:", idx.interval, "at target interval:", intervals[idx.interval])
     # yield all intersections
     var i = idx.interval
     while not (query << intervals[i]) and i < max_idx:
       yield intersection_both(query, intervals[i])
       i += 1
   else:
-    db("target seeking: chrom", chrom, "not in target")
+    dbEcho("target seeking: chrom", chrom, "not in target")
     
 proc intersects[T](query: genomic_interval_t[T], target: target_t, idx: var target_index_t): bool =
   for i in intersections(query, target, idx):
@@ -269,7 +276,7 @@ proc coverage_iter(bam: Bam, opts: input_option_t): iterator(): coverage_interva
         reflen = pos_t(reference.length)
         refname = chrom_t(reference.name)
       
-      db("new reference start:", refname, ",", reflen, "bp")
+      dbEcho("new reference start:", refname, ",", reflen, "bp")
 
       var 
         last_pos : pos_t = 0
@@ -278,7 +285,7 @@ proc coverage_iter(bam: Bam, opts: input_option_t): iterator(): coverage_interva
         more_alignments_for_ref = more_alignments and aln.chrom == refname
 
       while true:
-        db("Aln:", if more_alignments: $aln else: "no more", "in", refname)
+        dbEcho("Aln:", if more_alignments: $aln else: "no more", "in", refname)
 
         
         # calculate the position of the next coverage change
@@ -302,7 +309,7 @@ proc coverage_iter(bam: Bam, opts: input_option_t): iterator(): coverage_interva
         if len(opts.target) == 0:
           yield (refname, last_pos, next_change, (cov, refname))
         else:
-          db("pre-intersection coverage:", (refname, last_pos, next_change, cov))
+          dbEcho("pre-intersection coverage:", (refname, last_pos, next_change, cov))
           for i in intersections((refname, last_pos, next_change, cov), opts.target, target_idx):
             yield i
 
@@ -400,7 +407,7 @@ proc push_interval(o: var output_t, i: coverage_interval_t) =
   let q = o.queued
   var c: coverage_t = i.label.l1
 
-  db("push_interval: ", i)
+  dbEcho("push_interval: ", i)
   # handle stranded output
   if not o.opts.strand:
     c.forward = c.forward + c.reverse
@@ -580,7 +587,7 @@ proc bam2stats(bam_path: string, inopts: input_option_t, outopts: output_option_
 
   var cov_iter = coverage_iter(bam, inopts)
   for cov_inter in cov_iter():
-    db("coverage:", cov_inter)
+    dbEcho("coverage:", cov_inter)
     target_stats.push_interval(cov_inter)
     if not outopts.no_coverage:
       output.push_interval(cov_inter)
@@ -635,10 +642,10 @@ Other options:
   
   # Set target format (GFF/BED) using extension or forced by the user
   if ($args["--regions"]).contains(".gff") or args["--gff"]:
-    db("Parsing target as GFF")
+    dbEcho("Parsing target as GFF")
     format_gff = true
   else:
-    db("Parsing target as BED")
+    dbEcho("Parsing target as BED")
   
 
   let
@@ -676,7 +683,7 @@ Other options:
   # FIXME warn about not output for multiple bams (if --no-ouput is not given)
   for inputBam in input_paths:
     if inputBam == "-":
-      db("Will read STDIN")
+      dbEcho("Will read STDIN")
     elif not fileExists(inputBam):
       missing_files += 1
       stderr.writeLine("ERROR: Input file <", inputBam, "> not found.")
@@ -686,12 +693,12 @@ Other options:
   # CIAO ho condensato qui tutta la ciccia dei calcoli, in bam2stats, cosi' dovrebbe essere piu' semplice da mettere in threads
   var bam_stats: seq[target_stat_t]
   for p in input_paths:
-    db("running", p)
+    dbEcho("running", p)
     bam_stats.add(bam2stats(p, input_opts, output_opts, bam_threads=1))
      
   
   if args["--report"]: # print report table
-    db("stats reporting")
+    dbEcho("stats reporting")
     # assemble table index
     var index = initOrderedSet[string]()
     let sample_names = input_paths # TODO qui forse possiamo fare un po' meglio che mettere tutto il path ;-)
@@ -706,11 +713,11 @@ Other options:
         if not (t in index):
           dev("t not in index: " & t) #FIXME questo mi aspetto che non succeda!
         #doAssert(t in index, "ciiao")
-    db("target:", input_opts.target)
-    db("index:", index)
+    dbEcho("target:", input_opts.target)
+    dbEcho("index:", index)
 
     # print header
-    db("report: header")
+    dbEcho("report: header")
     let
       report = open($args["--report"], fmWrite)
       sep = "\t"
@@ -720,7 +727,7 @@ Other options:
     report.write("\n")
 
     # print body
-    db("report: body")
+    dbEcho("report: body")
     for t in index:
       report.write(t)
       for stats in bam_stats:
@@ -731,7 +738,7 @@ Other options:
   #  stderr.writeLine("FATAL ERROR: Unable to read input input: ", $args["<BAM>"] ) # FIXME handle multiple bams here!
   #  stderr.writeLine( () )
   #  quit(1)
-  db("exiting successfully!")
+  dbEcho("exiting successfully!")
   return 0
 
 type EKeyboardInterrupt = object of CatchableError
