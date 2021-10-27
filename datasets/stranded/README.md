@@ -1,6 +1,6 @@
 # Stranded coverage
 
-## Single pair: `stranded.bam`
+## Full stranded: `stranded.bam`
 
 ### Description
 
@@ -29,12 +29,48 @@ rev_1  16      filt.1  126     60      124M1S  *       0       0       CCTTCTATA
 filt.1  0       249     1
 ```
 
-* Physical: `bamtocov --stranded stranded.bam`
+* Stranded: `bamtocov --stranded stranded.bam`
 
 ```text
 filt.1  0       125     1       0
 filt.1  125     249     0       1
 ```
+
+## Small stranded: `stranded.bam`
+
+### Description
+
+_stranded.bam_ contains two reads, one of which is reverse-complemented.
+Together, they physically cover the whole genome, but having a gap between
+them their sequence coverage is smaller.
+
+### Generation
+
+```
+seqfu cat --fastq --truncate 100 --prefix for --strip-name ref-250.fa > for.fq
+seqfu rc  ref-250.fa  | seqfu cat --fastq --truncate 100  --prefix rev --strip-name > rev.fq
+cat for.fq rev.fq > gap-stranded.fq && rm {for,rev}.fq
+bwa mem -t 4 ref-250.fa gap-stranded.fq | samtools view -bS - > gap-stranded.bam
+```
+ 
+
+### Output
+* Sequence coverage: `bamtocov stranded.bam`
+
+```text
+filt.1  0       100     1
+filt.1  100     150     0
+filt.1  150     250     1
+```
+
+* Stranded: `bamtocov --stranded stranded.bam`
+
+```text
+filt.1  0       100     1       0
+filt.1  100     150     0       0
+filt.1  150     250     0       1
+```
+
 
 
 
