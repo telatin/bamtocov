@@ -1,0 +1,27 @@
+{
+   "exome" : {
+      "bam" : "/local/giovanni/exome/HG00258.bam",
+      "bed" : "/local/giovanni/exome/target.bed",
+      "runs" : 2
+   },
+   "exome-sub" : {
+      "bam" : "/local/giovanni/exome/HG00258.bam.04.bam",
+      "bed" : "/local/giovanni/exome/target.bed",
+      "runs" : 3
+   },
+   "exome-sub-chr2" : {
+      "bam" : "/local/giovanni/exome/HG00258.bam.04-chr2.bam",
+      "bed" : "/local/giovanni/exome/target.bed",
+      "runs" : 3
+   },
+   "mini" : {
+      "bam" : "/local/giovanni/bamtocov/input/mini.bam",
+      "bed" : "/local/giovanni/bamtocov/input/mini.bed",
+      "runs" : 10
+   },
+   "panel" : {
+      "bam" : "/local/giovanni/covtobed/example_data/panel_01.bam",
+      "bed" : "/local/giovanni/covtobed/example_data/lstarget.bed",
+      "runs" : 5
+   }
+}

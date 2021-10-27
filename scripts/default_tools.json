@@ -1,0 +1,42 @@
+{
+   "2.0.2-conda" : {
+      "args" : "{BAM}",
+      "check" : "--version",
+      "path" : "/local/miniconda3/bin/bamtocov"
+   },
+   "2.0.4-conda" : {
+      "args" : "{BAM}",
+      "check" : "--version",
+      "path" : "/local/miniconda3/envs/test-cov/bin/bamtocov"
+   },
+   "2.1.0-conda" : {
+      "args" : "{BAM}",
+      "check" : "--version",
+      "path" : "/local/miniconda3/envs/bamtocov210/bin/bamtocov"
+   },
+   "2.1.0-nimble" : {
+      "args" : "{BAM}",
+      "check" : "--version",
+      "path" : "/local/giovanni/bamtocov/bin/bamtocov"
+   },
+   "2.1.0-nimc" : {
+      "args" : "{BAM}",
+      "check" : "--version",
+      "path" : "/local/giovanni/bamtocov//test/bamtocov"
+   },
+   "covtobed-1.2.0" : {
+      "args" : "{BAM}",
+      "check" : "--version",
+      "path" : "/local/miniconda3/bin/covtobed"
+   },
+   "megadepth-1.1.2-conda" : {
+      "args" : "--coverage {BAM}",
+      "check" : "--version",
+      "path" : "/local/miniconda3/envs/mega/bin/megadepth"
+   },
+   "mosdepth-0.3.1-conda" : {
+      "args" : "/tmp/prefix {BAM}",
+      "check" : "--version",
+      "path" : "/local/miniconda3/bin/mosdepth"
+   }
+}
