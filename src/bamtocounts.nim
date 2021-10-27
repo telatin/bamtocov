@@ -9,7 +9,7 @@ import algorithm
 import ./covutils
  
 #[
-  **covToCounts**, part of MAGENTA Flow
+  **bamToCounts**, part of MAGENTA Flow
   based on count-reads in the "hts-nim-tools" suite by Brent Pedersen
   see: "https://github.com/brentp/hts-nim-tools"
   Static binary thanks to  "https://github.com/brentp/hts-nim"
@@ -215,9 +215,9 @@ call fn(x) for each interval x in L that overlaps start..stop this assumes that 
 proc main(argv: var seq[string]): int =
   let env_fasta = getEnv("REF_PATH")
   let doc = format("""
-  covToCounts $version
+  BamToCounts $version
 
-  Usage: covtocounts [options] <Target> <BAM-or-CRAM>...
+  Usage: bamtocounts [options] <Target> <BAM-or-CRAM>...
 
 Arguments:                                                                                                                                                 
 
@@ -258,6 +258,10 @@ Options:
     threads = parse_int($args["--threads"])
     bam:Bam
 
+  if len($args["<BAM-or-CRAM>"]) > 1:
+    echo "Multiple BAM/CRAM files not supported in the current version."
+    quit(1)
+
   try:
     open(bam, $args["<BAM-or-CRAM>"], threads=threads, index=true, fai=fasta)
     if debug:
@@ -293,6 +297,7 @@ Options:
   if debug:
     stderr.writeLine("Target loaded: ", len(regions), " reference sequences")
 
+  
   print_alignments_count(bam, uint8(mapq), eflag, regions)
   return 0
 

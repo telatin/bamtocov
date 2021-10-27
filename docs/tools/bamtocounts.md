@@ -2,11 +2,13 @@
 sort: 2
 ---
 
-# bamtocounts
+# BamToCounts
 
-A program 
+A program that counts the number of reads per target in
+a BAM file.
 
 ## Help screen
+
 ```text
   BamToCounts $version
 
@@ -45,7 +47,6 @@ columns:
 4. feature name
 5. read count
 6. Optional columns (RPKM, counts/length)
-
 
 ```text
 seq1    200     400     target1_8X      8

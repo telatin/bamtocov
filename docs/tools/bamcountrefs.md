@@ -41,7 +41,7 @@ Other options;
 ## Example
 
 ```bash
-bin/bamcountrefs input/mini.bam input/mini2.bam  --tag Chrom
+bin/bamcountrefs --tag "Chrom" input/mini.bam input/mini2.bam  
 ```
 
 Output:

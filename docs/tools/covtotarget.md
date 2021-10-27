@@ -2,7 +2,7 @@
 sort: 4
 ---
 
-# covtotarget
+# CovToTarget
 
 This tool produce a coverage per feature report based on
 a *target* (annotation file in BED or GFF3 format) and the output
