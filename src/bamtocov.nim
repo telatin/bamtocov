@@ -195,7 +195,13 @@ proc alignment_stream(bam: Bam, opts: input_option_t): iterator (): genomic_inte
         yield i
 
 
+#[ 
 proc doAssert(condition: bool, message: string) =
+  if condition == false:
+    stderr.writeLine("ERROR: ", message)
+    quit(1) 
+]#
+template doAssert(condition: bool, message: string) =
   if condition == false:
     stderr.writeLine("ERROR: ", message)
     quit(1)
@@ -302,7 +308,8 @@ proc coverage_iter(bam: Bam, opts: input_option_t): iterator(): coverage_interva
 
         if debug: stderr.writeLine("Last pos: " & $last_pos & ", next pos: " & $next_change)
         # check that we are advancing, this should always be the case if the bam is sorted (except when there is an alignment right at the beginning of a chromosome, hence the alternative condition)
-        doAssert(last_pos < next_change or (last_pos == 0 and next_change == 0), "coverage went backwards from " & $last_pos & " to " & $next_change)   
+        doAssert(last_pos < next_change or (last_pos == 0 and next_change == 0), 
+          "coverage went backwards from " & $last_pos & " to " & $next_change & ", at " & $refname & ":" & $aln.start)  
         # output coverage ...
         doAssert(coverage_ends.len() == cov.tot(), "coverage not equal to queue size")
         #let cov_inter: genomic_interval_t[coverage_t] = 

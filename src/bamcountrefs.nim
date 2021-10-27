@@ -224,25 +224,30 @@ call fn(x) for each interval x in L that overlaps start..stop this assumes that 
 proc main(argv: var seq[string]): int =
   let env_fasta = getEnv("REF_PATH")
   let doc = format("""
-  covToCounts $version
+  BamCountRefs $version
 
-  Usage: covtocounts [options]  <BAM-or-CRAM>...
+  Usage: bamcountrefs [options]  <BAM-or-CRAM>...
 
 Arguments:                                                                                                                                                 
  
   <BAM-or-CRAM>  the alignment file for which to calculate depth
 
-Options:
+BAM/CRAM processing options:
 
   -T, --threads <threads>      BAM decompression threads [default: 0]
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: $env_fasta].
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: 1796]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
+
+Annotation options:
   -g, --gff                    Force GFF for input (otherwise autodetected by .gff extension)
   -t, --type <feat>            GFF feature type to parse [default: CDS]
   -i, --id <ID>                GFF identifier [default: ID]
   -n, --rpkm                   Add a RPKM column
   -l, --norm-len               Add a counts/length column (after RPKM when both used)
+
+Other options;
+  --tag STR                    First column name [default: ViralSequence]
   --multiqc                    Print output as MultiQC table
   --header                     Print header
   --debug                      Enable diagnostics    
@@ -250,7 +255,9 @@ Options:
   """ % ["version", version, "env_fasta", env_fasta])
 
   let args = docopt(doc, version=version, argv=argv)
-  let mapq = parse_int($args["--mapq"])
+  let
+    mapq = parse_int($args["--mapq"])
+    columnName = $args["--tag"]
   var prokkaGff : bool = args["--gff"]
   do_rpkm = args["--rpkm"]
   do_norm = args["--norm-len"]
@@ -268,7 +275,7 @@ Options:
     bam:Bam
 
   var
-    samples = @["ViralSequence"]
+    samples = @[columnName]
 
   for bamFile in @(args["<BAM-or-CRAM>"]):
     var sampleName = extractFilename(bamFile)
