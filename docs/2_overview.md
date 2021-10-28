@@ -27,10 +27,13 @@ interest
 
 ## Features
 
-:check: can read sorted BAM files even without the index
-:check: can read sorte BAM files from stream
-:check: can calculate the **physical coverage**
-:check: can calculate the **per-strand coverage**
+:checkmark: can read sorted BAM files even without the index
+
+:checkmark: can read sorte BAM files from stream
+
+:checkmark: can calculate the **physical coverage**
+
+:checkmark: can calculate the **per-strand coverage**
 
 ## Further reading
 
