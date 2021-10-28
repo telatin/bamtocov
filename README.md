@@ -4,8 +4,7 @@
 [![Downloads](https://img.shields.io/conda/dn/bioconda/bamtocov)](https://anaconda.org/bioconda/bamtocov)
 [![Platforms](https://anaconda.org/bioconda/bamtocov/badges/platforms.svg)](https://bioconda.github.io/recipes/bamtocov/README.html)
 
-
-[![bamtocov logo](docs/bamtocov.png)](https://telatin.github.io/bamtocov/)
+[![bamtocov logo](docs/bamtocov-banner.png)](https://telatin.github.io/bamtocov/)
 
 Tools to extract coverage informations from BAM (and CRAM) files, based on the
 [covtobed](https://github.com/telatin/covtobed) algorithm that supports 
@@ -26,7 +25,8 @@ conda install -y -c bioconda bamtocov
 ```
 
 ## References
- * Brent Pedersen,  Aaron Quinlan, 
- [hts-nim: scripting high-performance genomic analyses](https://academic.oup.com/bioinformatics/article/34/19/3387/4990493) (Bioinformatics)
- * Giovanni Birolo, Andrea Telatin, 
- [covtobed: a simple and fast tool to extract coverage tracks from BAM files](https://joss.theoj.org/papers/10.21105/joss.02119) (JOSS)
+
+* Brent Pedersen,  Aaron Quinlan,
+[hts-nim: scripting high-performance genomic analyses](https://academic.oup.com/bioinformatics/article/34/19/3387/4990493) (Bioinformatics)
+* Giovanni Birolo, Andrea Telatin,
+[covtobed: a simple and fast tool to extract coverage tracks from BAM files](https://joss.theoj.org/papers/10.21105/joss.02119) (JOSS)
