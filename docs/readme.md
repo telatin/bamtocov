@@ -1,6 +1,6 @@
 # BamToCov
 
-![CovToBam logo](bamtocov-logo.png)
+![CovToBam logo](bamtocov-banner.png)
 
 - :package: Github: <https://github.com/telatin/bamtocov>
 - :book: Documentation: <https://telatin.github.io/bamtocov/>
