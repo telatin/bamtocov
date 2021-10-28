@@ -27,13 +27,13 @@ interest
 
 ## Features
 
-:checkmark: can read sorted BAM files even without the index
+:white_check_mark: can read sorted BAM files even without the index
 
-:checkmark: can read sorte BAM files from stream
+:white_check_mark: can read sorte BAM files from stream
 
-:checkmark: can calculate the **physical coverage**
+:white_check_mark: can calculate the **physical coverage**
 
-:checkmark: can calculate the **per-strand coverage**
+:white_check_mark: can calculate the **per-strand coverage**
 
 ## Further reading
 
