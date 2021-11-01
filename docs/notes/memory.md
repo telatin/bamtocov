@@ -13,7 +13,7 @@ Memory usage (in bytes) has been measured for alignments against:
 * Human targeted sequencing, 16 genes, Illumina
 
 |           | Fungus, Illumina | Fungus, ONT | HG00258 Exome | Human panel |
-| --------- | ---------------- | ----------- | ------------- | ----------- |
+| --------- | ----------------: | -----------: | -------------: | -----------:ß |
 | bamtocov  | **2,740**        | **4,376**   | **5,700**     | **2,172**   |
 | covtobed  | 4,080            | 5,008       | 6,588         | 4,052       |
 | mosdepth  | 13,952           | 19,140      | 1,983,928     | 6,425,744   |
@@ -28,7 +28,6 @@ For reference, this is the speed:
 | `covtobed "panel_01.bam"`                      |     533.2 ± 8.8 |    527.1 |    548.4 |   1.49 ± 0.08 |
 | `mega/bin/megadepth --coverage "panel_01.bam"` | 9246.8 ± 1509.7 |   8026.7 |  11072.8 |  25.77 ± 4.41 |
 | `mosdepth /tmp/prefix "panel_01.bam"`          | 53499.6 ± 875.1 |  52284.1 |  54548.5 | 149.08 ± 7.97 |
-
 
 ## Scripts
 
@@ -123,3 +122,4 @@ echo Mosdepth:
 memusg mosdepth /tmp/prefix $1
 sleep 3; echo ""
 ```
+

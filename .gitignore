@@ -10,3 +10,9 @@ local
 nimbledeps/
 test/
 src/macrotest*
+bamtocov_*
+*.fa.amb
+*.fa.ann
+*.fa.bwt
+*.fa.pac
+*.fa.sa
