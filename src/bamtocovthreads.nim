@@ -7,7 +7,8 @@ import tables
 import algorithm 
 import ./covutils
 import sets
-#import nimprof
+import threadpool
+
 
 # ✅ Fixed: total min/max coverage cannot be computed from the two strands! - DONE
 # ✅ Fixed: per la cronaca ho trovato un mini “bachetto”, se il BED non ha nomi, giustamente, ficca tutto in un mega intervallo immaginario. Ora,  potrebbe essere la cosa giusta da fare, l’alternativa è che se il nome non c’è lo creiamo noi tipo “chr2:100-200" e cosi li manteniamo forzatamente separati e se uno vuole il megatarget specifica lo stesso nome in tutto il file
@@ -22,13 +23,14 @@ import sets
 # ✅ TODO no output option, if one only wants the report
 # 🟡 TODO WIG 
 
-# FEATURES  
+# FEATURES piu' tardi
 # TODO multi-bam coverage?
 
 # NON FEATURES
 # TODO output_t fa un po' un pasticcio con intervalli target sovrapposti perche' cerca di appiccicarli, non mi e' chiaro cosa vogliamo ottenere comunque
 # TODO usare Record tid (numeric id of contig) instead of chromosome string, may be faster?
 # TODO add explicit check for sortedness
+# TODO use array for coverage? not so easy
 
 
 ################################
@@ -167,8 +169,8 @@ proc intersects[T](query: genomic_interval_t[T], target: target_t, idx: var targ
 
 type
   input_option_t = tuple[min_mapping_quality: uint8, eflag: uint16, physical: bool, target: target_t]
-proc alignment_stream(bam: Bam, opts: input_option_t): iterator (): genomic_interval_t[bool] =
-  result = iterator(): genomic_interval_t[bool] {.closure.} =
+proc alignment_stream(bam: Bam, opts: input_option_t): iterator (): genomic_interval_t[bool] {.gcsafe.} =
+  result = iterator(): genomic_interval_t[bool] {.closure, gcsafe.} =
     var
       b = bam
       o = opts
@@ -266,8 +268,8 @@ type
   #coverage_end_t = tuple[stop: pos_t, rev: bool]
   #coverage_t = tuple[forward, reverse: int]
 
-proc coverage_iter(bam: Bam, opts: input_option_t): iterator(): coverage_interval_t =
-  result = iterator(): coverage_interval_t {.closure.} =
+proc coverage_iter(bam: Bam, opts: input_option_t): iterator(): coverage_interval_t {. gcsafe .} =
+  result = iterator(): coverage_interval_t {.closure, gcsafe.} =
     var
       next_alignment                                     = alignment_stream(bam, opts)
       next_change             : pos_t                    = 0
@@ -566,21 +568,15 @@ proc to_string(self: target_stat_t, name: string, sep: string = " "): string =
     if self.opts.low_cov > 0:
       r = r & to_string(s.low_length, strand, sep) & sep
     r & $s.length
-  else: 
-    # FIXME this should not be happening if we do things correctly in main
-    # this is when an interval has no alignments
-    let nullstring = "0\t"
-    var r = nullstring.repeat( (1 + (if self.opts.low_cov > 0: 5 else: 4)*(if strand: 3 else: 1)) )
-    # remove last tab from string
-    r[.. ^2] 
-    
-    #for i in 1..(1 + (if self.opts.low_cov > 0: 5 else: 4)*(if strand: 3 else: 1)):
-    #  r = r & sep & "/" # TODO vedere se c'e' un modo di ripetere una string invece di stamparla tutte queste volte
-    #r
+  else: # FIXME this should not be happening if we do things correctly in main
+    var r = ""
+    for i in 1..(1 + (if self.opts.low_cov > 0: 5 else: 4)*(if strand: 3 else: 1)):
+      r = r & sep & "." # TODO vedere se c'e' un modo di ripetere una string invece di stamparla tutte queste volte
+    r
 
 # process coverage from a single file
 # open bam, compute coverage, print coverage output (based on outopts) and return coverage stats
-proc bam2stats(bam_path: string, inopts: input_option_t, outopts: output_option_t, bam_threads: int = 0): target_stat_t =
+proc bam2stats(bam_path: string, inopts: input_option_t, outopts: output_option_t, bam_threads: int = 0): target_stat_t {.gcsafe.} =
   var
     bam: Bam
     target_stats: target_stat_t = new_stats(outopts) # FIXME
@@ -621,7 +617,7 @@ Core options:
   -q, --quantize <breaks>      Comma separated list of breaks for quantized output
   -w, --wig <SPAN>             Output in wig format (using fixed <SPAN>)
   -o, --report <TXT>           Output coverage report
-  --skip-output                Do not output per-base coverage
+  --skip-output                Do not output per-base coverage (required for multiple BAMs)
   --report-low <min>
 
 Target files:
@@ -640,7 +636,7 @@ Other options:
   -h, --help                   Show help
   """ % ["version", version])
 
-  let args = docopt(doc, version=$version, argv=argv)
+  let args = docopt(doc, version="covtobed " & $version, argv=argv)
 
 
   debug = args["--debug"]
@@ -660,7 +656,6 @@ Other options:
     dbEcho("Parsing target as BED")
   
 
-
   let
     input_paths =
       if len(@(args["<BAM>"])) > 0:
@@ -674,7 +669,7 @@ Other options:
     input_opts: input_option_t = (
       min_mapping_quality: uint8(parse_int($args["--mapq"])),
       eflag: uint16(parse_int($args["--flag"])),
-      physical: bool(args["--physical"]), # FIXME e' giusto convertirlo cosi'?
+      physical: bool(args["--physical"]), # FIXME e' giusto convertirlo cosi'? [gli switch sono gia booleani]
       target: target
     )
     output_opts: output_option_t = (
@@ -686,21 +681,6 @@ Other options:
         if args["--report-low"]: int64(parse_int($args["--report-low"]))
         else: 0 # FIXME c'e' una maniera migliore di mettere i default con docopt? YES: [default: 0]
     )
-
-
-
-  #Preflight check input files
-  var
-    missing_files = 0
-  # FIXME warn about not output for multiple bams (if --no-ouput is not given)
-  for inputBam in input_paths:
-    if inputBam == "-":
-      dbEcho("Will read STDIN")
-    elif not fileExists(inputBam):
-      missing_files += 1
-      stderr.writeLine("ERROR: Input file <", inputBam, "> not found.")
-  if missing_files > 0:
-    quit(1)
 
   # Multiple BAMs
   if len(input_paths) > 1:
@@ -715,13 +695,34 @@ Other options:
     stderr.writeLine("ERROR: Report is supported only with a target (--regions). Supply a target or remove --report.")
     quit(1)
 
-
+  #Preflight check input files
+  var
+    missing_files = 0
+  # FIXME warn about not output for multiple bams (if --no-ouput is not given)
+  for inputBam in input_paths:
+    if inputBam == "-":
+      dbEcho("Will read STDIN")
+    elif not fileExists(inputBam):
+      missing_files += 1
+      stderr.writeLine("ERROR: Input file <", inputBam, "> not found.")
+  if missing_files > 0:
+    quit(1)
+  
   # CIAO ho condensato qui tutta la ciccia dei calcoli, in bam2stats, cosi' dovrebbe essere piu' semplice da mettere in threads
-  var bam_stats: seq[target_stat_t]
+
+  var bam_stats_flow = newSeq[FlowVar[target_stat_t]]()
+
+  
+  #var bam_stats: seq[target_stat_t]
   for p in input_paths:
     dbEcho("running", p)
-    bam_stats.add(bam2stats(p, input_opts, output_opts, bam_threads=1))
-     
+    dbEcho("[threads] Spawning thread for ", p)  
+    bam_stats_flow.add(spawn bam2stats(p, input_opts, output_opts, bam_threads=1)) 
+    
+  for threadResult in bam_stats_flow:
+    dbEcho("[threads] Receiving a result from a thread")  
+    let thisResult = ^threadResult 
+    bam_stats.add(thisResult)
   
   if args["--report"]: # print report table
     dbEcho("stats reporting")
@@ -734,7 +735,7 @@ Other options:
       for t in intervals:
         index.incl(t.label)
     # check that each interval in stats has benn put in index
-    for s in bam_stats:
+    for s in bam_stats_flow:
       for t in s.stats.keys():
         if not (t in index):
           dev("t not in index: " & t) #FIXME questo mi aspetto che non succeda!
