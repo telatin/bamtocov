@@ -16,3 +16,4 @@ bamtocov_*
 *.fa.bwt
 *.fa.pac
 *.fa.sa
+*sam

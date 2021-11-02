@@ -640,7 +640,7 @@ Other options:
   -h, --help                   Show help
   """ % ["version", version])
 
-  let args = docopt(doc, version=$version, argv=argv)
+  let args = docopt(doc, version=version, argv=argv)
 
 
   debug = args["--debug"]
