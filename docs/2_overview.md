@@ -29,11 +29,11 @@ interest
 
 :white_check_mark: can read sorted BAM files even without the index
 
-:white_check_mark: can read sorte BAM files from stream
+:white_check_mark: can read sorted BAM files from **streams** (from a pipe)
 
-:white_check_mark: can calculate the **physical coverage**
+:white_check_mark: can calculate the **physical coverage** to check the assembly integrity
 
-:white_check_mark: can calculate the **per-strand coverage**
+:white_check_mark: can calculate the **per-strand coverage** to check for strand bias
 
 
 ## File formats
