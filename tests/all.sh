@@ -4,8 +4,10 @@
 # check if username is runner
 if [[ $(whoami) == "runner" ]]; then
   echo "Running tests on the cloud"
+  CLOUD=1
   set -euxo pipefail
 else
+  CLOUD=0
   echo user: $(whoami)
   set -euo pipefail
 fi
@@ -33,9 +35,11 @@ BamToCov="$BIN/bamtocov"
 PASS=0
 FAIL=0
 
-# Get last release from github
-LAST_RELEASE=$(curl -s https://api.github.com/repos/telatin/bamtocov/releases/latest | grep tag_name | cut -d '"' -f 4)
-CURRENT_RELEASE=$(grep ver "$DIR"/../bamtocov.nimble  | perl -ne 'if ($_=~/"([0-9.]+)"/) {print $1}')
+if [[ $CLOUD == 0 ]]; then
+  # Get last release from github
+  LAST_RELEASE=$(curl -s https://api.github.com/repos/telatin/bamtocov/releases/latest | grep tag_name | cut -d '"' -f 4)
+  CURRENT_RELEASE=$(grep ver "$DIR"/../bamtocov.nimble  | perl -ne 'if ($_=~/"([0-9.]+)"/) {print $1}')
+fi
 # Check if the "fu-tabcheck" command is available in the systsm
 if command -v fu-tabcheck >/dev/null 2>&1; then
     echo " Tabcheck ON"
@@ -46,13 +50,13 @@ else
 fi
 
 # Check binaries
-for bin in bamtocov bamcountrefs bamtocounts covtotarget; do
-  if [ ! -e "$BIN/$bin" ]; then
-    echo "ERROR: Missing required binary <$bin> in $BIN/"
-    ls -l "$BIN"/*
+for binName in bamtocov bamcountrefs bamtocounts covtotarget; do
+  if [ ! -e "$BIN/$binName" ]; then
+    echo "ERROR: Missing required binary <$binName> in $BIN/"
+    ls -l "$binName"/*
     exit 1
   else
-    echo -n "[$bin]  "; "$BIN"/$bin --help| head -n 1 
+    echo -n "[$binName]  "; "$BIN"/$binName --help | head -n 1 
     
     PASS=$((PASS+1))
   fi
@@ -122,33 +126,40 @@ if [[ $TABCHECK == 1 ]]; then
   set -e
 else
   echo "SKIP: tab check [requires bioconda:seqfu]"
+  if [[ ! -e "$TMP"/report.tsv ]]; then
+    echo "FAIL: target report missing $TMP/report.tsv"
+    FAIL=$((FAIL+1))
+  else
+    echo "PASS: target report found"
+    PASS=$((PASS+1))
+  fi
 fi
 
 ## Check release github vs nimble
+if [[ $CLOUD == 0 ]]; then
+  if [[ $LAST_RELEASE == $CURRENT_RELEASE ]]; then
+    echo "FAIL: current release $CURRENT_RELEASE"
+    FAIL=$((FAIL+1))
+  else
+    echo "PASS: Current nimble version is different from GitHub release (should be newer)"
+    PASS=$((PASS+1))
+  fi
 
-if [[ $LAST_RELEASE == $CURRENT_RELEASE ]]; then
-  echo "FAIL: current release $CURRENT_RELEASE"
-  FAIL=$((FAIL+1))
-else
-  echo "PASS: Current nimble version is different from GitHub release (should be newer)"
-  PASS=$((PASS+1))
+  if [[ $($BIN/bamtocov --version | sed 's/covtobed //') != $CURRENT_RELEASE ]]; then
+    echo "FAIL: Nimble version differs from binary: recompile!"
+    FAIL=$((FAIL+1))
+  else
+    echo "PASS: Nimble version matches binary"
+    PASS=$((PASS+1))
+  fi
+
+  rm -rf $TMP
+  VER=$(grep version bamtocov.nimble  | cut -f2 -d\")
+  for i in "$BIN"/*; do 
+    b=$(basename "$i")
+    echo "Checking version for $b: $($i --version | grep $VER)"; 
+  done
 fi
-
-if [[ $($BIN/bamtocov --version | sed 's/covtobed //') != $CURRENT_RELEASE ]]; then
-  echo "FAIL: Nimble version differs from binary: recompile!"
-  FAIL=$((FAIL+1))
-else
-  echo "PASS: Nimble version matches binary"
-  PASS=$((PASS+1))
-fi
-
-rm -rf $TMP
-VER=$(grep version bamtocov.nimble  | cut -f2 -d\")
-for i in "$BIN"/*; do 
-  b=$(basename "$i")
-  echo "Checking version for $b: $($i --version | grep $VER)"; 
-done
-
 echo "--------------------------"
 echo "SUMMARY (PASS=$PASS,FAIL=$FAIL)"
 echo "Last release:    $LAST_RELEASE"
