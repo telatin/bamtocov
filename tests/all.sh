@@ -23,7 +23,10 @@ CURRENT_RELEASE=$(grep ver "$DIR"/../bamtocov.nimble  | perl -ne 'if ($_=~/"([0-
 # Check if the "fu-tabcheck" command is available in the systsm
 if command -v fu-tabcheck >/dev/null 2>&1; then
     TABCHECK=1
+else
+    TABCHECK=0
 fi
+
 # Check binaries
 for bin in bamtocov bamcountrefs bamtocounts covtotarget; do
   if [ ! -e "$BIN/$bin" ]; then
