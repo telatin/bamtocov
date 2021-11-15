@@ -1,6 +1,14 @@
 #!/bin/bash
-set -euo pipefail
 
+
+# check if username is runner
+if [[ $(whoami) == "runner" ]]; then
+  echo "Running tests on the cloud"
+  set -euxo pipefail
+else
+  echo user: $(whoami)
+  set -euo pipefail
+fi
 # Function to print to stderr
 echoerr() { echo "$@" 1>&2; }
 
