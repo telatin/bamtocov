@@ -159,12 +159,14 @@ if [[ $CLOUD == 0 ]]; then
     b=$(basename "$i")
     echo "Checking version for $b: $($i --version | grep $VER)"; 
   done
+
+  echo "Last release:    $LAST_RELEASE"
+  echo "Current release: v$CURRENT_RELEASE"
+  echo "Binary release:  $($BIN/bamtocov --version | sed 's/covtobed /v/')"
 fi
 echo "--------------------------"
 echo "SUMMARY (PASS=$PASS,FAIL=$FAIL)"
-echo "Last release:    $LAST_RELEASE"
-echo "Current release: v$CURRENT_RELEASE"
-echo "Binary release:  $($BIN/bamtocov --version | sed 's/covtobed /v/')"
+
 echo "--------------------------"
 if [[ $FAIL -gt 0 ]]; then
   echo "FINAL RESULT: FAIL"
