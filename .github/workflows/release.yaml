@@ -86,11 +86,3 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           nimble build -Y bamtocov.nimble && mv bin/bamtocov bin/bamtocov_${{ matrix.os }}
-      
-        
-      - name: Upload the artifacts
-        uses: skx/github-action-publish-binaries@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: 'bin/bamtocov_*'
