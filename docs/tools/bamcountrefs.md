@@ -2,7 +2,7 @@
 sort: 3
 ---
 
-# bamcountrefs
+# BamCountsRefs
 
 A program to build a count table from multiple BAM
 files (having the same reference sequence).

@@ -3,6 +3,9 @@
 The Wiggle format is used to plot quantitaitve data in a genome browser, and a detailed description
 can be found [at this website (genome.ucsc.edu)](http://genome.ucsc.edu/goldenPath/help/wiggle.html).
 
+The native output of "BamToCov" is BED, and specifically [bedGraph](http://genome.ucsc.edu/goldenPath/help/bedgraph.html), that
+can be converted to bigWig via `bedGraphToBigWig`.
+
 For convenience we report some succint examples taken from the website aforementioned.
 
 ## Examples
@@ -47,4 +50,4 @@ fixedStep chrom=chr3 start=400601 step=100 span=5
 33 
 ```
 
-```text
+start, step and span are all optional.

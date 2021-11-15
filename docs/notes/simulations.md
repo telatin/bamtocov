@@ -85,3 +85,10 @@ Short reads (100 bp to 300 bp):
 | `bamtocov short_100M_match.bam`             | 21.147 ± 0.362 |  20.742 |  21.439 | 3.81 ± 0.24 |
 | `covtobed short_100M_match.bam`             | 25.036 ± 0.788 |  24.579 |  25.946 | 4.51 ± 0.31 |
 | `mosdepth -x prefix short_100M_match.bam`  | 10.778 ± 0.894 |   9.949 |  11.725 | 1.94 ± 0.20 |
+
+## Large files
+
+```bash
+simulate-long-bam.py -l 400M -c 100 -m 1000 -M 10000 -x 3 -r --progress 100 -o local/400Mb_100X3_1000-10000.bam
+simulate-long-bam.py -l 400M -c 100 -m 100 -M 300    -x 3 -r --progress 100 -o local/400Mb_100X3_100-300.bam
+```
