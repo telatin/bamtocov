@@ -44,6 +44,7 @@ type
   genomic_interval_t[T] = tuple[chrom: chrom_t, start, stop: pos_t, label: T]
 
 
+proc is_null(c: chrom_t): bool = c == ""
 #proc intersection[T1, T2](i1: interval_t[T1], i2: interval_t[T2]): interval_t[T1] =
 #  (max(i1.start, i2.start), min(i1.stop, i2.stop), i1.label)
 
@@ -55,14 +56,13 @@ proc intersection_both[T1, T2](i1: genomic_interval_t[T1], i2: interval_t[T2]): 
   (i1.chrom, max(i1.start, i2.start), min(i1.stop, i2.stop), (i1.label, i2.label))
 #proc intersection[T1, T2](i1: interval_t[T1], i2: genomic_interval_t[T2]): interval_t[T1] =
 #  (max(i1.start, i2.start), min(i1.stop, i2.stop), i1.label)
-#proc intersection[T1, T2](i1: genomic_interval_t[T1], i2: genomic_interval_t[T2]): interval_t[T1] =
-#  if i1.chrom == i2.chrom:
-#    (i1.chrom, max(i1.start, i2.start), min(i1.stop, i2.stop), i1.label)
-#  else:
-#    (i1.chrom, 0, 0, i1.label)
+proc intersection_first[T1, T2](i1: genomic_interval_t[T1], i2: genomic_interval_t[T2]): genomic_interval_t[T1] =
+  if i1.chrom == i2.chrom:
+    (i1.chrom, max(i1.start, i2.start), min(i1.stop, i2.stop), i1.label)
+  else:
+    (i1.chrom, pos_t(0), pos_t(0), i1.label)
 
-#proc isEmpty(i: genomic_interval): bool = 
-#  i.start >= i.stop 
+proc is_empty[T](i: genomic_interval_t[T]): bool = i.start >= i.stop
 
 # true when interval i1 is before (without intersection) interval i2
 proc `<<`[T1, T2](i1: genomic_interval_t[T1], i2: interval_t[T2]): bool = i1.stop < i2.start
@@ -71,6 +71,7 @@ proc `<<`[T1, T2](i1: interval_t[T1], i2: genomic_interval_t[T2]): bool = i1.sto
 proc `>>`[T1, T2](i1: genomic_interval_t[T1], i2: interval_t[T2]): bool = i2 << i1
 proc `>>`[T1, T2](i1: interval_t[T1], i2: genomic_interval_t[T2]): bool = i2 << i1
 # interval length
+#proc len[T](i: interval_t[T]): pos_t = max(pos_t(0), i.stop - i.start)
 proc len[T](i: genomic_interval_t[T]): pos_t = max(pos_t(0), i.stop - i.start)
 # true when interval is not empty
 proc to_bool[T](i: genomic_interval_t[T]): bool = i.start < i.stop
@@ -371,43 +372,96 @@ proc coverage_iter(bam: Bam, opts: input_option_t): iterator(): coverage_interva
 #  output_coverage_t = tuple[total, forward, reverse: int64]
 
 type
-  output_format_t = enum of_bed
+  output_format_t = enum of_bed, of_wig_fixstep
+  span_func_t = enum sf_max, sf_min, sf_mean # which function use to summarize coverage in WIG span
   output_option_t = tuple[
     strand: bool, # output strand-specific coverage and stats
     # coverage specific options
     no_coverage: bool, # do not output coverage, only stats
     quantization: string, # 
-    output_format: output_format_t, # not implemented
+    output_format: output_format_t, # output format
+    span_length: pos_t, # span for wig output format
+    span_func: span_func_t,
     # stats specific options
     low_cov: int64 # report length of regions under low_cov in stats
   ]
 
   output_t = object
     queued: genomic_interval_t[coverage_t]
+    # data fields needed for spanned output (wig)
+    current_span: genomic_interval_t[coverage_t] 
+    #
     opts: output_option_t
     #output_strand: bool
     #wiggle_format: bool # if false the use bed format
     quantization_index2label: seq[string]
     quantization_coverage2index: seq[int]
 
+#proc add_to_span(coverage_t, )
+
 proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
   if i.start < i.stop: # skip empty intervals
-    #if o.wiggle_format:
-    #  echo "wig not implemented"
-    if true: # bed format output
-      let interval_str = $i.chrom & "\t" & $i.start & "\t" & $i.stop & "\t"
-      let coverage_str =
+    case o.opts.output_format:
+      of of_bed: # bed format output
+        let interval_str = $i.chrom & "\t" & $i.start & "\t" & $i.stop & "\t"
+        let coverage_str =
+          if o.opts.strand:
+            if len(o.quantization_index2label) > 0:
+              "\t" & o.quantization_index2label[i.label.forward] & "\t" & o.quantization_index2label[i.label.reverse]
+            else:
+              $i.label.forward & "\t" & $i.label.reverse
+          else:
+            if len(o.quantization_index2label) > 0:
+              o.quantization_index2label[i.label.forward]
+            else:
+              $i.label.forward
+        echo interval_str & coverage_str
+      of of_wig_fixstep: #FIXME handle chromosome!
+        if len(o.quantization_index2label) > 0:
+          stderr.writeLine("wig output does not support quantized coverage")
+          raise
         if o.opts.strand:
-          if len(o.quantization_index2label) > 0:
-            "\t" & o.quantization_index2label[i.label.forward] & "\t" & o.quantization_index2label[i.label.reverse]
-          else:
-            $i.label.forward & "\t" & $i.label.reverse
-        else:
-          if len(o.quantization_index2label) > 0:
-            o.quantization_index2label[i.label.forward]
-          else:
-            $i.label.forward
-      echo interval_str & coverage_str
+          stderr.writeLine("wig output does not support stranded coverage")
+          raise
+        #echo "WIG SPAN:" & $o.current_span
+        #echo "WIG INT:" & $i
+        let span_length = o.opts.span_length
+        if o.current_span.chrom != i.chrom: # start new contig
+          o.current_span.chrom = i.chrom
+          o.current_span.start = 0
+          o.current_span.stop = o.current_span.start + span_length
+          o.current_span.label.forward = 0
+          echo "fixedStep chrom=" & $o.current_span.chrom & " span=" & $span_length
+        
+        while o.current_span.start <= i.stop:
+          let inter = intersection_first(o.current_span, i)
+        #  echo "INTER:" & $o.current_span & " WITH " & $i & " AND GET " & $inter
+          if not is_empty(inter): # update the current span value
+            o.current_span.label.forward = case o.opts.span_func:
+              of sf_max: max(o.current_span.label.forward, i.label.forward)
+              of sf_min: min(o.current_span.label.forward, i.label.forward)
+              of sf_mean: o.current_span.label.forward + i.label.forward*int(len(inter))
+        #    echo "TOUCH:" & $o.current_span
+          if inter.stop == o.current_span.stop: # span is concluded
+            # output span
+            let span_value = case o.opts.span_func:
+              of sf_max, sf_min: $o.current_span.label.forward
+              of sf_mean: $(float(o.current_span.label.forward)/float(span_length))
+            echo $o.current_span.start & "\t" & span_value
+            # next span
+            o.current_span.start += span_length
+            o.current_span.stop = o.current_span.start + span_length
+            o.current_span.label.forward = case o.opts.span_func
+              of sf_max, sf_mean: 0
+              of sf_min: high(int)
+          else: # span extends beyond the interval, we are done
+            break
+        #echo "DONE:" & $o.current_span
+
+        
+      else:
+        stderr.writeLine("Output format not implemented")
+        raise
 
 proc push_interval(o: var output_t, i: coverage_interval_t) =
   let q = o.queued
@@ -468,8 +522,10 @@ proc newOutput(opts: output_option_t): output_t =
   o
 
 
+#[ 
 type cov_t = array[0..1, int64]
 proc to_array(c: coverage_t): cov_t = [int64(c.forward), int64(c.reverse)]
+]#
 
 type
   coverage_stats_t[T] = tuple[total, forward, reverse: T]
@@ -619,10 +675,11 @@ Core options:
   -p, --physical               Calculate physical coverage
   -s, --stranded               Report coverage separate by strand
   -q, --quantize <breaks>      Comma separated list of breaks for quantized output
-  -w, --wig <SPAN>             Output in wig format (using fixed <SPAN>)
+  -w, --wig <SPAN>             Output in WIG format (using fixed <SPAN>), 0 will print in BED format [default: 0]
+  --op <func>                  How to summarize coverage for each WIG span (mean/min/max) [default: max]
   -o, --report <TXT>           Output coverage report
   --skip-output                Do not output per-base coverage
-  --report-low <min>
+  --report-low <min>           Report coverage for bases with coverage < min [default: 0]
 
 Target files:
   -r, --regions <bed>          Target file in BED or GFF format (detected with the extension)
@@ -642,8 +699,13 @@ Other options:
 
   let args = docopt(doc, version=version, argv=argv)
 
+  #
 
   debug = args["--debug"]
+
+  if debug:
+    dbEcho("args:", args)
+
 
   let
     threads = parse_int($args["--threads"])
@@ -659,6 +721,8 @@ Other options:
   else:
     dbEcho("Parsing target as BED")
   
+  
+  assert( $args["--op"] in  @["mean", "min", "max"], "--op must be one of mean, min, max, got: " & $args["--op"])
 
 
   let
@@ -674,17 +738,21 @@ Other options:
     input_opts: input_option_t = (
       min_mapping_quality: uint8(parse_int($args["--mapq"])),
       eflag: uint16(parse_int($args["--flag"])),
-      physical: bool(args["--physical"]), # FIXME e' giusto convertirlo cosi'?
+      physical: bool(args["--physical"]),
       target: target
     )
     output_opts: output_option_t = (
       strand: bool(args["--stranded"]),
       no_coverage: bool(args["--skip-output"]) or len(input_paths) > 1,
       quantization: $args["--quantize"],
-      output_format: of_bed,
-      low_cov:
-        if args["--report-low"]: int64(parse_int($args["--report-low"]))
-        else: 0 # FIXME c'e' una maniera migliore di mettere i default con docopt? YES: [default: 0]
+      output_format: if (parseInt($args["--wig"]) > 0): of_wig_fixstep else: of_bed,
+      span_length: pos_t(parse_int($args["--wig"])),
+      span_func: if $args["--op"] == "max": sf_max
+                elif $args["--op"] == "min": sf_min
+                else: sf_mean,
+      low_cov: int64(parse_int($args["--report-low"]))
+      #  if args["--report-low"]: int64(parse_int($args["--report-low"]))
+      #  else: 0 # FIXME c'e' una maniera migliore di mettere i default con docopt? YES: [default: 0]
     )
 
 
