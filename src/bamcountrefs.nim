@@ -281,7 +281,7 @@ Other options;
     var sampleName = extractFilename(bamFile)
     samples.add(sampleName.split('.')[0])
     try:
-      open(bam, bamFile, threads=threads, index=true, fai=fasta)
+      open(bam, cstring(bamFile), threads=threads, index=true, fai=fasta)
       if debug:
         stderr.writeLine("Opening BAM/CRAM file: ", bamFile)
     except:

@@ -249,19 +249,6 @@ proc `<`(a, b: covEnd): bool = a.stop < b.stop
 proc `$`(c: coverage_t): string =
   "c=" & $(c.forward + c.reverse) & "(" & $c.forward & "+/" & $c.reverse & "-)"
 
-#type 
-#  output_format_t = enum
-#    BedFormat
-#    WigFormat
-#  output_handler_t = object
-#    target: target_t,
-#    output_format: output_format_t,
-#    output_strand: bool,
-#    last_chrom: chrom_t,
-#    last_start, last_end: pos_t,
-#    last_coverage: coverage
-
-
 type
   coverage_interval_t = genomic_interval_t[tuple[l1: coverage_t, l2: string]] # l2 is the target interval or the chromosome
   #coverage_end_t = tuple[stop: pos_t, rev: bool]
@@ -628,7 +615,7 @@ proc to_string(self: target_stat_t, name: string, sep: string = " "): string =
     let nullstring = "0\t"
     var r = nullstring.repeat( (1 + (if self.opts.low_cov > 0: 5 else: 4)*(if strand: 3 else: 1)) )
     # remove last tab from string
-    r[.. ^2] 
+    r[0 .. ^2] 
     
     #for i in 1..(1 + (if self.opts.low_cov > 0: 5 else: 4)*(if strand: 3 else: 1)):
     #  r = r & sep & "/" # TODO vedere se c'e' un modo di ripetere una string invece di stamparla tutte queste volte

@@ -1,9 +1,15 @@
 #!/bin/bash
 set -euo pipefail
+
+# Function to print to stderr
+echoerr() { echo "$@" 1>&2; }
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 BIN="$DIR/../bin/"
 DATA="$DIR/../input"
 
+echoerr "Running tests: $DIR"
+echoerr "Binary dir: $BIN"
 TMP=$(mktemp -d)
 
 BamToCov="$BIN/bamtocov"
@@ -22,6 +28,7 @@ fi
 for bin in bamtocov bamcountrefs bamtocounts covtotarget; do
   if [ ! -e "$BIN/$bin" ]; then
     echo "ERROR: Missing required binary <$bin> in $BIN/"
+    ls -l "$BIN"/*
     exit 1
   else
     PASS=$((PASS+1))
