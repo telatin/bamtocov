@@ -431,7 +431,7 @@ proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
           o.current_span.start = 0
           o.current_span.stop = o.current_span.start + span_length
           o.current_span.label.forward = 0
-          echo "fixedStep chrom=" & $o.current_span.chrom & " span=" & $span_length
+          echo "fixedStep chrom=" & $o.current_span.chrom & " start=1 step=" & $span_length & " span=" & $span_length
         
         while o.current_span.start <= i.stop:
           let inter = intersection_first(o.current_span, i)

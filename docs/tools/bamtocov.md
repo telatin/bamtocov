@@ -93,3 +93,6 @@ fixedStep chrom=seq1 span=100
 400     2
 500     0
 ```
+
+An alternative program to perform this analysis is [bam2wig](http://lindenb.github.io/jvarkit/Bam2Wig.html), that will
+take into account the CIGAR operations, if required.
