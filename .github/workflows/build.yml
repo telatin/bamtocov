@@ -83,12 +83,16 @@ jobs:
     - name: Build macOS executable
       if: runner.os == 'macOS'
       run: |
-        nimble build -Y bamtocov.nimble && bash tests/all.sh
+        nimble build -y --verbose bamtocov.nimble
+        ls -l bin/
+        bin/bamtocov --version
         
     - name: Build Linux executable
       if: runner.os == 'Linux'
       run: |
-        nimble build -Y bamtocov.nimble && bash tests/all.sh
+        nimble build -y --verbose bamtocov.nimble
+        ls -l bin/
+        bin/bamtocov --version
       
     - name: Upload Artifact
       if: success()
