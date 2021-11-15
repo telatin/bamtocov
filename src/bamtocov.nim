@@ -359,7 +359,9 @@ proc coverage_iter(bam: Bam, opts: input_option_t): iterator(): coverage_interva
 #  output_coverage_t = tuple[total, forward, reverse: int64]
 
 type
-  output_format_t = enum of_bed, of_wig_fixstep
+  output_format_t = enum # supported output formats
+    of_bed, # BED format
+    of_wig_fixstep, # fixed step WIG format
   span_func_t = enum sf_max, sf_min, sf_mean # which function use to summarize coverage in WIG span
   output_option_t = tuple[
     strand: bool, # output strand-specific coverage and stats
@@ -384,8 +386,6 @@ type
     quantization_index2label: seq[string]
     quantization_coverage2index: seq[int]
 
-#proc add_to_span(coverage_t, )
-
 proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
   if i.start < i.stop: # skip empty intervals
     case o.opts.output_format:
@@ -403,15 +403,13 @@ proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
             else:
               $i.label.forward
         echo interval_str & coverage_str
-      of of_wig_fixstep: #FIXME handle chromosome!
+      of of_wig_fixstep: 
         if len(o.quantization_index2label) > 0:
           stderr.writeLine("wig output does not support quantized coverage")
           raise
         if o.opts.strand:
           stderr.writeLine("wig output does not support stranded coverage")
           raise
-        #echo "WIG SPAN:" & $o.current_span
-        #echo "WIG INT:" & $i
         let span_length = o.opts.span_length
         if o.current_span.chrom != i.chrom: # start new contig
           o.current_span.chrom = i.chrom
@@ -422,13 +420,11 @@ proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
         
         while o.current_span.start <= i.stop:
           let inter = intersection_first(o.current_span, i)
-        #  echo "INTER:" & $o.current_span & " WITH " & $i & " AND GET " & $inter
           if not is_empty(inter): # update the current span value
             o.current_span.label.forward = case o.opts.span_func:
               of sf_max: max(o.current_span.label.forward, i.label.forward)
               of sf_min: min(o.current_span.label.forward, i.label.forward)
               of sf_mean: o.current_span.label.forward + i.label.forward*int(len(inter))
-        #    echo "TOUCH:" & $o.current_span
           if inter.stop == o.current_span.stop: # span is concluded
             # output span
             let span_value = case o.opts.span_func:
@@ -443,12 +439,6 @@ proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
               of sf_min: high(int)
           else: # span extends beyond the interval, we are done
             break
-        #echo "DONE:" & $o.current_span
-
-        
-      else:
-        stderr.writeLine("Output format not implemented")
-        raise
 
 proc push_interval(o: var output_t, i: coverage_interval_t) =
   let q = o.queued
@@ -507,12 +497,6 @@ proc newOutput(opts: output_option_t): output_t =
   if opts.quantization != "nil":
     o.parse_quantization(opts.quantization)
   o
-
-
-#[ 
-type cov_t = array[0..1, int64]
-proc to_array(c: coverage_t): cov_t = [int64(c.forward), int64(c.reverse)]
-]#
 
 type
   coverage_stats_t[T] = tuple[total, forward, reverse: T]
