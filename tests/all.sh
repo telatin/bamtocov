@@ -9,6 +9,14 @@ else
   echo user: $(whoami)
   set -euo pipefail
 fi
+
+# Check OS
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  MD5="md5"
+else
+  MD5="md5sum"
+fi
 # Function to print to stderr
 echoerr() { echo "$@" 1>&2; }
 
@@ -69,13 +77,13 @@ else
   FAIL=$((FAIL+1))
 fi 
 
-MD5="e09d11db350851b41b97b3ea3c7c41c0"
-CALCULATED=$("$BamToCov" "$DATA"/mini.bam | md5sum | cut -f 1 -d " ")
-if [[ $CALCULATED == $MD5 ]]; then
+ORIG_MD5="e09d11db350851b41b97b3ea3c7c41c0"
+CALCULATED=$("$BamToCov" "$DATA"/mini.bam | $MD5 | cut -f 1 -d " ")
+if [[ $CALCULATED == $ORIG_MD5 ]]; then
   echo "PASS: covtobed style output, MD5"
   PASS=$((PASS+1))
 else
-  echo "FAIL: covtobed style output MD5: got $CALCULATED, but e09d11db350851b41b97b3ea3c7c41c0 expected"
+  echo "FAIL: covtobed style output MD5: got $CALCULATED, but $ORIG_MD5 expected"
   "$BamToCov" "$DATA"/mini.bam | head
   echo "---"
   FAIL=$((FAIL+1))
@@ -90,7 +98,7 @@ else
   FAIL=$((FAIL+1))
 fi
 # Wig lines (no headers)
-if [[ $("$BamToCov" "$DATA"/mini.bam --wig 250 --op max | grep -v "fixed" | md5sum ) == $(cat $DIR/results/mini_wig250_max.wig | grep -v "fixed" | md5sum) ]]; then
+if [[ $("$BamToCov" "$DATA"/mini.bam --wig 250 --op max | grep -v "fixed" | $MD5 ) == $(cat $DIR/results/mini_wig250_max.wig | grep -v "fixed" | $MD5) ]]; then
   echo "PASS: Wiggle output fixed step"
   PASS=$((PASS+1))
 else
