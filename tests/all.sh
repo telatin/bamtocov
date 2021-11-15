@@ -22,8 +22,10 @@ LAST_RELEASE=$(curl -s https://api.github.com/repos/telatin/bamtocov/releases/la
 CURRENT_RELEASE=$(grep ver "$DIR"/../bamtocov.nimble  | perl -ne 'if ($_=~/"([0-9.]+)"/) {print $1}')
 # Check if the "fu-tabcheck" command is available in the systsm
 if command -v fu-tabcheck >/dev/null 2>&1; then
+    echo " Tabcheck ON"
     TABCHECK=1
 else
+    echo " Will skip tabular check"
     TABCHECK=0
 fi
 
@@ -88,7 +90,7 @@ fi
 "$BamToCov" --regions "$DATA"/mini.bed --report "$TMP"/report.tsv "$DATA"/mini.bam --skip-output
 
 ## Check that the tabular report is a proper table (will likely work locally where seqfu is installed)
-if [[ $TABCHECK ]]; then
+if [[ $TABCHECK == 1 ]]; then
   set +e
   fu-tabcheck "$TMP"/report.tsv >/dev/null
   if [[ $? == 0 ]]; then
