@@ -56,6 +56,23 @@ else
   FAIL=$((FAIL+1))
 fi 
 
+# Wig line
+if [[ $("$BamToCov" "$DATA"/mini.bam --wig 250 --op max | wc -l ) -eq $(cat $DIR/results/mini_wig250_max.wig | wc -l) ]]; then
+  echo "PASS: Wiggle output fixed step: line numbers"
+  PASS=$((PASS+1))
+else
+  echo "FAIL: Wiggle output has different lines than $DIR/results/mini_wig250_max.wig"
+  FAIL=$((FAIL+1))
+fi
+# Wig lines (no headers)
+if [[ $("$BamToCov" "$DATA"/mini.bam --wig 250 --op max | grep -v "fixed" | md5sum ) == $(cat $DIR/results/mini_wig250_max.wig | grep -v "fixed" | md5sum) ]]; then
+  echo "PASS: Wiggle output fixed step"
+  PASS=$((PASS+1))
+else
+  echo "FAIL: Wiggle output differs from $DIR/results/mini_wig250_max.wig"
+  FAIL=$((FAIL+1))
+fi
+
 "$BamToCov" --regions "$DATA"/mini.bed --report "$TMP"/report.tsv "$DATA"/mini.bam --skip-output
 
 ## Check that the tabular report is a proper table (will likely work locally where seqfu is installed)
