@@ -62,11 +62,14 @@ else
 fi 
 
 MD5="e09d11db350851b41b97b3ea3c7c41c0"
-if [[ $("$BamToCov" "$DATA"/mini.bam | md5sum | cut -f 1 -d " ") == $MD5 ]]; then
+CALCULATED=$("$BamToCov" "$DATA"/mini.bam | md5sum | cut -f 1 -d " ")
+if [[ $CALCULATED == $MD5 ]]; then
   echo "PASS: covtobed style output, MD5"
   PASS=$((PASS+1))
 else
-  echo "FAIL: covtobed style output MD5 $($BamToCov $DATA/mini.bam | md5sum) lines, but e09d11db350851b41b97b3ea3c7c41c0 expected"
+  echo "FAIL: covtobed style output MD5: got $CALCULATED, but e09d11db350851b41b97b3ea3c7c41c0 expected"
+  "$BamToCov" "$DATA"/mini.bam | head
+  echo "---"
   FAIL=$((FAIL+1))
 fi 
 
