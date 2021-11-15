@@ -31,6 +31,8 @@ for bin in bamtocov bamcountrefs bamtocounts covtotarget; do
     ls -l "$BIN"/*
     exit 1
   else
+    echo -n "[$bin]  "; "$BIN"/$bin --help| head -n 1 
+    
     PASS=$((PASS+1))
   fi
 done

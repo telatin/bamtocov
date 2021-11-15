@@ -86,6 +86,7 @@ jobs:
         nimble build -y --verbose bamtocov.nimble
         ls -l bin/
         bin/bamtocov --version
+        bash tests/all.sh
         
     - name: Build Linux executable
       if: runner.os == 'Linux'
@@ -93,6 +94,7 @@ jobs:
         nimble build -y --verbose bamtocov.nimble
         ls -l bin/
         bin/bamtocov --version
+        bash tests/all.sh
       
     - name: Upload Artifact
       if: success()

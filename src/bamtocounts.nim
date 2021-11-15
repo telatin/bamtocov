@@ -263,7 +263,7 @@ Options:
     quit(1)
 
   try:
-    open(bam, $args["<BAM-or-CRAM>"], threads=threads, index=true, fai=fasta)
+    open(bam, cstring($args["<BAM-or-CRAM>"]), threads=threads, index=true, fai=fasta)
     if debug:
       stderr.writeLine("Opening BAM/CRAM file: ", $args["<BAM-or-CRAM>"])
   except:
