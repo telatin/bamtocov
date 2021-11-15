@@ -83,14 +83,15 @@ jobs:
     - name: Build macOS executable
       if: runner.os == 'macOS'
       run: |
-        nimble build -y --verbose bamtocov.nimble
+        nimble build -y --verbose  
         ls -l bin/
         bin/bamtocov --version
         
     - name: Build Linux executable
       if: runner.os == 'Linux'
       run: |
-        nimble build -y --verbose bamtocov.nimble
+        nimble --version
+        nimble build -y --verbose  
         ls -l bin/
         bin/bamtocov --version
       
