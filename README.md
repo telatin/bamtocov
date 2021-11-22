@@ -26,6 +26,7 @@ conda install -y -c bioconda bamtocov
 
 ## References
 
+* Giovanni Birolo, Andrea Telatin [BamToCov: an efficient toolkit for sequence coverage calculations](https://doi.org/10.1101/2021.11.12.466787) (BiorXiv)
 * Brent Pedersen,  Aaron Quinlan,
 [hts-nim: scripting high-performance genomic analyses](https://academic.oup.com/bioinformatics/article/34/19/3387/4990493) (Bioinformatics)
 * Giovanni Birolo, Andrea Telatin,
