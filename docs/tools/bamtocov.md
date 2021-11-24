@@ -28,9 +28,10 @@ Core options:
   --report-low <min>           Report coverage for bases with coverage < min [default: 0]
 
 Target files:
-  -r, --regions <bed>          Target file in BED or GFF format (detected with the extension)
+  -r, --regions <bed>          Target file in BED or GFF3/GTF format (detected with the extension)
   -t, --gff-type <feat>        GFF feature type to parse [default: CDS]
-  -i, --id <ID>                GFF identifier [default: ID]
+  -i, --gff-id <ID>            GFF identifier [default: ID]
+  --gff-separator <sep>        GFF attributes separator [default: ;]
   --gff                        Force GFF input (otherwise assumed by extension .gff)
 
 BAM reading options:
@@ -70,6 +71,24 @@ To manipulate the output:
 * `--quantize STRING` to produce a quantized output, where the coverage is divided in bins specified in comma separated list as INT,INT...
 * `--physical-coverage` to calculate the physical coverage of paired libraries
 * and `--stranded` to print a separate column for the forward and negative strands
+
+### Stranded output
+
+When `--stranded` is used, the output is a five column BED-like file, where the columns are:
+
+1. Chromosome name
+2. Interval start
+3. Interval end
+4. Coverage in the forward strand
+5. Coverage in the reverse strand
+
+```text
+seq1    0       9       0       0
+seq1    9       109     5       0
+seq1    109     189     0       0
+seq1    189     200     2       0
+seq1    200     250     4       0
+```
 
 ## Bam To Wiggle
 

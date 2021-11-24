@@ -86,9 +86,12 @@ jobs:
         nimble build -y --verbose 
         ls -l bin/
         bin/bamtocov --version
-        bash tests/all.sh
+        # TESTS
+        # bash tests/all.sh
+        tests/bin/shpec tests/shpec/bamtocov.sh
+        tests/unit/bamtocov-base.sh
         
-    - name: Build Linux executable
+    - name: Build and Test Linux executable
       if: runner.os == 'Linux'
       run: |
         nimble build -y --verbose
