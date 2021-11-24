@@ -241,6 +241,9 @@ Options:
   """ % ["version", version, "env_fasta", env_fasta])
 
   let args = docopt(doc, version=version, argv=argv)
+
+  if args["--debug"]:
+    stderr.write_line("args:", args)
   let mapq = parse_int($args["--mapq"])
   var prokkaGff : bool = args["--gff"]
   do_rpkm = args["--rpkm"]
@@ -258,7 +261,7 @@ Options:
     threads = parse_int($args["--threads"])
     bam:Bam
 
-  if len($args["<BAM-or-CRAM>"]) > 1:
+  if len(args["<BAM-or-CRAM>"]) > 1:
     echo "Multiple BAM/CRAM files not supported in the current version."
     quit(1)
 
