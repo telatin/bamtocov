@@ -1,0 +1,3 @@
+describe "a failing test"
+  assert equal "foo" "bar"
+end

@@ -1,7 +1,7 @@
 nimcache/
 nimblecache/
 htmldocs/
-bin/*
+./bin
 *.bai
 profiling
 multiqc/
@@ -19,5 +19,5 @@ bamtocov_*
 *sam
 bamtocov-chrom*
 _test
-shpec
+./shpec
 shunit2/

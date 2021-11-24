@@ -9,7 +9,7 @@ def eprint(*args, **kwargs):
 class GFFFeature:
 
     SOFA = """
-        SO:0000000 ! Sequence Ontology
+    SO:0000000 ! Sequence Ontology
     SO:0000001 ! region
     SO:0000004 ! interior coding exon
     SO:0000005 ! satellite DNA
