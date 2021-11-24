@@ -5,7 +5,7 @@ import algorithm
 import posix
 
 signal(SIG_PIPE, SIG_IGN)
-const NimblePkgVersion {.strdefine.} = "<NimblePkgVersion>"
+const NimblePkgVersion {.strdefine.} = "prerelease"
 
 let
   version* = NimblePkgVersion
@@ -64,9 +64,13 @@ proc gff_line_to_region*(line: string, gffField = "CDS", gffSeparator = ";", gff
   
   # In the future, 8th field could be requireed [TODO]
   if len(cse) == 9:
-    for gffAnnotPart in cse[8].split(gffSeparator):
+    for gffAnnotPartRaw in cse[8].split(gffSeparator):
+      let gffAnnotPart = gffAnnotPartRaw.strip(chars = {'"', '\'', ' '})
       if gffAnnotPart.startsWith(gffIdentifier):
-        reg.name = gffAnnotPart.split("=")[1] 
+        try:
+          reg.name = gffAnnotPart.split("=")[1].strip(chars = {'"', '\'', ' '}) 
+        except:
+          reg.name = gffAnnotPart.split(" ")[1].strip(chars = {'"', '\'', ' '})
         break
   return reg
 
@@ -76,7 +80,7 @@ proc bed_line_to_region*(line: string): region_t =
    cse = line.strip().split('\t', 5)
 
   if len(cse) == 9:
-    stderr.writeLine("[warning] GFF format detected.")
+    stderr.writeLine("[warning] GFF format detected, attempting detection with defaults.")
     return gff_line_to_region(line)
     
 
@@ -120,7 +124,7 @@ proc bed_to_table*(bed: string): TableRef[string, seq[region_t]] =
 
 
 
-proc gff_to_table*(bed: string): TableRef[string, seq[region_t]] =
+proc gff_to_table*(bed: string, gffField, gffSeparator, gffIdentifier: string): TableRef[string, seq[region_t]] =
   var bed_regions = newTable[string, seq[region_t]]()
   var hf = hts.hts_open(cstring(bed), "r")
   var kstr: hts.kstring_t
@@ -133,7 +137,7 @@ proc gff_to_table*(bed: string): TableRef[string, seq[region_t]] =
     if $kstr.s[0] == "#":
       continue
 
-    var v = gff_line_to_region($kstr.s)
+    var v = gff_line_to_region($kstr.s, gffField, gffSeparator, gffIdentifier)
     if v == nil: continue
     discard bed_regions.hasKeyOrPut(v.chrom, new_seq[region_t]())
     bed_regions[v.chrom].add(v)

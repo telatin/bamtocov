@@ -279,7 +279,7 @@ Options:
 
   if bam.idx == nil:
     stderr.write_line("ERROR: requires BAM/CRAM index")
-    quit(1)
+    quit(1) 
 
   if args["--header"]:
     if do_rpkm and do_norm:
