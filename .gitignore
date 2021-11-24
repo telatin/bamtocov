@@ -17,3 +17,7 @@ bamtocov_*
 *.fa.pac
 *.fa.sa
 *sam
+bamtocov-chrom*
+_test
+shpec
+shunit2/

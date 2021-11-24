@@ -94,11 +94,7 @@ jobs:
         nimble build -y --verbose
         ls -l bin/
         bin/bamtocov --version
-        bash tests/all.sh
-      
-    - name: Upload Artifact
-      if: success()
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        name: bamtocov_${{ matrix.os }}
-        path: bin/
+        echo SKIPPING bash tests/all.sh
+        tests/bin/shpec tests/shpec/bamtocov.sh
+        tests/unit/bamtocov-base.sh
+
