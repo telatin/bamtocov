@@ -1,8 +1,16 @@
 describe "Coverage tools"
-  SELFDIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-  BINDIR="$( cd -- "$( dirname -- "$SELFDIR"/../../bin/bamtocov )" &> /dev/null && pwd )"
-  DATADIR="$( cd -- "$( dirname -- "$SELFDIR"/../../input/mini.bam )" &> /dev/null && pwd )"
 
+  if [ "$0" = "./tests/bin/shpec" ];
+  then
+    echo "Make test"
+    BINDIR="./bin/"
+    DATADIR="./input/"
+  else
+    echo "Manual test $0"
+    SELFDIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+    BINDIR="$( cd -- "$( dirname -- "$SELFDIR"/../../bin/bamtocov )" &> /dev/null && pwd )"
+    DATADIR="$( cd -- "$( dirname -- "$SELFDIR"/../../input/mini.bam )" &> /dev/null && pwd )"
+  fi
   describe "BamToCov"
     it "Binary exist"
         assert file_present "$BINDIR"/bamtocov
@@ -35,15 +43,18 @@ describe "Coverage tools"
 
     it "Counts target"    
       COV=$("$BINDIR"/bamtocounts "$DATADIR"/regions.bed "$DATADIR"/mini.bam | wc -l)
-      assert equal $((COV+0)) 2
+      assert equal $((COV+0)) 6
     end
 
     it "Coverage check"    
+      TMPFILE=$(mktemp)
+      "$BINDIR"/bamtocounts "$DATADIR"/regions.bed "$DATADIR"/mini.bam > "$TMPFILE"
       while read -r line; do
         COV=$(echo "$line" | cut -f 5)
         REGION=$(echo "$line" | cut -f 4)
         assert glob "$REGION" "*_$COV"
-      done < <("$BINDIR"/bamtocounts "$DATADIR"/regions.bed "$DATADIR"/mini.bam)
+      done < "$TMPFILE"
+      rm "$TMPFILE"
     end 
   end
 end
