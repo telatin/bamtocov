@@ -389,9 +389,10 @@ type
     quantization_index2label: seq[string]
     quantization_coverage2index: seq[int]
     chrom2str: TableRef[chrom_t, string]
+    chrom2len: TableRef[chrom_t, pos_t]
 
 proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
-  if i.start < i.stop: # skip empty intervals
+  if o.current_span.chrom != i.chrom or i.start < i.stop: # skip empty intervals
     case o.opts.output_format:
       of of_bed: # bed format output
         let interval_str = o.chrom2str[i.chrom] & "\t" & $i.start & "\t" & $i.stop & "\t"
@@ -416,11 +417,13 @@ proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
           raise
         let span_length = o.opts.span_length
         if o.current_span.chrom != i.chrom: # start new contig
-          if o.current_span.chrom != -1: # output last possibly incomplete span from previous chrom
+          if o.current_span.chrom != -1 and o.current_span.start < o.chrom2len[o.current_span.chrom]: # output last possibly incomplete span from previous chrom
             let span_value = case o.opts.span_func:
               of sf_max, sf_min: $o.current_span.label.forward
               of sf_mean: $(float(o.current_span.label.forward)/float(span_length)) # FIXME the actual span is less than span_length!
             echo $o.current_span.start & "\t" & span_value
+          if i.chrom == -1:
+            return
             
           o.current_span.chrom = i.chrom
           o.current_span.start = 0
@@ -476,7 +479,9 @@ proc push_interval(o: var output_t, i: coverage_interval_t) =
 proc `=destroy`(o: var output_t) =
   case o.opts.output_format:
     of of_bed: o.write_output(o.queued)
-    of of_wig_fixstep: o.write_output((chrom_t(-1), pos_t(0), pos_t(0), newCov()))
+    of of_wig_fixstep:
+      o.write_output(o.queued)
+      o.write_output((chrom_t(-1), pos_t(0), pos_t(0), newCov()))
 
 import sequtils
 # output quantization
@@ -506,10 +511,12 @@ proc newOutput(opts: output_option_t, bam: Bam): output_t =
     quantization_index2label: @[],
     quantization_coverage2index: @[],
     chrom2str: newTable[chrom_t, string](),
+    chrom2len: newTable[chrom_t, pos_t](),
     current_span: (chrom_t(-1), pos_t(0), pos_t(0), newCov())
   )
   for t in bam.hdr.targets:
     o.chrom2str[t.tid] = t.name
+    o.chrom2len[t.tid] = pos_t(t.length)
   if opts.quantization != "nil":
     o.parse_quantization(opts.quantization)
   o

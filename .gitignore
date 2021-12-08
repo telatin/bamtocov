@@ -21,3 +21,5 @@ bamtocov-chrom*
 _test
 ./shpec
 shunit2/
+.vscode
+shpec/

@@ -7,14 +7,14 @@ VERSION := $(shell grep version bamtocov.nimble  | grep  -o "[0-9]\\+\.[0-9]\.[0
 LIST=$(BIN)/bamtocov $(BIN)/bamtocounts $(BIN)/covtotarget $(BIN)/bamcountrefs $(BIN)/gff2bed
 
 $(BIN)/%: $(SOURCE)/%.nim
-	nim c -d:NimblePkgVersion=$(VERSION) -d:release -d:danger --opt:speed --gc:arc --out:$@ $<
+	nim c -d:NimblePkgVersion=$(VERSION) -d:release  --opt:speed -d:danger --out:$@ $<
 
 all: $(LIST)
 
-bin/bamtocov:
-	nimble build
+#bin/bamtocov:
+#	nimble build
 
-test: testshpec testshunit2
+test: testshpec testshunit2 testbash
 
 testshpec:
 	@echo "Test shpec"
@@ -23,9 +23,10 @@ testshpec:
 testshunit2:
 	@echo "Test shunit2"
 	./tests/unit/bamtocov-base.sh
-	
+
 testbash:
 	bash tests/all.sh
+
 
 build:
 	nimble build
