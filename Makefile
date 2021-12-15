@@ -14,17 +14,19 @@ all: $(LIST)
 #bin/bamtocov:
 #	nimble build
 
-test: testshpec testshunit2 testbash
+test: testshpec 
 
+testall: testbash testshpec testshunit2
 testshpec:
-	@echo "Test shpec"
+	@echo " --- Test shpec --- "
 	./tests/bin/shpec ./tests/shpec/bamtocov.sh
 
 testshunit2:
-	@echo "Test shunit2"
+	@echo " --- Test shunit2 --- "
 	./tests/unit/bamtocov-base.sh
 
 testbash:
+	@echo " --- Test (legacy) --- "
 	bash tests/all.sh
 
 

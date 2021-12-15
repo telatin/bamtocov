@@ -1,4 +1,4 @@
-describe "Coverage tools"
+describe "Coverage tools tested by Shpec"
 
   if [ "$0" = "./tests/bin/shpec" ];
   then
@@ -11,27 +11,58 @@ describe "Coverage tools"
     BINDIR="$( cd -- "$( dirname -- "$SELFDIR"/../../bin/bamtocov )" &> /dev/null && pwd )"
     DATADIR="$( cd -- "$( dirname -- "$SELFDIR"/../../input/mini.bam )" &> /dev/null && pwd )"
   fi
+
+  # PROGRAM: bamtocov
   describe "BamToCov"
     it "Binary exist"
         assert file_present "$BINDIR"/bamtocov
     end
-    it "Version 2.x"
+    it "Version emitted is 2.x"
       VERSION=$("$BINDIR"/bamtocov --version)
       assert glob "$VERSION" "2.*"
     end
 
-    it "Mini coverage lines"
+    it "Mini coverage, verify output line number"
       COV=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam | wc -l)
       assert equal $((COV+0)) 21
     end
 
-    it "One line with empty chromosome seq0"
+    it "One line with empty chromosome seq0 (empty chromosome)"
       COV=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam | grep -c seq0)
       assert equal $((COV+0)) 1
     end
 
+    it "Works with sorted file"
+      "$BINDIR"/bamtocov "$DATADIR"/mini-sorted.bam 2> /dev/null > /dev/null
+      exitstatus=$?
+      assert equal $exitstatus 0
+    end
+
+    it "Fails with unsorted file"
+      "$BINDIR"/bamtocov "$DATADIR"/mini-unsorted.bam 2> /dev/null > /dev/null
+      exitstatus=$?
+      assert gt $exitstatus 0
+    end
+
+    it "Produces wig output (check lines)"
+      LINES=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 250 --op max | wc -l)
+      assert equal $LINES 15
+    end
+    it "Produces wig output (check lines at 750)"
+      LINES=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 250 --op max | grep -w 750 | wc -l)
+      assert equal $LINES 3
+    end
+    it "Produces wig output (check lines at 1000 bases, unexpected)"
+      LINES=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 250 --op max |  grep -w 1000 |wc -l)
+      assert equal $LINES 0
+    end
+    it "Produces wig output header"
+      LINES=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 250 --op max | grep "fixed" | wc -l)
+      assert equal $LINES 3
+    end
   end
 
+  # PROGRAM: bamtocount
   describe "BamToCounts"
     it "Binary exists"
         assert file_present "$BINDIR"/bamtocounts
