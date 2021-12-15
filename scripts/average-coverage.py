@@ -17,7 +17,7 @@ def eprint(*args, **kwargs):
 
 
 
-def avgCoverage(bam, bin="bamtocov", out=sys.stdout):
+def AvgCov(bam, bin="bamtocov", out=sys.stdout):
     """
     get the STDOUT from bamtocov and return only the intervals
     between min and max 
@@ -43,15 +43,21 @@ def avgCoverage(bam, bin="bamtocov", out=sys.stdout):
     
     totalsize = sum(sizes.values())
     totalcov  = sum(totcov.values())
+    avgCov = {}
     for refseq in sizes:
-        print(refseq, sizes[refseq], round(totcov[refseq]/sizes[refseq], 2), sep="\t", file=out)
-
-    print("#Total", totalsize, round(totalcov/totalsize, 2), sep="\t", file=out)
+        #print(refseq, sizes[refseq], round(totcov[refseq]/sizes[refseq], 2), sep="\t", file=out)
+        avgCov[refseq] = round(totcov[refseq]/sizes[refseq], 2)
+    
+    #print("#Total", totalsize, round(totalcov/totalsize, 2), sep="\t", file=out)
+    avgCov["#Total"] = round(totalcov/totalsize, 2)
+    return avgCov
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('bam', help='BAM file')
+    parser.add_argument('bam',  help='BAM file', nargs='+')
     parser.add_argument('-o', '--output', help='Output file')
+    parser.add_argument('-t', '--total', help='Print total coverage', action='store_true')
+    #parser.add_argument('-n', '--normalize', help='Normalize coverage', action='store_true')
     parser.add_argument('-b', '--bin', default="bamtocov", help='bamtocov binary [default: bamtocov]')
 
     opts = parser.parse_args()
@@ -61,4 +67,25 @@ if __name__ == '__main__':
     else:
         out = open(opts.output, 'w')
     
-    avgCoverage(opts.bam, opts.bin, out)
+    matrix = {}
+    files = []
+    for bamFile in opts.bam:
+        files.append(os.path.basename(bamFile).replace(".bam", ""))
+        table = AvgCov(bamFile, opts.bin, out)
+        for refseq in table:
+            if refseq not in matrix:
+                matrix[refseq] = []
+            matrix[refseq].append(table[refseq])
+
+    # Print header: files
+    print("Chromosome\t", "\t".join(files), file=out)
+    for refseq in matrix:
+        if len(matrix[refseq]) != len(opts.bam):
+            eprint("Warning: missing coverage for", refseq)
+            exit(1)
+        if not opts.total and refseq == "#Total":
+            continue
+        print(refseq, *matrix[refseq], sep="\t", file=out)
+
+    if opts.output is not None:
+        out.close()

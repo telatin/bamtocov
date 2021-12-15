@@ -35,6 +35,7 @@ interest
 
 :white_check_mark: can calculate the **per-strand coverage** to check for strand bias
 
+:white_check_mark: **lowest memory usage** for a coverage tool
 
 ## File formats
 

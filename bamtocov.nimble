@@ -1,6 +1,6 @@
 # Package
 
-version       = "2.2.0"
+version       = "2.3.1"
 author        = "Andrea Telatin, Giovanni Birolo"
 description   = "BAM to Coverage"
 license       = "MIT"
@@ -10,7 +10,7 @@ license       = "MIT"
 requires "hts >= 0.3.1", "docopt >= 0.6.8", "nim >= 1.0.0", "lapper"
 srcDir = "src"
 binDir = "bin"
-bin = @["covtotarget", "bamtocounts", "bamtocov", "bamcountrefs"]
+bin = @["covtotarget", "bamtocounts", "bamtocov", "bamcountrefs", "gff2bed"]
 skipDirs = @["tests", "docs"]
 skipFiles = @["example.bam"]
 

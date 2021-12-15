@@ -18,4 +18,4 @@ conda install -c conda-forge -c bioconda bamtocov
 
 1. Install [nim](https://nim-lang.org/) and nimble.
 1. Install [hts-lib](https://www.htslib.org)
-1. Compile with `nimble build`.
+1. Compile with `nimble build`

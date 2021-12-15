@@ -1,7 +1,8 @@
 nimcache/
 nimblecache/
 htmldocs/
-bin/*
+bin/bam*
+./bin
 *.bai
 profiling
 multiqc/
@@ -17,3 +18,10 @@ bamtocov_*
 *.fa.pac
 *.fa.sa
 *sam
+bamtocov-chrom*
+_test
+./shpec
+shunit2/
+.vscode
+shpec/
+_data/

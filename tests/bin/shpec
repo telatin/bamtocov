@@ -1,0 +1,222 @@
+# vim: set ft=sh:
+
+indent() {
+  printf '%*s' $(( (_shpec_indent - 1) * 2))
+}
+
+echoe() { printf "%b\n" "$*"; }
+
+iecho() {
+  indent && echoe "$@"
+}
+
+sanitize() {
+  IFS= echoe "$1" | tr '\n' 'n' | tr "'" 'q'
+}
+
+describe() {
+  : $((_shpec_indent += 1))
+  iecho "$1"
+}
+
+end() {
+  : $((_shpec_indent -= 1))
+  _shpec_assertion_printed=0
+  [ $_shpec_indent -ge 0 ] && return 0
+  echo >& 2 "shpec: $_shpec_file: unexpected 'end'"
+  exit 1
+}
+
+end_describe() {
+  iecho "Warning: end_describe will be deprecated in shpec 1.0." \
+    "Please use end instead."
+  end
+}
+
+# Beware: POSIX shells are not required to accept
+# any identifier as a function name.
+
+stub_command() {
+  _shpec_stub_body="${2:-:}"
+  eval "$1() { ${_shpec_stub_body}; }"
+}
+
+unstub_command() { unset -f "$1"; }
+
+it() {
+  : $((_shpec_indent += 1))
+  : $((_shpec_examples += 1))
+  _shpec_assertion="$1"
+}
+
+is_function() {
+  case $(LC_ALL=C command -V "$1" 2> /dev/null) in
+    (*function*) return 0;;
+  esac
+  return 1
+}
+
+assert() {
+  case "x$1" in
+  ( xequal )
+    print_result "[ '$(sanitize "$2")' = '$(sanitize "$3")' ]" \
+      "Expected [$2] to equal [$3]"
+  ;;
+  ( xunequal )
+    print_result "[ '$(sanitize "$2")' != '$(sanitize "$3")' ]" \
+      "Expected [$2] not to equal [$3]"
+  ;;
+  ( xgt )
+    print_result "[ $2 -gt $3 ]" \
+      "Expected [$2] to be > [$3]"
+  ;;
+  ( xlt )
+    print_result "[ $2 -lt $3 ]" \
+      "Expected [$2] to be < [$3]"
+  ;;
+  ( xglob )
+    print_result "case '$2' in $3) :;; *) false;; esac" \
+      "Expected [$2] to match [$3]"
+  ;;
+  ( xno_glob )
+    print_result "case '$2' in $3) false ;; *) :;; esac" \
+      "Expected [$2] not to match [$3]"
+  ;;
+  ( xpresent )
+    print_result "[ -n '$2' ]" \
+      "Expected [$2] to be present"
+  ;;
+  ( xblank )
+    print_result "[ -z '$2' ]" \
+      "Expected [$2] to be blank"
+  ;;
+
+  ( xfile_present )
+    print_result "[ -e $2 ]" \
+      "Expected file [$2] to exist"
+  ;;
+  ( xfile_absent )
+    print_result "[ ! -e $2 ]" \
+      "Expected file [$2] not to exist"
+  ;;
+  ( xsymlink )
+    link="$(readlink "$2")"
+    print_result "[ '$link' = '$3' ]" \
+      "Expected [$2] to link to [$3], but got [$link]"
+  ;;
+  ( xtest )
+    print_result "$2" \
+      "Expected $2 to be true"
+  ;;
+  ( xgrep )
+    print_result "echo \"$2\" | grep -q \"$3\"" "Expected [$2] to match [$3]"
+  ;;
+  ( xno_grep )
+    print_result "echo \"$2\" | grep -qv \"$3\"" "Expected [$2] to not match [$3]"
+  ;;
+  ( xegrep )
+    print_result "echo \"$2\" | egrep -q \"$3\"" "Expected [$2] to match [$3]"
+  ;;
+  ( xno_egrep )
+    print_result "echo \"$2\" | egrep -qv \"$3\"" "Expected [$2] to not match [$3]"
+  ;;
+  ( * )
+    if is_function "$1"; then
+      _shpec_matcher="$1"; shift
+      $_shpec_matcher "$@"
+      return 0
+    else
+      print_result false "Error: Unknown matcher [$1]"
+    fi
+  ;;
+  esac
+}
+
+print_result() {
+  if eval "$1"; then
+    : $((_shpec_assertion_printed += 1))
+    if [ ${_shpec_assertion_printed} -le 1 ]; then
+      iecho "$_shpec_green$_shpec_assertion$_shpec_norm"
+    else
+      printf "%b" "$_shpec_clear_ln"
+      iecho "$_shpec_green$_shpec_assertion$_shpec_norm(x$_shpec_assertion_printed)"
+    fi
+  else
+    : $((_shpec_failures += 1))
+    _shpec_assertion_printed=0
+    iecho "$_shpec_red$_shpec_assertion"
+    iecho "($2)$_shpec_norm"
+  fi
+}
+
+final_results() {
+  [ $_shpec_failures -eq 0 ] && _shpec_color=$_shpec_green || _shpec_color=$_shpec_red
+  echoe "${_shpec_color}${_shpec_examples} examples, ${_shpec_failures} failures${_shpec_norm}"
+  times
+  [ $_shpec_failures -eq 0 ]
+  exit
+}
+
+shpec_version() {
+  (
+    VERSION=0.3.1
+    echo $VERSION
+  )
+}
+
+shpec() {
+  (
+    case "$1" in
+    ( -v | --version )
+      shpec_version
+      exit 0
+    ;;
+    esac
+
+    _shpec_examples=0
+    _shpec_failures=0
+    _shpec_indent=0
+    _shpec_red="\033[0;31m"
+    _shpec_green="\033[0;32m"
+    _shpec_norm="\033[0m"
+    _shpec_clear_ln="\033[1A\033[K"
+
+    _shpec_root=${SHPEC_ROOT:-$(
+      [ -d './shpec' ] && echo './shpec' || echo '.'
+    )}
+    SHPEC_ROOT=${_shpec_root}
+
+    _shpec_matcher_files=$(
+      find "$_shpec_root/matchers" -name '*.sh' 2>/dev/null
+    )
+
+    for _shpec_matcher_file in $_shpec_matcher_files; do
+      # shellcheck source=/dev/null
+      . "$_shpec_matcher_file"
+    done
+
+    if [ $# -gt 0 ] ; then
+      for _shpec_file in "$@"; do
+        # shellcheck source=/dev/null
+        . "$_shpec_file"
+      done
+    else
+      _shpec_files=$(find "$_shpec_root" -name '*_shpec.*')
+      for _shpec_file in $_shpec_files; do
+        # shellcheck source=/dev/null
+        . "$_shpec_file"
+      done
+    fi
+
+    final_results
+  )
+}
+
+(
+  _progname=shpec
+  _pathname=$( command -v "$0" )
+  _cmdname=${_pathname##*/}
+  _main=shpec
+
+  case $_progname in (${_cmdname%.sh}) $_main "$@";; esac
+)
