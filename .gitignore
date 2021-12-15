@@ -1,6 +1,7 @@
 nimcache/
 nimblecache/
 htmldocs/
+bin/bam*
 ./bin
 *.bai
 profiling
