@@ -1,7 +1,7 @@
 ---
-sort: 8
+sort: 7
 ---
 
-# Notes
+# Scripts
 
 {% include list.liquid %}
