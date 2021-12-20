@@ -1,0 +1,58 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  BamToCov, an efficient toolkit for sequence
+  coverage calculations
+message: >-
+  Please cite this dataset using the metadata from
+  'preferred-citation'.
+type: software
+authors:
+  - given-names: Andrea
+    family-names: Telatin
+    email: andrea.telatin@quadram.ac.uk
+    affiliation: Quadram Institute Bioscience
+    orcid: 'https://orcid.org/0000-0001-7619-281X'
+  - given-names: Giovanni
+    family-names: Birolo
+    email: giovanni.birolo@unito.it
+    affiliation: University of Turin
+identifiers:
+  - type: doi
+    value: 10.1101/2021.11.12.466787
+    description: >-
+      BamToCov: an efficient toolkit for sequence
+      coverage calculations
+url: 'https://telatin.github.io/bamtocov/'
+abstract: >
+  Motivation: Many genomics applications require the
+  computation of nucleotide coverage of a reference
+  genome or the ability to determine how many reads
+  map to a reference region. 
+
+
+  Results: BamToCov is a toolkit for rapid and
+  flexible coverage computation that relies on a
+  memory efficient algorithm and is designed for
+  integration in pipelines; this is possible as a
+  result of reading alignment files from streams. The
+  tools in the suite can process sorted BAM or CRAM
+  files, allowing the user to extract coverage
+  information via different filtering approaches and
+  also save the output in different formats (BED, Wig
+  or counts). 
+
+  The BamToCov algorithm can also handle
+  strand-specific and/or physical coverage analyses.
+
+
+  Availability: This program, accessory utilities,
+  and their documentation are freely available at
+  https://github.com/telatin/BamToCov.
+keywords:
+  - bioinformatics
+  - sequence coverage
+  - next-generation sequencing
+license: MIT
