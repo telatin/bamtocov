@@ -7,6 +7,12 @@ permalink: /history
 This project extends [covtobed](https://github.com/telatin/covtobed),
 reimplementing the core algorithm in Nim.
 
+* 2.4.0
+  * Standed analysis is now supported with Wig-like output 
+* 2.3.0:
+  * Improved Wig support
+  * Improved GTF format detection
+  * Expanded test suite
 * 2.2.0:
   * Support for wiggle output (`--wig STEP` and `--op FUNCT`)
 * 2.1.1:

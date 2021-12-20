@@ -1,6 +1,6 @@
 # Package
 
-version       = "2.3.1"
+version       = "2.4.0"
 author        = "Andrea Telatin, Giovanni Birolo"
 description   = "BAM to Coverage"
 license       = "MIT"

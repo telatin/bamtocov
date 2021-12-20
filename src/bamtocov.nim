@@ -707,6 +707,7 @@ Target files:
   -i, --gff-id <ID>            GFF identifier [default: ID]
   --gff-separator <sep>        GFF attributes separator [default: ;]
   --gff                        Force GFF input (otherwise assumed by extension .gff)
+  --gtf                        Force GTF input (otherwise assumed by extension .gtf)
 
 BAM reading options:
   -T, --threads <threads>      BAM decompression threads [default: 0]
@@ -734,15 +735,25 @@ Other options:
   var
     #bams: seq[BAM]
     format_gff = false 
+    format_gtf = false
   
   # Set target format (GFF/BED) using extension or forced by the user
-  if ($args["--regions"]).toLower().contains(".gff") or ($args["--regions"]).toLower().contains(".gtf")  or args["--gff"]:
+  if ($args["--regions"]).toLower().contains(".gff"):
     dbEcho("Parsing target as GFF")
     format_gff = true
+  elif ($args["--regions"]).toLower().contains(".gtf"):
+    format_gtf = true
   else:
     dbEcho("Parsing target as BED")
   
-  
+  if (args["--gtf"] and args["--gff"]) or (format_gff and format_gtf):
+    echo "ERROR: Target format is ambiguous: specify a GFF or GTF target (ideally autoinferred from the extension)"
+    quit(1)
+  elif args["--gtf"]:
+    format_gtf = true
+  elif args["--gff"]:
+    format_gff = true
+
   assert( $args["--op"] in  @["mean", "min", "max"], "--op must be one of mean, min, max, got: " & $args["--op"])
 
   let 
@@ -760,7 +771,9 @@ Other options:
       min_mapping_quality: uint8(parse_int($args["--mapq"])),
       eflag: uint16(parse_int($args["--flag"])),
       physical: bool(args["--physical"]),
-      target: if format_gff: gff_to_table(target_file, gffField, gffSeparator, gffIdentifier) else: bed_to_table(target_file)
+      target: if format_gff: gff_to_table(target_file, gffField, gffSeparator, gffIdentifier) 
+              elif format_gtf: gtf_to_table(target_file, gffField, gffSeparator, gffIdentifier) 
+              else: bed_to_table(target_file)
     )
     output_opts: output_option_t = (
       strand: bool(args["--stranded"]),

@@ -38,7 +38,7 @@ var
   gffField      = "CDS"
   bedOutput     = false
 
-type
+#[ type
   region_t = ref object
     chrom: string
     start: int
@@ -49,6 +49,7 @@ type
 
 proc start(r: region_t): int {.inline.} = return r.start
 proc stop(r: region_t): int {.inline.} = return r.stop
+ ]#
 #proc `$`(m:region_t): string = return "($#-$#:$#, $#)" % [$m.chrom, $m.start, $m.stop, $m.name]
 #proc inc_count(r:region_t) = inc(r.count)
 
@@ -61,7 +62,7 @@ proc overlapLen(reference, feature: region_t): int =
         return feature.stop - feature.start
  
 # Converts a GFF line to region object
-proc gff_line_to_region(line: string): region_t =
+#[ proc gff_line_to_region(line: string): region_t =
   var
    cse = line.strip().split('\t')
 
@@ -157,7 +158,7 @@ proc gff_to_table(bed: string): TableRef[string, seq[region_t]] =
 
   hts.free(kstr.s)
   return bed_regions
- 
+ ]# 
  
 proc processCoverage(f: File, target: TableRef[string, seq[region_t]], normalize: bool, bedout: bool) =
     var
@@ -231,7 +232,7 @@ Arguments:
 
 Options:
 
-  -g, --gff                    Force GFF for input (otherwise autodetected by .gff extension)
+  -g, --gff                    Force GFF for input (otherwise autodetected by .gff/.gtf extension)
   -t, --type <feat>            GFF feature type to parse [default: CDS]
   -i, --id <ID>                GFF identifier [default: ID]
   -l, --norm-len               Normalize by gene length
@@ -251,7 +252,7 @@ Options:
   gffField      = $args["--type"]
   bedOutput     = args["--bed-output"]
  
-  if ($args["<Target>"]).contains(".gff"):
+  if ($args["<Target>"]).contains(".gff") or (($args["<Target>"]).contains(".gtf") ):
     prokkaGff = true
 
  
@@ -259,7 +260,7 @@ Options:
     stderr.writeLine("FATAL ERROR: Unable to read target regions: ", $args["<Target>"]) 
     quit(1)
 
-  var targetRegions = if prokkaGff == true: gff_to_table($args["<Target>"])
+  var targetRegions = if prokkaGff == true: gff_to_table($args["<Target>"],gffField, gffSeparator, gffIdentifier)
                  else: bed_to_table($args["<Target>"])
    
   var
