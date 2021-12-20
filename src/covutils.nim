@@ -42,7 +42,36 @@ proc tostring*(r: region_t, s:var string) {.inline.} =
     s.add(r.name & "\t")
   s.add($r.count)
 
+# Converts a GTF line to region object
+proc gtf_line_to_region*(line: string, gffField = "exon", gffSeparator = ";", gffIdentifier = "gene_id"): region_t =
+  #NC_001422.1     Prodigal:002006 gene    51      221     .       +       0       gene_id "nbis-gene-1"; ID "nbis-gene-1"; inference "ab initio prediction:Prodigal:002006"; locus_tag "PhiX_01"; product "hypothetical protein";
+  var
+   cse = line.strip().split('\t')
 
+  if len(cse) < 8:
+    stderr.write_line("[warning] skipping GTF line (fields not found):", line.strip())
+    return nil
+
+  # Skip non CDS fields (or user provided)
+  if cse[2] != gffField:
+    return nil
+
+  var
+    s = parse_int(cse[3])  - 1
+    e = parse_int(cse[4])
+    reg = region_t(chrom: cse[0], start: s, stop: e, count:0)
+  
+  # In the future, 8th field could be requireed [TODO]
+  if len(cse) == 9:
+    for gffAnnotPartRaw in cse[8].split(gffSeparator):
+      let gffAnnotPart = gffAnnotPartRaw.strip(chars = {'"', '\'', ' '})
+      if gffAnnotPart.startsWith(gffIdentifier):
+        try:
+          reg.name = gffAnnotPart.split("=")[1].strip(chars = {'"', '\'', ' '}) 
+        except:
+          reg.name = gffAnnotPart.split(" ")[1].strip(chars = {'"', '\'', ' '})
+        break
+  return reg
 
 # Converts a GFF line to region object
 proc gff_line_to_region*(line: string, gffField = "CDS", gffSeparator = ";", gffIdentifier = "ID"): region_t =
@@ -123,6 +152,30 @@ proc bed_to_table*(bed: string): TableRef[string, seq[region_t]] =
   return bed_regions
 
 
+proc gtf_to_table*(bed: string, gffField, gffSeparator, gffIdentifier: string): TableRef[string, seq[region_t]] =
+  var bed_regions = newTable[string, seq[region_t]]()
+  var hf = hts.hts_open(cstring(bed), "r")
+  var kstr: hts.kstring_t
+  kstr.l = 0
+  kstr.m = 0
+  kstr.s = nil
+  while hts_getline(hf, cint(10), addr kstr) > 0:
+    if ($kstr.s).startswith("##FASTA"):
+      break
+    if $kstr.s[0] == "#":
+      continue
+
+    var v = gtf_line_to_region($kstr.s, gffField, gffSeparator, gffIdentifier)
+    if v == nil: continue
+    discard bed_regions.hasKeyOrPut(v.chrom, new_seq[region_t]())
+    bed_regions[v.chrom].add(v)
+
+  # since it is read into mem, can also well sort.
+  for chrom, ivs in bed_regions.mpairs:
+    sort(ivs, proc (a, b: region_t): int = a.start - b.start)
+
+  hts.free(kstr.s)
+  return bed_regions
 
 proc gff_to_table*(bed: string, gffField, gffSeparator, gffIdentifier: string): TableRef[string, seq[region_t]] =
   var bed_regions = newTable[string, seq[region_t]]()

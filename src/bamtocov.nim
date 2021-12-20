@@ -210,6 +210,8 @@ template doAssert(condition: bool, message: string) = # FIXME is this already in
     stderr.writeLine("ERROR: ", message)
     quit(1)
 
+
+# COVERAGE FUNCTIONS #
 proc newCov(f = 0, r = 0): coverage_t =
   coverage_t(forward: f, reverse: r)
 
@@ -228,11 +230,23 @@ proc dec(c: var coverage_t, reverse=false) =
 proc tot(c: coverage_t): int =
   c.forward + c.reverse
 
+proc max(c1: coverage_t, c2: coverage_t): coverage_t =
+  newCov(max(c1.forward, c2.forward), max(c1.reverse, c2.reverse))
+proc min(c1: coverage_t, c2: coverage_t): coverage_t =
+  newCov(min(c1.forward, c2.forward), min(c1.reverse, c2.reverse))
+proc `+`(c1: coverage_t, c2: coverage_t): coverage_t =
+  newCov(c1.forward + c2.forward, c1.reverse + c2.reverse)
+
+proc `/`(c: coverage_t, by: float): tuple[forward: float, reverse: float] = 
+  (float(c.forward)/by, float(c.reverse)/by)
+proc `*`(c: coverage_t, by: int): coverage_t =
+  newCov(c.forward*by, c.reverse*by)
+
+
 proc topStop(q: HeapQueue): int64 =
   if not q[0].isNil:
     return q[0].stop
   return -1
-
 
 proc topReverse(q: HeapQueue): bool =
   if not q[0].isNil:
@@ -391,6 +405,24 @@ type
     chrom2str: TableRef[chrom_t, string]
     chrom2len: TableRef[chrom_t, pos_t]
 
+proc output_wig_span(span: genomic_interval_t[coverage_t], opts: output_option_t) =
+  let span_length = opts.span_length # FIXME the actual span can be less than span_length!
+  let value_str =
+    if opts.strand:
+      case opts.span_func:
+        of sf_max, sf_min: $span.label.forward & "\t" & $span.label.reverse
+        of sf_mean: 
+          let mean = span.label/float(span_length) 
+          $mean.forward & "\t" & $mean.reverse
+    else:
+      let tot = span.label.forward + span.label.reverse
+      case opts.span_func:
+        of sf_max, sf_min: $tot
+        of sf_mean: $(float(tot)/float(span_length))
+  echo $span.start & "\t" & value_str
+
+
+
 proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
   if o.current_span.chrom != i.chrom or i.start < i.stop: # skip empty intervals
     case o.opts.output_format:
@@ -412,16 +444,13 @@ proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
         if len(o.quantization_index2label) > 0:
           stderr.writeLine("wig output does not support quantized coverage")
           raise
-        if o.opts.strand:
-          stderr.writeLine("wig output does not support stranded coverage")
-          raise
+        #if o.opts.strand:
+        #  stderr.writeLine("wig output does not support stranded coverage")
+        #  raise
         let span_length = o.opts.span_length
         if o.current_span.chrom != i.chrom: # start new contig
           if o.current_span.chrom != -1 and o.current_span.start < o.chrom2len[o.current_span.chrom]: # output last possibly incomplete span from previous chrom
-            let span_value = case o.opts.span_func:
-              of sf_max, sf_min: $o.current_span.label.forward
-              of sf_mean: $(float(o.current_span.label.forward)/float(span_length)) # FIXME the actual span is less than span_length!
-            echo $o.current_span.start & "\t" & span_value
+            output_wig_span(o.current_span, o.opts)
           if i.chrom == -1:
             return
             
@@ -434,22 +463,18 @@ proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
         while o.current_span.start <= i.stop:
           let inter = intersection_first(o.current_span, i)
           if not is_empty(inter): # update the current span value
-            o.current_span.label.forward = case o.opts.span_func:
-              of sf_max: max(o.current_span.label.forward, i.label.forward)
-              of sf_min: min(o.current_span.label.forward, i.label.forward)
-              of sf_mean: o.current_span.label.forward + i.label.forward*int(len(inter))
+            o.current_span.label = case o.opts.span_func:
+              of sf_max: max(o.current_span.label, i.label)
+              of sf_min: min(o.current_span.label, i.label)
+              of sf_mean: o.current_span.label + i.label*int(len(inter))
           if inter.stop == o.current_span.stop: # span is concluded
-            # output span
-            let span_value = case o.opts.span_func:
-              of sf_max, sf_min: $o.current_span.label.forward
-              of sf_mean: $(float(o.current_span.label.forward)/float(span_length))
-            echo $o.current_span.start & "\t" & span_value
+            output_wig_span(o.current_span, o.opts)
             # next span
             o.current_span.start += span_length
             o.current_span.stop = o.current_span.start + span_length
-            o.current_span.label.forward = case o.opts.span_func
-              of sf_max, sf_mean: 0
-              of sf_min: high(int)
+            o.current_span.label = case o.opts.span_func
+              of sf_max, sf_mean: newCov(0, 0)
+              of sf_min: newCov(high(int), high(int))
           else: # span extends beyond the interval, we are done
             break
 

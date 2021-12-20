@@ -114,6 +114,19 @@ def makeTarget(genomeSize, targetSize, numFeatures=1):
             target[start] = end
     return target
 
+def savetarget(target, file):
+    """
+    Save target in bed format
+    """
+    bed = open(file, "w")
+    chrname = "chromosome"
+    
+    for t in target:
+        name = f"chromosome:{t}-{target[t]}"
+        print(f"{chrname}\t{t}\t{target[t]}\t{name}", file=bed)
+    
+
+    
 
 
 if __name__ == "__main__":
@@ -121,13 +134,15 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", help="Output BAM file", required=True)
     parser.add_argument("-l", "--length", help="Length of the genome [default: %(default)s]", default="100M")
     
-    parser.add_argument("-n", "--num-reads", help="Number of reads [default: %(default)s]", default="100M")
+    parser.add_argument("-n", "--num-reads", help="Number of reads [default: %(default)s]", default="1M")
     parser.add_argument("-t", "--target-size", help="Bases in target [default: %(default)s]", default="10M")
     parser.add_argument("-f", "--target-features", help="Number of features [default: %(default)s]", type=int, default=10)
     
-    parser.add_argument("-m", "--min-len", help="Minimum read length [default: 1000]", type=int, default=1000)
-    parser.add_argument("-M", "--max-len", help="Minimum read length [default: 10000]", type=int,default=10000)
+    parser.add_argument("-m", "--min-len", help="Minimum read length [default: 1000]", type=int, default=50)
+    parser.add_argument("-M", "--max-len", help="Minimum read length [default: 10000]", type=int,default=300)
     parser.add_argument("-s", "--seed", help="Random seed [default: 42]", type=int,default=42)
+    parser.add_argument("--multiply", help="Multiply the number of reads by this number", type=int, default=1)
+    parser.add_argument("--randomcigar", help="Use random CIGAR strings", action="store_true")
     parser.add_argument("--progress", help="Print progress every INT reads [default: 10000]", type=int, default=10000)
 
     
@@ -144,14 +159,18 @@ if __name__ == "__main__":
     bamHeader = makeHeader(genome)
     target = makeTarget(genomeSize, stringSizeToInt(opts.target_size), opts.target_features)
 
+    bedOutput = opts.output.replace("bam", "bed")
+    savetarget(target, bedOutput)
     totalReads = stringSizeToInt(opts.num_reads)
     generatedBases = 0
     n = 0
     seqPosLength = {}
      
-    while n < totalReads:
+    for n in track(range(totalReads), total=totalReads, description="Generating positions..."):
+    #while n < totalReads:
+        #n += 1
         readLength = int(opts.min_len + (opts.max_len - opts.min_len) * random.random())
-        n += 1
+        
         # Generate a random position being included in a random interval of the target
         intervalStart = random.choice(list(target.keys()))
         intervalEnd = target[intervalStart]
@@ -162,16 +181,15 @@ if __name__ == "__main__":
         else:
             seqPosLength[pos] = [readLength]
 
-    
-    eprint(f"Generated positions for {totalReads} reads (from {len(seqPosLength)} positions)")
 
+    
+    
     # Sort seqPosLength keys ascending
     seqPosLength = {k: v for k, v in sorted(seqPosLength.items())}
-    eprint(f"Generating {totalReads} reads, {generatedBases} bp")
     # Generate reads
     with pysam.AlignmentFile(opts.output, "wb", header=bamHeader) as outf:
         n = 0
-        for index, pos in  track(enumerate(seqPosLength), total=len(seqPosLength), description="Writing BAM..."):
+        for index, pos in  track(enumerate(seqPosLength), total=len(seqPosLength), description="Writing BAM...         "):
             
             
             for length in seqPosLength[pos]:
@@ -184,9 +202,7 @@ if __name__ == "__main__":
                     seqString   = "A" * length
                     try:
                         a = pysam.AlignedSegment()
-                        
-            
-                        a.query_sequence = "chr1"
+                        #a.query_sequence = "chr1"
                         a.flag = 0
                         a.reference_id = 0
                         a.reference_start = pos
@@ -207,6 +223,7 @@ if __name__ == "__main__":
                         if pos + length > genomeSize:
                             raise Exception("Read extends past end of genome")
                         outf.write(a)
+
 
                     except Exception as e:
                         eprint("ERROR:", sys.exc_info(), a)
