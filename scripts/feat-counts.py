@@ -43,6 +43,8 @@ def counts(bamfile, targetfile, options):
         fields = line.split()
         if len(fields) < 3:
             continue
+
+        # KEY: "Chromosome\tStart\tEnd\tName"
         f = "\t".join(fields[0:4])
         try:
             c = int(fields[4])
@@ -50,7 +52,8 @@ def counts(bamfile, targetfile, options):
         except ValueError:
             print("Error:", fields[4])
     
-    return counts
+    # Return FILENAME, COUNTS[feature, int]
+    return bamfile, counts
 
 if __name__ == "__main__":
     import argparse
@@ -72,20 +75,25 @@ if __name__ == "__main__":
     
     matrix = {}
     first = ""
-    for bam in opts.BAM:
-        # Check index is present
-        if not os.path.exists(bam + ".bai"):
-            eprint("Error:", bam, "is missing index")
-            sys.exit(1)
-        sample = os.path.basename(bam).split(".")[0]
-        first = sample if first == "" else first
-        c = counts(bam, opts.target, options)
-        matrix[sample] = c
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        count_results = [executor.submit(counts, bam, opts.target, options) for bam in opts.BAM]
+        for f in concurrent.futures.as_completed(count_results):
+            sample, c = f.result()
+            
+            sample = "".join(os.path.basename(sample).split(".")[:-1])
+            first = sample if first == "" else first
+            matrix[sample] = c
+            if opts.verbose:
+                eprint(f"Received results: {sample}")
+
  
     # Print all samples names (matrix keys)
     print("Chr\tStart\tStop\tName\t", "\t".join(matrix.keys()), file=out)
+     
     # Print all features and counts
     for feature in matrix[first]:
+         
         counts = [matrix[sample][feature] for sample in matrix]
         print(feature, "\t", "\t".join(map(str, counts)), file=out)
        
