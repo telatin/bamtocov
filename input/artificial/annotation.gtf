@@ -1,0 +1,7 @@
+##gtf-version 3
+##sequence-region chr1 1 500
+##sequence-region chr2 1 500
+##sequence-region chr3 1 500
+chr1	bamtocov	exon	90	160	.	+	.	gene_id "target1-ext"
+chr2	bamtocov	exon	110	120	.	+	.	gene_id "target2-int"
+chr3	bamtocov	exon	100	150	.	+	.	gene_id "target3-exact"

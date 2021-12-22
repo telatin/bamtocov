@@ -1,0 +1,5 @@
+# Program:featureCounts v2.0.1; Command:"featureCounts" "-a" "annotation.gtf" "-o" "featureCounts" "reads.bam" 
+Geneid	Chr	Start	End	Strand	Length	reads.bam
+target1-ext	chr1	90	160	+	71	3
+target2-int	chr2	110	120	+	11	4
+target3-exact	chr3	100	150	+	51	4

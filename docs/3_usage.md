@@ -7,17 +7,22 @@ permalink: /usage
 
 ## Tools
 
-**[bamtocov]({{ site.baseurl }}/tools/bamtocov.html)** will produce a _coverage BED_ from a single BAM file, or a count matrix from a set of alignments and a target (in BED, GTF or GFF format).
+BamToCov is inspired by the [UNIX Phylosophy](https://en.wikipedia.org/wiki/Unix_philosophy) and the tools are designed for efficient computation
+of a very specific task. Integration of multiple samples and specific tasks can be achieved [with scripts](https://telatin.github.io/bamtocov/scripts/)
+and we provide a set to demonstrate the process.
 
+**[bamtocov]({{ site.baseurl }}/tools/bamtocov.html)** will produce a _coverage BED_ from a single BAM file, or a count matrix from a set of alignments and a target (in BED, GTF or GFF format).
 Used without a target, it is a drop-in replacement for [covtobed](https://github.com/telatin/covtobed), but discarding invalid alignments by default.
 When providing the target, it can produce coverage statistics for each region in the target, also with multiple BAM files.
 
-**[bamtocounts]({{ site.baseurl }}/tools/bamtocounts.html)** will count the number of reads covering each target region, rather than the nucleotidic coverage
+**[bamtocounts]({{ site.baseurl }}/tools/bamtocounts.html)** will count the number of reads covering each target region,
+rather than the nucleotidic coverage
 
-**[bamcountrefs]({{ site.baseurl }}/tools/bamcountrefs.html)** is a shortcut to count the number of reads per chromosome, with filters on the read flags, length and quality
+**[bamcountrefs]({{ site.baseurl }}/tools/bamcountrefs.html)** is a shortcut to count the number of reads per chromosome,
+with filters on the read flags, length and quality
 
-**[covtotarget]({{ site.baseurl }}/tools/covtotarget.html)** is an utility to create a count table from the _output_ of the original [covtobed](https://github.com/telatin/covtobed) program.
-
+**[covtotarget]({{ site.baseurl }}/tools/covtotarget.html)** (_legacy_) is an utility to create a count table from the _output_ of
+the original [covtobed](https://github.com/telatin/covtobed) program.
  
 ## Quick start
 
