@@ -94,7 +94,8 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
     if debug:
       stderr.writeLine("[alignments_count] Got chrom: ", chrom, " tot=", len(regions))
     for aln in bam.query(chrom):
-     
+      if debug:
+          stderr.writeLine("[alignments_count]\tGot aln ", aln.start)       
       if not regions.contains(chrom) or regions[chrom].len == 0:
         continue
 
@@ -120,6 +121,9 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
         table[interval.label.l2].inc(aln.flag.reverse)
         if debug:
           stderr.writeLine("[alignments_count]\t\tdone ", interval.label.l2)
+
+  if debug:
+    stderr.writeLine("[alignments_count] Done")
 
 
 proc targetSort(x, y: target_feature): int =
