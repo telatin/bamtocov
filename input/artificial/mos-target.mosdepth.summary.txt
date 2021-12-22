@@ -1,0 +1,9 @@
+chrom	length	bases	mean	min	max
+chr1	250	150	0.60	0	3
+chr1_region	70	150	2.14	0	3
+chr2	250	200	0.80	0	4
+chr2_region	10	40	4.00	4	4
+chr3	250	200	0.80	0	4
+chr3_region	30	84	2.80	0	4
+total	750	550	0.73	0	4
+total_region	110	274	2.49	0	4
