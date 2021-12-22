@@ -92,7 +92,7 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
  
   for chrom in regions.keys():
     if debug:
-      stderr.writeLine("[alignments_count] Got chrom: ", chrom)
+      stderr.writeLine("[alignments_count] Got chrom: ", chrom, " tot=", len(regions))
     for aln in bam.query(chrom):
      
       if not regions.contains(chrom) or regions[chrom].len == 0:
@@ -101,26 +101,26 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
       var
         target_idx: target_index_t
 
-      for aln in bam.query(chrom):
-        if aln.mapping_quality < mapq: continue
-        if (aln.flag and eflag) != 0: continue
+      #for aln in bam.query(chrom):
+      if aln.mapping_quality < mapq: continue
+      if (aln.flag and eflag) != 0: continue
         
-        let readAsInterval = (aln.tid, pos_t(aln.start), pos_t(aln.stop), aln.flag.reverse)
-        if debug:
-            stderr.writeLine("[alignments_count]\tGot aln: ", readAsInterval)        
-        for interval in intersections(readAsInterval, regions, target_idx):
-          # Returns: genomic_interval_t[tuple[l1: T, l2: string]
+      let readAsInterval = (aln.tid, pos_t(aln.start), pos_t(aln.stop), aln.flag.reverse)
+      if debug:
+          stderr.writeLine("[alignments_count]\tGot aln: ", readAsInterval)        
+      for interval in intersections(readAsInterval, regions, target_idx):
+        # Returns: genomic_interval_t[tuple[l1: T, l2: string]
           
-          #let feature : target_feature = (chrom: "", cid: interval.chrom.int, start: interval.start.int, stop: interval.stop.int, feature: interval.label.l2)
-          if interval.label.l2 notin table:
-            stderr.writeLine("[alignments_count] Warning: unknown feature: ", interval.label.l2)
-            table[interval.label.l2] = (fwd: 0, rev: 0)
-          if debug:
-            stderr.writeLine("[alignments_count]\t\tfor ", interval.label.l2)
-          table[interval.label.l2].inc(aln.flag.reverse)
-          if debug:
-            stderr.writeLine("[alignments_count]\t\tdone ", interval.label.l2)
-  
+        #let feature : target_feature = (chrom: "", cid: interval.chrom.int, start: interval.start.int, stop: interval.stop.int, feature: interval.label.l2)
+        if interval.label.l2 notin table:
+          stderr.writeLine("[alignments_count] Warning: unknown feature: ", interval.label.l2)
+          table[interval.label.l2] = (fwd: 0, rev: 0)
+        if debug:
+          stderr.writeLine("[alignments_count]\t\tfor ", interval.label.l2)
+        table[interval.label.l2].inc(aln.flag.reverse)
+        if debug:
+          stderr.writeLine("[alignments_count]\t\tdone ", interval.label.l2)
+
 
 proc targetSort(x, y: target_feature): int =
   if x.cid < y.cid:
