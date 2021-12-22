@@ -88,6 +88,9 @@ jobs:
         bin/bamtocov --version
         bin/bamtocounts --version
         bin/bamtocov input/mini.bam
+        echo "--"
+        cat input/regions.bed
+        echo "--"
         bin/bamtocounts input/regions.bed input/mini.bam --debug
         # TESTS
         # bash tests/all.sh
