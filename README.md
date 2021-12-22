@@ -31,4 +31,5 @@ conda install -y -c bioconda bamtocov
 [hts-nim: scripting high-performance genomic analyses](https://academic.oup.com/bioinformatics/article/34/19/3387/4990493) (Bioinformatics)
 * Giovanni Birolo, Andrea Telatin,
 [covtobed: a simple and fast tool to extract coverage tracks from BAM files](https://joss.theoj.org/papers/10.21105/joss.02119) (JOSS)
-* Brent Pedersen, [nim-lapper: fast, simple interval overlapping (Version 0.1.7)](https://brentp.github.io/nim-lapper/index.html)
+
+Initially we also used [Lapper](https://brentp.github.io/nim-lapper/index.html), and I recommend checking out this library for fast interval operations.

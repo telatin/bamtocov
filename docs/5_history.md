@@ -7,6 +7,8 @@ permalink: /history
 This project extends [covtobed](https://github.com/telatin/covtobed),
 reimplementing the core algorithm in Nim.
 
+* 2.5.0
+  * **BamToCounts** rewritten with the target engine of BamToCov
 * 2.4.0
   * Standed analysis is now supported with Wig-like output 
 * 2.3.0:
