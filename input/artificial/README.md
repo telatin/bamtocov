@@ -1,9 +1,14 @@
 # Multiple chromosome dataset
 
-
+* Chr1
+  
 ![Screenshot of IGV](chr1.png)
 
+* Chr2
+
 ![Screenshot of IGV](chr2.png)
+
+* Chr3
 
 ![Screenshot of IGV](chr3.png)
 
@@ -22,7 +27,7 @@ target3-exact  chr3    100    149    +       50      4
 * Coverage (Mosdepth)
 
 ```text
-chr1	90	160	target1-ext	2.14
-chr2	110	120	target2-int	4.00
-chr3	90	120	target3-olp	2.80
+chr1    90    160    target1-ext    2.14
+chr2    110   120    target2-int    4.00
+chr3    90    120    target3-olp    2.80
 ```

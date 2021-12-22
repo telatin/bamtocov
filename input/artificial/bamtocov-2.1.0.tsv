@@ -1,0 +1,4 @@
+interval	reads.bam_bases	reads.bam_mean	reads.bam_min	reads.bam_max	reads.bam_length
+target3-olp		.	.	.	.	.
+target2-int		.	.	.	.	.
+target1-ext		.	.	.	.	.
