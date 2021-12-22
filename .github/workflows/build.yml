@@ -85,7 +85,7 @@ jobs:
       run: |
         nimble build -y --verbose 
         ls -l bin/
-        samtools index input/mini.bam
+        
         bin/bamtocov --version
         bin/bamtocounts --version
         bin/bamtocov input/mini.bam
@@ -103,7 +103,7 @@ jobs:
       run: |
         nimble build -y --verbose
         ls -l bin/
-        samtools index input/mini.bam
+        
         bin/bamtocov --version
         bin/bamtocounts --version
         bin/bamtocov input/mini.bam
