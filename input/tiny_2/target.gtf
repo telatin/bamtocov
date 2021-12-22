@@ -1,0 +1,6 @@
+##gtf-version 3
+##sequence-region seq1 1 1000
+seq1	bamtocov	exon	101	200	.	+	.	gene_id "feature_1"
+seq1	bamtocov	exon	301	400	.	+	.	gene_id "feature_2"
+seq1	bamtocov	exon	601	700	.	+	.	gene_id "feature_3"
+seq1	bamtocov	exon	801	900	.	+	.	gene_id "last_but_not_least"

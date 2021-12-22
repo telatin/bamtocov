@@ -1,0 +1,6 @@
+# Program:featureCounts v2.0.1; Command:"featureCounts" "-a" "target.gtf" "-o" "fc" "reads.bam" 
+Geneid	Chr	Start	End	Strand	Length	reads.bam
+feature_1	seq1	101	200	+	100	7
+feature_2	seq1	301	400	+	100	16
+feature_3	seq1	601	700	+	100	9
+last_but_not_least	seq1	801	900	+	100	2

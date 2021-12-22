@@ -1,0 +1,4 @@
+seq1	100	200	feature_1	6.67
+seq1	300	400	feature_2	5.60
+seq1	600	700	feature_3	4.09
+seq1	800	900	last_but_not_least	1.81

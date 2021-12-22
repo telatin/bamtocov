@@ -1,0 +1,16 @@
+seq1	7	0.08
+seq1	6	0.15
+seq1	5	0.28
+seq1	4	0.33
+seq1	3	0.34
+seq1	2	0.42
+seq1	1	0.44
+seq1	0	1.00
+total	7	0.08
+total	6	0.15
+total	5	0.28
+total	4	0.33
+total	3	0.34
+total	2	0.42
+total	1	0.44
+total	0	1.00

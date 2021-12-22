@@ -1,0 +1,5 @@
+interval	reads.bam_bases	reads.bam_mean	reads.bam_min	reads.bam_max	reads.bam_length
+feature_1	667	6.67	0	7	100
+feature_2	560	5.6	0	6	100
+feature_3	409	4.09	0	5	100
+last_but_not_least	0	0	0	0	0
