@@ -256,18 +256,24 @@ Options:
   for index, chrName in bam.hdr.targets:
     #feature_coords  = tuple[chrom, starts, stops, name]
     if debug:
-      stderr.writeLine("Processing: ", chrName, "-", index)
+      stderr.writeLine("BAM targets: ", chrName, "-", index)
     if index in cookedTarget:
+      if debug:
+        stderr.writeLine("Coocked targets: ", chrName, "-", index)
       for interval in cookedTarget[index]:
         let
           c : feature_coords = (chrom: chrName.name, starts: $interval.start, stops: $interval.stop, name: interval.label, length: int(interval.stop - interval.start))
-        
+        if debug:
+          stderr.writeLine("\tInterval: ",interval.label, "-", interval.start, "-", interval.stop)
         if interval.label notin targetCoords:
-          
+          if debug:
+            stderr.writeLine("\t - Adding")
           targetCoords[interval.label] = c
           targetCounts[interval.label] = (fwd: 0, rev: 0)
           
         else:
+          if debug:
+            stderr.writeLine("\t - Extending")
           targetCoords[interval.label].add(c)
         
         
