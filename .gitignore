@@ -3,7 +3,6 @@ nimblecache/
 htmldocs/
 bin/bam*
 ./bin
-*.bai
 profiling
 multiqc/
 .DS_Store

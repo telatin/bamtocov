@@ -106,7 +106,8 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
         if (aln.flag and eflag) != 0: continue
         
         let readAsInterval = (aln.tid, pos_t(aln.start), pos_t(aln.stop), aln.flag.reverse)
-        
+        if debug:
+            stderr.writeLine("[alignments_count] Got aln: ", readAsInterval)        
         for interval in intersections(readAsInterval, regions, target_idx):
           # Returns: genomic_interval_t[tuple[l1: T, l2: string]
           
@@ -115,7 +116,7 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
             stderr.writeLine("[alignments_count] Warning: unknown feature: ", interval.label.l2)
             table[interval.label.l2] = (fwd: 0, rev: 0)
           if debug:
-            stderr.writeLine("[alignments_count] Got aln: ", readAsInterval, " for ", interval.label.l2)
+            stderr.writeLine("[alignments_count]\t for ", interval.label.l2)
           table[interval.label.l2].inc(aln.flag.reverse)
   
 
