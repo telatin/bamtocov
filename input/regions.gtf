@@ -1,0 +1,9 @@
+##gtf-version 3
+##sequence-region seq1 1 950
+##sequence-region seq2 1 769
+##sequence-region seq0 1 210
+seq1	bamtocov	exon	5	111	.	+	.	gene_id "include_5"
+seq1	bamtocov	exon	410	531	.	+	.	gene_id "overlap_2"
+seq1	bamtocov	exon	800	949	.	+	.	gene_id "empty1_0"
+seq2	bamtocov	exon	300	531	.	+	.	gene_id "shared1_10"
+seq2	bamtocov	exon	566	768	.	+	.	gene_id "shared2_10"
