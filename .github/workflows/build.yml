@@ -88,7 +88,7 @@ jobs:
         bin/bamtocov --version
         bin/bamtocounts --version
         bin/bamtocov input/mini.bam
-        bin/bamtocounts input/target.bed input/mini.bam
+        bin/bamtocounts input/regions.bed input/mini.bam
         # TESTS
         # bash tests/all.sh
         tests/bin/shpec tests/shpec/bamtocov.sh
