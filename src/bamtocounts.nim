@@ -114,6 +114,8 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
           if interval.label.l2 notin table:
             stderr.writeLine("[alignments_count] Warning: unknown feature: ", interval.label.l2)
             table[interval.label.l2] = (fwd: 0, rev: 0)
+          if debug:
+            stderr.writeLine("[alignments_count] Got aln: ", readAsInterval, " for ", interval.label.l2)
           table[interval.label.l2].inc(aln.flag.reverse)
   
 
