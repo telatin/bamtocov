@@ -231,11 +231,51 @@ Options:
     stderr.write_line("ERROR: requires BAM/CRAM index")
     quit(1) 
 
+  if ($args["<Target>"]).contains("gff") or ($args["<Target>"]).contains(".gtf"):
+    prokkaGff = true
+
+  var targetTable = if prokkaGff == true: gff_to_table($args["<Target>"], gffField, gffSeparator, gffIdentifier)
+                 else: bed_to_table($args["<Target>"])
+
+
+
+  if len(targetTable) == 0:
+    stderr.writeLine("ERROR: No target regions found (try changing --id and --type): see an example line below")
+    for line in lines($args["<Target>"]):
+      if line.startsWith("#"):
+        continue
+      stderr.writeLine(line)
+      quit(1)
+    quit(1)
+  if debug:
+    stderr.writeLine("Target loaded: ", len(targetTable), " reference sequences")
+    
+  let cookedTarget = cookTarget(targetTable, bam)
+  #let countsTable  = alignments_count(bam, uint8(mapq), eflag, cookedTarget)
+  var targetCounts = OrderedTable[string, stranded_counts]()
+  for index, chrName in bam.hdr.targets:
+    #feature_coords  = tuple[chrom, starts, stops, name]
+    if debug:
+      stderr.writeLine("Processing: ", chrName, "-", index)
+    if index in cookedTarget:
+      for interval in cookedTarget[index]:
+        let
+          c : feature_coords = (chrom: chrName.name, starts: $interval.start, stops: $interval.stop, name: interval.label, length: int(interval.stop - interval.start))
+        
+        if interval.label notin targetCoords:
+          
+          targetCoords[interval.label] = c
+          targetCounts[interval.label] = (fwd: 0, rev: 0)
+          
+        else:
+          targetCoords[interval.label].add(c)
+        
+        
   if args["--header"]:
-    let coords = if do_coords: "Chrom\tstart\tend\t"
+    let coords = if do_coords: "Chrom\tStart\tEnd\t"
                  else: ""
-    let header = if do_strand: "#Feature\t" & coords & "for\trev"
-                else:   "#Feature\t" & coords & "counts"
+    let header = if do_strand: "#Feature\t" & coords & "For\tRev"
+                else:   "#Feature\t" & coords & "Counts"
     if do_rpkm and do_norm:
       echo header & "\tRPKM\tCounts/Length"
     elif do_rpkm:
@@ -245,33 +285,7 @@ Options:
     else:
       echo header
 
-  if ($args["<Target>"]).contains("gff") or ($args["<Target>"]).contains(".gtf"):
-    prokkaGff = true
-
-  var targetTable = if prokkaGff == true: gff_to_table($args["<Target>"], gffField, gffSeparator, gffIdentifier)
-                 else: bed_to_table($args["<Target>"])
-
-
-  if debug:
-    stderr.writeLine("Target loaded: ", len(targetTable), " reference sequences")
-
-  let cookedTarget = cookTarget(targetTable, bam)
-  #let countsTable  = alignments_count(bam, uint8(mapq), eflag, cookedTarget)
-  var targetCounts = OrderedTable[string, stranded_counts]()
-  for index, chrName in bam.hdr.targets:
-    #feature_coords  = tuple[chrom, starts, stops, name]
-    for interval in cookedTarget[index]:
-      let
-        c : feature_coords = (chrom: chrName.name, starts: $interval.start, stops: $interval.stop, name: interval.label, length: int(interval.stop - interval.start))
-
-      if interval.label notin targetCoords:
-        #targetCoords = Table[string, feature_coords]()
-        targetCoords[interval.label] = c
-        targetCounts[interval.label] = (fwd: 0, rev: 0)
-      else:
-        targetCoords[interval.label].add(c)
-        #targetCoords[interval.label] = ()
-
+  
   targetCounts.alignments_count(bam, uint8(mapq), eflag, cookedTarget)  
   
   

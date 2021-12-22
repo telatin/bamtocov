@@ -1,0 +1,5 @@
+##gtf-version 3
+##sequence-region chr1 1 1000
+chr1	bamtocov	exon	100	109	.	+	.	gene_id "feat1"
+chr1	bamtocov	exon	200	209	.	+	.	gene_id "feat2"
+chr1	bamtocov	exon	300	309	.	+	.	gene_id "feat1"

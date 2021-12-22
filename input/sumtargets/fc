@@ -1,0 +1,4 @@
+# Program:featureCounts v2.0.1; Command:"featureCounts" "-a" "target.gtf" "-o" "fc" "reads.bam" 
+Geneid	Chr	Start	End	Strand	Length	reads.bam
+feat1	chr1;chr1	100;300	109;309	+;+	20	2
+feat2	chr1	200	209	+	10	1
