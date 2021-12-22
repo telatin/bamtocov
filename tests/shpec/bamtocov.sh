@@ -81,8 +81,8 @@ describe "Coverage tools tested by Shpec"
       TMPFILE=$(mktemp)
       "$BINDIR"/bamtocounts "$DATADIR"/regions.bed "$DATADIR"/mini.bam > "$TMPFILE"
       while read -r line; do
-        COV=$(echo "$line" | cut -f 5)
-        REGION=$(echo "$line" | cut -f 4)
+        COV=$(echo "$line" | cut -f 2)
+        REGION=$(echo "$line" | cut -f 1)
         assert glob "$REGION" "*_$COV"
       done < "$TMPFILE"
       rm "$TMPFILE"
