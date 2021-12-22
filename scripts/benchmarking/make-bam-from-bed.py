@@ -64,7 +64,7 @@ def loadBed(file):
             else:
                 references[chromosome] = max(references[chromosome], End)
             
-            alignments.append(Alignmnent(chromosome, start, Cigar, Flag))
+            alignments.append(Alignmnent(chromosome, int(start) - 1, Cigar, Flag))
     return alignments, references
 
 def cigarToLen(cigar):

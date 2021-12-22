@@ -29,7 +29,7 @@ if __name__ == "__main__":
     args = argparse.ArgumentParser(description="Convert a BED file to a minimal GTF file")
     args.add_argument("-i", "--bed", help="BED file", required=True)
     
-    args.add_argument("-o", "--fasta", help="GTF file") 
+    args.add_argument("-o", "--fasta", help="FASTA file") 
     args.add_argument("--min-len", help="Minimum length of feature [default: %(default)s]", default=0, type=int)
     args = args.parse_args()
 
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     if args.fasta is None:
         out = sys.stdout
     else:
-        out = open(args.gtf, 'w')
+        out = open(args.fasta, 'w')
 
    
     chrLen = {}
