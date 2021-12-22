@@ -291,9 +291,11 @@ Options:
     else:
       echo header
 
-  
+  if debug:
+    stderr.writeLine("Target regions: ", len(targetCounts))
   targetCounts.alignments_count(bam, uint8(mapq), eflag, cookedTarget)  
-  
+  if debug:
+    stderr.writeLine("Counts done") 
   
    
   for feature, rawcounts in targetCounts:
