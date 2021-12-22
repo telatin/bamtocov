@@ -1,6 +1,5 @@
 import os
 import system
-import hts
 import docopt
 import lapper
 import strutils
@@ -8,22 +7,6 @@ import tables
 import algorithm
 
 import ./covutils
-
-#[
-  **covToTarget**, part of MAGENTA Flow
-
-  based on count-reads in the "hts-nim-tools" suite by Brent Pedersen
-  see: "https://github.com/brentp/hts-nim-tools"
-
-  0.3.3   Minor improvements
-  0.3.2   Debug binary
-  0.3.1   Checking input files exist
-  0.3.0   BUG FIX - uncovered targets were not printed; sorting added; --bed output added
-  0.2.0   Added normalization
-  0.1.1   BUG FIX - coverage in contig without genes
-  0.1.0   Initial release
-]#
-
 
 type EKeyboardInterrupt = object of CatchableError
  
@@ -183,7 +166,7 @@ proc processCoverage(f: File, target: TableRef[string, seq[region_t]], normalize
         if lap.seek(interval.start, interval.stop, res):
  
           let counts = parseInt(interval.name) * overlapLen(res[0], interval)
-         
+          echo parseInt(interval.name), " x ", overlapLen(res[0], interval)
           if counts > 0:
             featCount.inc(res[0].name, counts)
             

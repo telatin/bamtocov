@@ -1,7 +1,7 @@
 import os
 import hts
 import docopt
-import lapper
+ 
 import strutils
 import tables
 import algorithm
@@ -41,6 +41,8 @@ var
   do_norm = false
   debug = false
   do_rpkm = false
+  do_strand = false
+  do_coords = false
   gffIdentifier = "ID"
   gffSeparator  = ";"
   gffField      = "CDS"
@@ -48,170 +50,99 @@ var
 
 
 
-
-type
-  region_t = ref object
-    chrom: string
-    start: int
-    stop: int
-    name: string
-    count: int
-
-proc inc_count(r:region_t) = inc(r.count)
-proc start(r: region_t): int {.inline.} = return r.start
-proc stop(r: region_t): int {.inline.} = return r.stop
-
-
-proc tostring(r: region_t, s:var string) {.inline.} =
-  # Print a 'region' to string (BED)
-  s.set_len(0)
-  s.add(r.chrom & "\t" & $r.start & "\t" & $r.stop & "\t")
-  if r.name != "":
-    s.add(r.name & "\t")
-  s.add($r.count)
+ 
+  
 
 # Expand 'toString' with normalized counts (no longer BED)
-proc toline(r: region_t, s: var string) {.inline.} =
-  r.tostring(s)
-
-  if do_rpkm:  
-    let kb : float =(r.stop - r.start ) / 1000 
-    let RPKM : float = float(r.count) / alignmentsPerMillion / kb
-    s.add("\t" & $RPKM)
-
-  if do_norm:
-    let normLen = r.count / (r.stop - r.start)
-    s.add("\t" & $normLen)
-
-
-# Converts a GFF line to region object
-proc gff_line_to_region(line: string): region_t =
-  var
-   cse = line.strip().split('\t')
-
-  if len(cse) < 5:
-    stderr.write_line("[warning] skipping GFF line (fields not found):", line.strip())
-    return nil
-
-  # Skip non CDS fields (or user provided)
-  if cse[2] != gffField:
-    return nil
-
-  var
-    s = parse_int(cse[3])  - 1
-    e = parse_int(cse[4])
-    reg = region_t(chrom: cse[0], start: s, stop: e, count:0)
-  
-  # In the future, 8th field could be requireed [TODO]
-  if len(cse) == 9:
-    for gffAnnotPart in cse[8].split(gffSeparator):
-      if gffAnnotPart.startsWith(gffIdentifier):
-        reg.name = gffAnnotPart.split("=")[1] 
-        break
-  return reg
-
-# Convert a BED line to region object
-proc bed_line_to_region(line: string): region_t =
-  var
-   cse = line.strip().split('\t', 5)
-
-  if len(cse) == 9:
-    stderr.writeLine("[warning] GFF format detected.")
-    return gff_line_to_region(line)
-    
-
-  if len(cse) < 3:
-    stderr.write_line("[warning] skipping bad bed line:", line.strip())
-    return nil
-  var
-    s = parse_int(cse[1])
-    e = parse_int(cse[2])
-    reg = region_t(chrom: cse[0], start: s, stop: e, count:0)
-  if len(cse) > 3:
-   reg.name = cse[3]
-  return reg
-
-# Convert BED file to table
-proc bed_to_table(bed: string): TableRef[string, seq[region_t]] =
-  var bed_regions = newTable[string, seq[region_t]]()
-  var hf = hts.hts_open(cstring(bed), "r")
-  var kstr: hts.kstring_t
-  kstr.l = 0
-  kstr.m = 0
-  kstr.s = nil
-  while hts_getline(hf, cint(10), addr kstr) > 0:
-    if ($kstr.s).startswith("track "):
-      continue
-    if $kstr.s[0] == "#":
-      continue
-    var v = bed_line_to_region($kstr.s)
-    if v == nil: continue
-    discard bed_regions.hasKeyOrPut(v.chrom, new_seq[region_t]())
-    bed_regions[v.chrom].add(v)
-  
-  for chrom, ivs in bed_regions.mpairs:     # since it is read into mem, can also well sort. (BP)
-    sort(ivs, proc (a, b: region_t): int = a.start - b.start)
-
-  hts.free(kstr.s)
-  return bed_regions
-
-
-
-proc gff_to_table(bed: string): TableRef[string, seq[region_t]] =
-  var bed_regions = newTable[string, seq[region_t]]()
-  var hf = hts.hts_open(cstring(bed), "r")
-  var kstr: hts.kstring_t
-  kstr.l = 0
-  kstr.m = 0
-  kstr.s = nil
-  while hts_getline(hf, cint(10), addr kstr) > 0:
-    if ($kstr.s).startswith("##FASTA"):
-      break
-    if $kstr.s[0] == "#":
-      continue
-
-    var v = gff_line_to_region($kstr.s)
-    if v == nil: continue
-    discard bed_regions.hasKeyOrPut(v.chrom, new_seq[region_t]())
-    bed_regions[v.chrom].add(v)
-
-  # since it is read into mem, can also well sort.
-  for chrom, ivs in bed_regions.mpairs:
-    sort(ivs, proc (a, b: region_t): int = a.start - b.start)
-
-  hts.free(kstr.s)
-  return bed_regions
 
 proc get_alignments_per_million(bam:Bam): float =
   for i in bam.hdr.targets:
     result += float(stats(bam.idx,i.tid).mapped)
   result /= 1000000
+#[ 
+proc legacytoline(r: region_t, s: var string) {.inline.} =
+  r.renderString(s)
+  let countFloat = float(1)
 
-proc print_alignments_count(bam:Bam, mapq:uint8, eflag:uint16, regions:TableRef[string, seq[region_t]]) =
-  for chrom in regions.keys():
-    if not regions.contains(chrom) or regions[chrom].len == 0:
-      continue
-    var lap: Lapper[region_t] = lapify(regions[chrom])
 
-    for aln in bam.query(chrom):
-      if aln.mapping_quality < mapq: continue
-      if (aln.flag and eflag) != 0: continue
-
-      lap.each_seek(aln.start.int, aln.stop.int, inc_count)
-    var s = new_string_of_cap(1000)         # Returns a new string of length 0 but with capacity cap.
-    for region in regions[chrom]:
-      region.toline(s)
-      echo s
  
-#[
-  proc each_seek[T: Interval](
-    L: var Lapper[T]; 
-    start: int; 
-    stop: int; f
-    n: proc (v: T)) {..}
-call fn(x) for each interval x in L that overlaps start..stop this assumes that subsequent calls to this function will be in sorted order
 ]#
+type
+  target_feature  = tuple[chrom: string, cid: int, start: int, stop: int, feature: string]
+  stranded_counts = tuple[fwd, rev: int]
+  feature_coords  = tuple[chrom, starts, stops, name: string, length: int]
+  
+ 
+proc inc(c: var stranded_counts, reverse=false) =
+  if reverse == false:
+    c.fwd += 1
+  else:
+    c.rev += 1
 
+proc counts(c: stranded_counts): int =
+  c.fwd + c.rev
+
+proc countsToString(c: stranded_counts, stranded: bool): string =
+  if stranded:
+    $(c.fwd) & "\t" & $(c.rev)
+  else:
+    $(c.fwd + c.rev)
+
+proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t) =
+ 
+  for chrom in regions.keys():
+    for aln in bam.query(chrom):
+     
+      if not regions.contains(chrom) or regions[chrom].len == 0:
+        continue
+
+      var
+        target_idx: target_index_t
+
+      for aln in bam.query(chrom):
+        if aln.mapping_quality < mapq: continue
+        if (aln.flag and eflag) != 0: continue
+        
+        let readAsInterval = (aln.tid, pos_t(aln.start), pos_t(aln.stop), aln.flag.reverse)
+        
+        for interval in intersections(readAsInterval, regions, target_idx):
+          # Returns: genomic_interval_t[tuple[l1: T, l2: string]
+          
+          #let feature : target_feature = (chrom: "", cid: interval.chrom.int, start: interval.start.int, stop: interval.stop.int, feature: interval.label.l2)
+          table[interval.label.l2].inc(aln.flag.reverse)
+  
+
+proc targetSort(x, y: target_feature): int =
+  if x.cid < y.cid:
+    -1
+  elif x.cid > y.cid:
+    1
+  else:
+    if x.start < y.start:
+      -1
+    elif x.start > y.start:
+      1
+    else:
+      if x.stop < y.stop:
+        -1
+      elif x.stop > y.stop:
+        1
+      else:
+        0
+
+proc add(s: var feature_coords, z: feature_coords) = 
+  # feature_coords  = tuple[chrom, starts, stops, name: string]
+  s.chrom &= ";" & z.chrom
+  s.starts &= ";" & z.starts
+  s.stops &= ";" & z.stops
+  s.length += z.length
+  
+proc rpkm(f: feature_coords, alignmentsPerMillion: float, c: stranded_counts ): float =
+  let
+    kb   : float = f.length / 1000 
+  
+  float(counts(c)) / alignmentsPerMillion / kb
+  
 proc main(argv: var seq[string]): int =
   let env_fasta = getEnv("REF_PATH")
   let doc = format("""
@@ -230,25 +161,35 @@ Options:
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: $env_fasta].
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: 1796]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
+  --stranded                   Print strand-specific counts
+  --coords                     Also print coordinates of each feature
+
   -g, --gff                    Force GFF for input (otherwise autodetected by .gff extension)
   -t, --type <feat>            GFF feature type to parse [default: CDS]
   -i, --id <ID>                GFF identifier [default: ID]
+
   -n, --rpkm                   Add a RPKM column
   -l, --norm-len               Add a counts/length column (after RPKM when both used)
+  -p, --precision INT          Digits for floating point precision [default: 3]
   --header                     Print header
   --debug                      Enable diagnostics    
   -h, --help                   Show help
   """ % ["version", version, "env_fasta", env_fasta])
 
-  let args = docopt(doc, version=version, argv=argv)
+  let
+    args = docopt(doc, version=version, argv=argv)
+    digitsPrecision = parseInt($args["--precision"])
 
   if args["--debug"]:
     stderr.write_line("args:", args)
   let mapq = parse_int($args["--mapq"])
   var prokkaGff : bool = args["--gff"]
-  do_rpkm = args["--rpkm"]
-  do_norm = args["--norm-len"]
-  debug = args["--debug"]
+
+  do_rpkm = bool(args["--rpkm"])
+  do_norm = bool(args["--norm-len"])
+  do_strand = bool(args["--stranded"])
+  do_coords = bool(args["--coords"])
+  debug = bool(args["--debug"])
   gffIdentifier = $args["--id"]
   gffField      = $args["--type"]
 
@@ -259,51 +200,114 @@ Options:
   var
     eflag = uint16(parse_int($args["--flag"]))
     threads = parse_int($args["--threads"])
+    #targetNames = Table[int, string]()
+    targetCoords = Table[string, feature_coords]()
+    #targetCounts = Table[string, stranded_counts]()
     bam:Bam
 
   if len(args["<BAM-or-CRAM>"]) > 1:
     echo "Multiple BAM/CRAM files not supported in the current version."
     quit(1)
 
-  try:
-    open(bam, cstring($args["<BAM-or-CRAM>"]), threads=threads, index=true, fai=fasta)
+  if not fileExists($args["<Target>"]):
+    echo "ERROR: Target file does not exist: ", $args["<Target>"]
+    quit(1)
+
+  try:                                    #index=true,
+    open(bam, cstring($args["<BAM-or-CRAM>"]), threads=threads,index=true,  fai=fasta)
     if debug:
       stderr.writeLine("Opening BAM/CRAM file: ", $args["<BAM-or-CRAM>"])
   except:
     stderr.writeLine("Unable to open BAM file: ", $args["<BAM-or-CRAM>"] )
+    quit(1)
 
   if do_rpkm:
     alignmentsPerMillion = bam.get_alignments_per_million()
     if debug:
       stderr.writeLine("Total: ", 1000000 * bam.get_alignments_per_million())
 
+ 
   if bam.idx == nil:
     stderr.write_line("ERROR: requires BAM/CRAM index")
     quit(1) 
 
   if args["--header"]:
+    let coords = if do_coords: "Chrom\tstart\tend\t"
+                 else: ""
+    let header = if do_strand: "#Feature\t" & coords & "for\trev"
+                else:   "#Feature\t" & coords & "counts"
     if do_rpkm and do_norm:
-      echo "#Chrom\tstart\tend\tcounts\tRPKM\tCounts/Length"
+      echo header & "\tRPKM\tCounts/Length"
     elif do_rpkm:
-      echo "#Chrom\tstart\tend\tcounts\tRPKM"
+      echo header & "\tRPKM"
     elif do_norm:
-      echo "#Chrom\tstart\tend\tcounts\tCounts/Length"
+      echo header & "\tCounts/Length"
     else:
-      echo "#Chrom\tstart\tend\tcounts"
+      echo header
 
-  if ($args["<Target>"]).endsWith("gff"):
+  if ($args["<Target>"]).contains("gff") or ($args["<Target>"]).contains(".gtf"):
     prokkaGff = true
 
-  var regions = if prokkaGff == true: gff_to_table($args["<Target>"])
+  var targetTable = if prokkaGff == true: gff_to_table($args["<Target>"], gffField, gffSeparator, gffIdentifier)
                  else: bed_to_table($args["<Target>"])
-  
+
+
   if debug:
-    stderr.writeLine("Target loaded: ", len(regions), " reference sequences")
+    stderr.writeLine("Target loaded: ", len(targetTable), " reference sequences")
 
+  let cookedTarget = cookTarget(targetTable, bam)
+  #let countsTable  = alignments_count(bam, uint8(mapq), eflag, cookedTarget)
+  var targetCounts = OrderedTable[string, stranded_counts]()
+  for index, chrName in bam.hdr.targets:
+    #feature_coords  = tuple[chrom, starts, stops, name]
+    for interval in cookedTarget[index]:
+      let
+        c : feature_coords = (chrom: chrName.name, starts: $interval.start, stops: $interval.stop, name: interval.label, length: int(interval.stop - interval.start))
+
+      if interval.label notin targetCoords:
+        #targetCoords = Table[string, feature_coords]()
+        targetCoords[interval.label] = c
+        targetCounts[interval.label] = (fwd: 0, rev: 0)
+      else:
+        targetCoords[interval.label].add(c)
+        #targetCoords[interval.label] = ()
+
+  targetCounts.alignments_count(bam, uint8(mapq), eflag, cookedTarget)  
   
-  print_alignments_count(bam, uint8(mapq), eflag, regions)
-  return 0
+  
+   
+  for feature, rawcounts in targetCounts:
+    let
+      coords = if do_coords: targetCoords[feature].chrom & "\t" & targetCoords[feature].starts & "\t" & targetCoords[feature].stops & "\t"
+                 else: ""
+      counts = countsToString(rawcounts, do_strand)
+      rpkm   = if do_rpkm: "\t" & rpkm(targetCoords[feature], alignmentsPerMillion, rawcounts).formatBiggestFloat(ffDecimal, digitsPrecision)
+               else: "" 
+      norm   = if do_norm:  "\t" & ( counts(rawcounts) / targetCoords[feature].length ).formatBiggestFloat(ffDecimal, digitsPrecision)
+               else: ""
+    echo feature, "\t", coords, counts, rpkm, norm
 
+#[ 
+  # Print table
+  var tableKeys = newSeq[target_feature]()
+  for j in keys(countsTable):
+    tableKeys.add(j)
+  #tableKeys.sort(targetSort)
+  for feat in tableKeys: 
+    var fields = ""
+    let featCoords = if do_coords: #[feat.cid] & "\t" &  $feat.start & "\t" &  $feat.stop & "\t"
+                     else: ""
+    if do_rpkm#:
+      let 
+        kb   : float = (feat.stop - feat.start ) / 1000 
+        RPKM : float = float(counts(countsTable[feat])) / alignmentsPerMillion / kb
+      fields &= "\t" & $RPKM.formatBiggestFloat(ffDecimal, digitsPrecision)
+    if do_norm:
+      let normal = counts(countsTable[feat]) / (feat.stop - feat.start)
+      fields &= "\t" & $normal.formatBiggestFloat(ffDecimal, digitsPrecision) 
+    echo  featCoords,  "\t", feat.feature, "\t", counts(countsTable[feat]), fields ]#
+  return 0
+]#
  
 when isMainModule:
   var args = commandLineParams()

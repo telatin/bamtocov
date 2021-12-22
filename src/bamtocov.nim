@@ -31,49 +31,6 @@ import sets
 # TODO add explicit check for sortedness
 
 
-################################
-# INTERVAL TYPES AND FUNCTIONS #
-################################
-type
-  chrom_t = int # reference id
-  pos_t = int64
-  # here intervals have a "label", which contains additional information besides the location
-  # there is one interval without explicit chromosome to be used in the target table, where intervals are already grouped by chromosome
-  interval_t[T] = tuple[start, stop: pos_t, label: T]
-  genomic_interval_t[T] = tuple[chrom: chrom_t, start, stop: pos_t, label: T]
-
-
-proc is_null(c: chrom_t): bool = c == -1
-#proc intersection[T1, T2](i1: interval_t[T1], i2: interval_t[T2]): interval_t[T1] =
-#  (max(i1.start, i2.start), min(i1.stop, i2.stop), i1.label)
-
-# return the intersection of two intervals with the first label
-#proc intersection[T1, T2](i1: genomic_interval_t[T1], i2: interval_t[T2]): genomic_interval_t[T1] =
-#  (i1.chrom, max(i1.start, i2.start), min(i1.stop, i2.stop), i1.label)
-# return the intersection of two intervals with both labels
-proc intersection_both[T1, T2](i1: genomic_interval_t[T1], i2: interval_t[T2]): genomic_interval_t[tuple[l1: T1, l2: T2]] =
-  (i1.chrom, max(i1.start, i2.start), min(i1.stop, i2.stop), (i1.label, i2.label))
-#proc intersection[T1, T2](i1: interval_t[T1], i2: genomic_interval_t[T2]): interval_t[T1] =
-#  (max(i1.start, i2.start), min(i1.stop, i2.stop), i1.label)
-proc intersection_first[T1, T2](i1: genomic_interval_t[T1], i2: genomic_interval_t[T2]): genomic_interval_t[T1] =
-  if i1.chrom == i2.chrom:
-    (i1.chrom, max(i1.start, i2.start), min(i1.stop, i2.stop), i1.label)
-  else:
-    (i1.chrom, pos_t(0), pos_t(0), i1.label)
-
-proc is_empty[T](i: genomic_interval_t[T]): bool = i.start >= i.stop
-
-# true when interval i1 is before (without intersection) interval i2
-proc `<<`[T1, T2](i1: genomic_interval_t[T1], i2: interval_t[T2]): bool = i1.stop < i2.start
-proc `<<`[T1, T2](i1: interval_t[T1], i2: genomic_interval_t[T2]): bool = i1.stop < i2.start
-# true when interval i1 is after (without intersection) interval i2
-proc `>>`[T1, T2](i1: genomic_interval_t[T1], i2: interval_t[T2]): bool = i2 << i1
-proc `>>`[T1, T2](i1: interval_t[T1], i2: genomic_interval_t[T2]): bool = i2 << i1
-# interval length
-#proc len[T](i: interval_t[T]): pos_t = max(pos_t(0), i.stop - i.start)
-proc len[T](i: genomic_interval_t[T]): pos_t = max(pos_t(0), i.stop - i.start)
-# true when interval is not empty
-proc to_bool[T](i: genomic_interval_t[T]): bool = i.start < i.stop
 
 
 type
@@ -111,64 +68,15 @@ template devEcho(things: varargs[string, `$`]) =
 template dbEcho(things: varargs[string, `$`]) =
   if debug:
     db(things)
-type
-  target_t = TableRef[chrom_t, seq[interval_t[string]]]
-  raw_target_t = TableRef[string, seq[region_t]]
 
-
-proc cookTarget(orig: raw_target_t, bam: Bam): target_t =
-  var chrom_map = newTable[string, chrom_t]()
-  for t in bam.hdr.targets:
-    chrom_map[t.name] = t.tid
-  var cooked = newTable[chrom_t, seq[interval_t[string]]]()
-  for chrom_str, intervals in orig:
-    doAssert(not (":" in chrom_str), "bad target")
-    let chrom = chrom_map[chrom_str]
-    cooked[chrom] = @[]
-    var last_start = 0
-    for i in intervals:
-      doAssert(i.chrom == chrom_str, "bad target")
-      doAssert(i.start >= last_start)
-      let name = if i.name == "": ($i.chrom & ":" & $i.start & "-" & $i.stop) else: i.name
-      cooked[chrom].add((pos_t(i.start), pos_t(i.stop), name))
-      last_start = i.start
-  cooked
 
 
 proc `$`[T](i: genomic_interval_t[T]): string =
   $i.chrom & ":" & $i.start & "-" & $i.stop & $i.label
 
-type
-  target_index_t = tuple[chrom: chrom_t, interval: int]
 
-# seek target to the right, return true when there is an intersection and move index to the leftmost intersercting interval of the target
-iterator intersections[T](query: genomic_interval_t[T], target: target_t, idx: var target_index_t): genomic_interval_t[tuple[l1: T, l2: string]] =
-  dbEcho("target intersection for query interval:", query, ", starting from:", idx)
-  let chrom = query.chrom
-  if chrom in target:
-    let
-      intervals = target[chrom]
-      max_idx = len(intervals) - 1
-    # if the chrom changes, start from leftmost interval
-    if idx.chrom != chrom:
-      dbEcho("target seeking: change chrom to:", idx)
-      idx = (chrom, 0)
-    # advance target interval until we reach the query interval
-    while intervals[idx.interval] << query and idx.interval < max_idx:
-      idx.interval += 1
-      dbEcho("target seeking: advance target index to:", idx.interval, "at target interval:", intervals[idx.interval])
-    # yield all intersections
-    var i = idx.interval
-    while not (query << intervals[i]) and i < max_idx:
-      yield intersection_both(query, intervals[i])
-      i += 1
-  else:
-    dbEcho("target seeking: chrom", chrom, "not in target")
-    
-proc intersects[T](query: genomic_interval_t[T], target: target_t, idx: var target_index_t): bool =
-  for i in intersections(query, target, idx):
-    return to_bool(i)
-  return false
+
+
 
 type
   input_option_t = tuple[min_mapping_quality: uint8, eflag: uint16, physical: bool, target: raw_target_t]
@@ -666,7 +574,7 @@ proc bam2stats(bam_path: string, inopts: input_option_t, outopts: output_option_
   let target = cookTarget(inopts.target, bam)
   var output: output_t = newOutput(outopts, bam)
 
-# TODO copiato da mosdepth, serve a sveltire il parsing per i CRAM
+# TODO ispirato, serve a sveltire il parsing per i CRAM
 #  var opts = SamField.SAM_FLAG.int or SamField.SAM_RNAME.int or SamField.SAM_POS.int or SamField.SAM_MAPQ.int or SamField.SAM_CIGAR.int
 #  if not fast_mode:
 #      opts = opts or SamField.SAM_QNAME.int or SamField.SAM_RNEXT.int or SamField.SAM_PNEXT.int #or SamField.SAM_TLEN.int
@@ -732,6 +640,7 @@ Other options:
   let
     threads = parse_int($args["--threads"])
     target_file       = $args["--regions"]
+    
   var
     #bams: seq[BAM]
     format_gff = false 
@@ -746,13 +655,18 @@ Other options:
   else:
     dbEcho("Parsing target as BED")
   
-  if (args["--gtf"] and args["--gff"]) or (format_gff and format_gtf):
-    echo "ERROR: Target format is ambiguous: specify a GFF or GTF target (ideally autoinferred from the extension)"
-    quit(1)
-  elif args["--gtf"]:
-    format_gtf = true
-  elif args["--gff"]:
-    format_gff = true
+  if target_file != "nil":
+    if not fileExists(target_file):
+      stderr.writeLine("ERROR: Target file not found:", target_file)
+      quit(1)
+
+    if (args["--gtf"] and args["--gff"]) or (format_gff and format_gtf):
+      echo "ERROR: Target format is ambiguous: specify a GFF or GTF target (ideally autoinferred from the extension)"
+      quit(1)
+    elif args["--gtf"]:
+      format_gtf = true
+    elif args["--gff"]:
+      format_gff = true
 
   assert( $args["--op"] in  @["mean", "min", "max"], "--op must be one of mean, min, max, got: " & $args["--op"])
 
@@ -798,7 +712,7 @@ Other options:
       dbEcho("Will read STDIN")
     elif not fileExists(inputBam):
       missing_files += 1
-      stderr.writeLine("ERROR: Input file <", inputBam, "> not found.")
+      stderr.writeLine("ERROR: Input BAM file <", inputBam, "> not found.")
   if missing_files > 0:
     quit(1)
 
@@ -863,10 +777,7 @@ Other options:
         report.write(sep & to_string(s.stats, t, sep=sep))
       report.write("\n")
 
-  #except:
-  #  stderr.writeLine("FATAL ERROR: Unable to read input input: ", $args["<BAM>"] ) # FIXME handle multiple bams here!
-  #  stderr.writeLine( () )
-  #  quit(1)
+ 
   dbEcho("exiting successfully!")
   return 0
 
