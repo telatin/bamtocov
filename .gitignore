@@ -25,3 +25,5 @@ shunit2/
 .vscode
 shpec/
 _data/
+bin/covtotarget
+bin/gff2bed
