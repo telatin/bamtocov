@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Simulate a BAM file with long reads mapped against a hypothetical genome
 """

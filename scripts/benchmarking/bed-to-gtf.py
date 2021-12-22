@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Convert a BED file to a minimal GTF file
 """
@@ -48,7 +48,7 @@ if __name__ == "__main__":
             if line[0] == '#':
                 continue
             chromosome, start, end, name = line.split()
-            features.append(Feature(chromosome, start, int(end) - 1, name))
+            features.append(Feature(chromosome, int(start) + 1, int(end) , name))
             if not chromosome in chrLen:
                 chrLen[chromosome] = max(int(end) + args.add_len, int(start) + args.add_len, args.min_len)
             else:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Simulate a BAM file with long reads mapped against a hypothetical genome
 """
@@ -18,6 +18,11 @@ class Alignmnent(object):
         self.pos = int(pos)
         self.cigar = cigar
         self.flag = int(flag)
+    
+    def __repr__(self) -> str:
+        return "Alignment: ref={}, pos={}, cigar={}, flag={}\n".format(self.ref, self.pos, self.cigar, self.flag)
+    #def __lt__(self, other):
+    #    return self.pos < other.pos
 
 def eprint(*args, **kwargs):
     """
@@ -40,7 +45,7 @@ def makeHeader(seqs):
     
     return header
  
-def loadBed(file):
+def loadBed(file, MinLen):
     """
     Load alignment coordinates from a BED file: chr, start, end, strand
     """
@@ -54,13 +59,13 @@ def loadBed(file):
             if line[0] == '#':
                 continue
             chromosome, start, end, strand = line.split()
-            Cigar = str(int(end) - int(start)) + 'M'
+            Cigar = str(int(end) - int(start) + 1) + 'M'
             Flag = 0
             End = int(end) + 100
             if strand == '-':
                 Flag = 16
             if chromosome not in references:
-                references[chromosome] = End
+                references[chromosome] = max(End, MinLen)
             else:
                 references[chromosome] = max(references[chromosome], End)
             
@@ -97,13 +102,10 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--input",  help="Bed file with alignments", required=True)
     parser.add_argument("-o", "--output", help="Output BAM file", required=True)
     parser.add_argument("-l", "--length", help="Length of the genome [default: %(default)s]", default="100M")
-    
-    parser.add_argument("-n", "--num-reads",       help="Number of reads [default: %(default)s]", default="1M")
-    parser.add_argument("-t", "--target-size",     help="Bases in target [default: %(default)s]", default="10M")
-    parser.add_argument("-f", "--target-features", help="Number of features [default: %(default)s]", type=int, default=10)
-    
-    parser.add_argument("-m", "--min-len", help="Minimum read length [default: 1000]", type=int, default=50)
-    parser.add_argument("-M", "--max-len", help="Minimum read length [default: 10000]", type=int,default=300)
+    parser.add_argument("-m", "--min-len", help="Minimum reference length [default: 0]", type=int, default=0)
+
+    #parser.add_argument("-m", "--min-len", help="Minimum read length [default: 1000]", type=int, default=50)
+    #parser.add_argument("-M", "--max-len", help="Minimum read length [default: 10000]", type=int,default=300)
     parser.add_argument("-s", "--seed",    help="Random seed [default: 42]", type=int,default=42)
     parser.add_argument("--multiply",      help="Multiply the number of reads by this number", type=int, default=1)
     parser.add_argument("--randomcigar",   help="Use random CIGAR strings", action="store_true")
@@ -111,7 +113,9 @@ if __name__ == "__main__":
 
     opts = parser.parse_args()
 
-    alignments, references = loadBed(opts.input)
+    alignments, references = loadBed(opts.input, opts.min_len)
+    alignments = sorted(alignments, key=lambda x: (x.ref, x.pos))
+    
     bamHeader = makeHeader(references)
     print(bamHeader)
     with pysam.AlignmentFile(opts.output, "wb", header=bamHeader) as outf:

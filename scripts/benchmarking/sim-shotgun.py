@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Given a list of chromosome names and their lengths, generate a sorted SAM file
 of a shotgun.

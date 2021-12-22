@@ -86,6 +86,9 @@ jobs:
         nimble build -y --verbose 
         ls -l bin/
         bin/bamtocov --version
+        bin/bamtocounts --version
+        bin/bamtocov input/mini.bam
+        bin/bamtocounts input/target.bed input/mini.bam
         # TESTS
         # bash tests/all.sh
         tests/bin/shpec tests/shpec/bamtocov.sh
@@ -97,6 +100,9 @@ jobs:
         nimble build -y --verbose
         ls -l bin/
         bin/bamtocov --version
+        bin/bamtocounts --version
+        bin/bamtocov input/mini.bam
+        bin/bamtocounts input/target.bed input/mini.bam
         echo SKIPPING bash tests/all.sh
         tests/bin/shpec tests/shpec/bamtocov.sh
         tests/unit/bamtocov-base.sh
