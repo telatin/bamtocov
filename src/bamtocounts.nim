@@ -91,6 +91,8 @@ proc countsToString(c: stranded_counts, stranded: bool): string =
 proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t) =
  
   for chrom in regions.keys():
+    if debug:
+      stderr.writeLine("[alignments_count] Got chrom: ", chrom)
     for aln in bam.query(chrom):
      
       if not regions.contains(chrom) or regions[chrom].len == 0:
@@ -109,6 +111,9 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
           # Returns: genomic_interval_t[tuple[l1: T, l2: string]
           
           #let feature : target_feature = (chrom: "", cid: interval.chrom.int, start: interval.start.int, stop: interval.stop.int, feature: interval.label.l2)
+          if interval.label.l2 notin table:
+            stderr.writeLine("[alignments_count] Warning: unknown feature: ", interval.label.l2)
+            table[interval.label.l2] = (fwd: 0, rev: 0)
           table[interval.label.l2].inc(aln.flag.reverse)
   
 

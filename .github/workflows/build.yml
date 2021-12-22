@@ -91,7 +91,7 @@ jobs:
         echo "--"
         cat input/regions.bed
         echo "--"
-        bin/bamtocounts input/regions.bed input/mini.bam --debug
+        bin/bamtocounts input/regions.bed input/mini.bam --debug --header
         # TESTS
         # bash tests/all.sh
         tests/bin/shpec tests/shpec/bamtocov.sh
@@ -105,7 +105,7 @@ jobs:
         bin/bamtocov --version
         bin/bamtocounts --version
         bin/bamtocov input/mini.bam
-        bin/bamtocounts input/target.bed input/mini.bam --debug
+        bin/bamtocounts input/regions.bed input/mini.bam --debug --header
         echo SKIPPING bash tests/all.sh
         tests/bin/shpec tests/shpec/bamtocov.sh
         tests/unit/bamtocov-base.sh
