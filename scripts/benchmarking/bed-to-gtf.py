@@ -48,7 +48,7 @@ if __name__ == "__main__":
             if line[0] == '#':
                 continue
             chromosome, start, end, name = line.split()
-            features.append(Feature(chromosome, start, end, name))
+            features.append(Feature(chromosome, start, int(end) - 1, name))
             if not chromosome in chrLen:
                 chrLen[chromosome] = max(int(end) + args.add_len, int(start) + args.add_len, args.min_len)
             else:
