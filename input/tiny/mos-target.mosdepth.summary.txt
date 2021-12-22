@@ -1,0 +1,5 @@
+chrom	length	bases	mean	min	max
+seq1	1000	1283	1.28	0	7
+seq1_region	700	965	1.38	0	7
+total	1000	1283	1.28	0	7
+total_region	700	965	1.38	0	7

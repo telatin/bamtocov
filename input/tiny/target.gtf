@@ -1,0 +1,5 @@
+##gtf-version 3
+##sequence-region seq1 1 1000
+seq1	bamtocov	exon	100	199	.	+	.	gene_id "feature_1"
+seq1	bamtocov	exon	300	399	.	+	.	gene_id "feature_2"
+seq1	bamtocov	exon	500	999	.	+	.	gene_id "second_half"
