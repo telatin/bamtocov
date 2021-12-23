@@ -40,7 +40,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: $HOME/htslib
-        key: ${{ runner.os }}-htslib-1.10
+        key: ${{ runner.os }}-htslib-1.12
 
     # Install Dependencies
     - name: Install dependencies (Linux)
@@ -73,10 +73,10 @@ jobs:
       with:
         version: ${{ matrix.nimversion }}
 
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - uses: actions-rs/cargo@v1
+#    - uses: actions-rs/toolchain@v1
+#      with:
+#        toolchain: stable
+#    - uses: actions-rs/cargo@v1
 
 
     # Build and Test
@@ -87,16 +87,14 @@ jobs:
         ls -l bin/
         
         bin/bamtocov --version
-        bin/bamtocounts --version
+        
         bin/bamtocov input/mini.bam
-        echo "--"
-        cat input/regions.bed
-        echo "--"
+
+        bin/bamtocounts --version
         bin/bamtocounts input/regions.bed input/mini.bam --debug --header
         # TESTS
-        # bash tests/all.sh
-        tests/bin/shpec tests/shpec/bamtocov.sh
-        tests/unit/bamtocov-base.sh
+        #bash tests/all.sh
+        
         
     - name: Build and Test Linux executable
       if: runner.os == 'Linux'
@@ -108,7 +106,8 @@ jobs:
         bin/bamtocounts --version
         bin/bamtocov input/mini.bam
         bin/bamtocounts input/regions.bed input/mini.bam --debug --header
-        echo SKIPPING bash tests/all.sh
+        #bash tests/all.sh
         tests/bin/shpec tests/shpec/bamtocov.sh
         tests/unit/bamtocov-base.sh
-
+        echo "WHERE: $HOME/htslib" 
+        cat $HOME/htslib/version.h 

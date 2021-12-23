@@ -103,9 +103,39 @@ iterator intersections*[T](query: genomic_interval_t[T], target: target_t, idx: 
     while not (query << intervals[i]) and i <= max_idx:
       yield intersection_both(query, intervals[i])
       i += 1
-  #else:
-  #  dbEcho("target seeking: chrom", chrom, "not in target")
-    
+
+iterator intersections2*[T](query: genomic_interval_t[T], target: target_t, idx: var target_index_t): genomic_interval_t[tuple[l1: T, l2: string]] =
+  #dbEcho("target intersection for query interval:", query, ", starting from:", idx)
+  let chrom = query.chrom
+  echo "IS2.1 ", chrom
+  if chrom in target:
+    let
+      intervals = target[chrom]
+      max_idx = len(intervals) - 1
+    # if the chrom changes, start from leftmost interval
+    if idx.chrom != chrom:
+      #dbEcho("target seeking: change chrom to:", idx)
+      idx = (chrom, 0)
+    # advance target interval until we reach the query interval
+    while intervals[idx.interval] << query and idx.interval < max_idx:
+      idx.interval += 1
+      echo "IS2.2 idx=", idx.interval
+      #dbEcho("target seeking: advance target index to:", idx.interval, "at target interval:", intervals[idx.interval])
+    # yield all intersections
+    var i = idx.interval
+    try:
+      discard intervals[i]
+    except Exception as e:
+      stderr.writeLine("INTERSECT2:", e.msg)
+    while not (query << intervals[i]) and i <= max_idx: 
+      echo "IS2.3 idx=", idx.interval
+      try:
+        let r= intersection_both(query, intervals[i])
+        yield r
+        i += 1
+      except Exception as e:
+        stderr.writeLine("-------- INTERSECT2:", e.msg)
+        
 proc intersects*[T](query: genomic_interval_t[T], target: target_t, idx: var target_index_t): bool =
   for i in intersections(query, target, idx):
     return to_bool(i)

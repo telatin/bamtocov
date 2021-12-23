@@ -95,7 +95,7 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
       stderr.writeLine("[alignments_count] Got chrom: ", chrom, " tot=", len(regions))
     for aln in bam.query(chrom):
       if debug:
-          stderr.writeLine("[alignments_count]  Got aln ", aln.start)       
+          stderr.writeLine("[alignments_count]  Got aln ", aln.start)    
       if not regions.contains(chrom) or regions[chrom].len == 0:
         continue
 
@@ -107,24 +107,32 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
       if (aln.flag and eflag) != 0: continue
         
       let readAsInterval = (aln.tid, pos_t(aln.start), pos_t(aln.stop), aln.flag.reverse)
-      if debug:
-          stderr.writeLine("[alignments_count]\tGot aln: ", readAsInterval)        
-      for interval in intersections(readAsInterval, regions, target_idx):
-        # Returns: genomic_interval_t[tuple[l1: T, l2: string]
+      var
+        s: string
+        c = 0
+      try:     
+        for interval in intersections(readAsInterval, regions, target_idx):
+          # Returns: genomic_interval_t[tuple[l1: T, l2: string]]
+          s = $interval
+          c = c + 1
+          #let feature : target_feature = (chrom: "", cid: interval.chrom.int, start: interval.start.int, stop: interval.stop.int, feature: interval.label.l2)
+          #if interval.label.l2 notin table:
+          #  stderr.writeLine("[alignments_count] Warning: unknown feature: ", interval.label.l2)
+          #  table[interval.label.l2] = (fwd: 0, rev: 0)
           
-        #let feature : target_feature = (chrom: "", cid: interval.chrom.int, start: interval.start.int, stop: interval.stop.int, feature: interval.label.l2)
-        if interval.label.l2 notin table:
-          stderr.writeLine("[alignments_count] Warning: unknown feature: ", interval.label.l2)
-          table[interval.label.l2] = (fwd: 0, rev: 0)
+          try:
+            table[interval.label.l2].inc(aln.flag.reverse)
+          except Exception as e:
+            stderr.writeLine("[alignments_count] Error key table: ", e.msg)
+          
+          if debug:
+            stderr.writeLine("[alignments_count]\t\tdone ", interval.label.l2)
+      except Exception:
+        # ⛔️ ERROR TODO FIXME ALOHA [index not in ...]
         if debug:
-          stderr.writeLine("[alignments_count]\t\tfor ", interval.label.l2)
-        table[interval.label.l2].inc(aln.flag.reverse)
-        if debug:
-          stderr.writeLine("[alignments_count]\t\tdone ", interval.label.l2)
-      if debug:
-        stderr.writeLine("[alignments_count]\t\tdone aln -----")
-  if debug:
-    stderr.writeLine("[alignments_count] Done")
+          stderr.writeLine("[alignments_count] intersections loop broken at chr=", chrom, " aln=", aln.qname, " last=", s, " c=", c)
+
+ 
 
 
 proc targetSort(x, y: target_feature): int =
