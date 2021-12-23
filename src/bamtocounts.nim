@@ -94,8 +94,6 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
     if debug:
       stderr.writeLine("[alignments_count] Got chrom: ", chrom, " tot=", len(regions))
     for aln in bam.query(chrom):
-      if debug:
-          stderr.writeLine("[alignments_count]  Got aln ", aln.start)    
       if not regions.contains(chrom) or regions[chrom].len == 0:
         continue
 
@@ -120,15 +118,14 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
           #  stderr.writeLine("[alignments_count] Warning: unknown feature: ", interval.label.l2)
           #  table[interval.label.l2] = (fwd: 0, rev: 0)
           
-          try:
-            table[interval.label.l2].inc(aln.flag.reverse)
-          except Exception as e:
-            stderr.writeLine("[alignments_count] Error key table: ", e.msg)
+          #try:
+          table[interval.label.l2].inc(aln.flag.reverse)
+          #except Exception as e:
+          #  stderr.writeLine("[alignments_count] Error key table: ", e.msg)
           
-          if debug:
-            stderr.writeLine("[alignments_count]\t\tdone ", interval.label.l2)
+      
       except Exception:
-        # ⛔️ ERROR TODO FIXME ALOHA [index not in ...]
+        # ⛔️  [index not in ...]
         if debug:
           stderr.writeLine("[alignments_count] intersections loop broken at chr=", chrom, " aln=", aln.qname, " last=", s, " c=", c)
 
