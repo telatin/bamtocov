@@ -1,5 +1,15 @@
 # Testing BamToCov
 
+## Testing scenarios
+
+To create minimal examples a set of scripts is provided in
+`scripts/benchmarking/` to generate artificial BAM files.
+
+Some examples are provided in the repository (with screenshots):
+
+* [Target (1 chromosome, 3 features)](https://github.com/telatin/bamtocov/tree/main/input/tiny#readme)
+* [3 chromosomes, 1 feature each](https://github.com/telatin/bamtocov/tree/main/input/artificial#readme)
+  
 ## Test suite
 
 The program default test suite can be invoked by:
@@ -16,7 +26,7 @@ make testall
 
 This runs both the default tests, plus a legacy Bash script
 
-## Shpec tests
+### Shpec tests
 
 The default test suite was written using the [Shpec](https://github.com/rylnd/shpec)
 framework, and can be individually run as:
@@ -50,7 +60,7 @@ Make test
 14 examples, 0 failures
 ```
 
-## Legacy test suite
+### Legacy test suite
 
 A minimal test suite is provided in `tests/all.sh`. The output will
 show the passing and failing tests as well as a check on the versions
