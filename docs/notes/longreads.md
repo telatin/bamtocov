@@ -1,7 +1,7 @@
 # Testing on long reads
 
 
-## Benchmark
+## Speed measures
 
 The speed test is performed via hyperfine: 
 
@@ -46,8 +46,7 @@ minimap2 -ax map-ont -t 4 db/hg19.fa.gz SRR13615770_L1Hs_MinION_1.min2500.fastq.
   samtools view -bS | samtools sort -o SRR13615770.bam -
 ```
 
-
-## Benchmark
+## Benchmark result
 
 ```bash
 hyperfine \
