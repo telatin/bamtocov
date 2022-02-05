@@ -28,6 +28,9 @@ else
 	"https://zenodo.org/record/5636944/files/HG00258.bam?download=1" \
 	"https://zenodo.org/record/5636944/files/panel_01.bam?download=1";
   do
+    echo pretest
+    tmpfile=$(mktemp mosdepth.XXXXXX)
+    mosdepth "$tmpfile" '$1' && rm "$tmpfile"*
     NAME=$(basename "$URL" | cut -f 1 -d "?")
     wget --quiet -O "$NAME" "$URL"
     compare "$NAME" "$NAME"
