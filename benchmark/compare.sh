@@ -11,10 +11,11 @@ function compare {
  hyperfine --export-markdown $2.md --min-runs 5 \
   "covtobed '$1'" \
   "bamtocov '$1'" \
-  "mosdepth "$tmpfile" '$1'" \
-  "mosdepth --fast-mode _$out '$1'" \
   "megadepth --coverage '$1'" \
-  "megadepth --coverage --longreads '$1'"
+  "megadepth --coverage --longreads '$1'" \
+  "mosdepth $tmpfile '$1'" \
+  "mosdepth --fast-mode $tmpfile '$1'"
+
   rm "$tmpfile"*
 }
 
@@ -28,11 +29,13 @@ else
 	"https://zenodo.org/record/5636944/files/HG00258.bam?download=1" \
 	"https://zenodo.org/record/5636944/files/panel_01.bam?download=1";
   do
-    echo pretest
-    tmpfile=$(mktemp mosdepth.XXXXXX)
-    mosdepth "$tmpfile" '$1' && rm "$tmpfile"*
+    
     NAME=$(basename "$URL" | cut -f 1 -d "?")
     wget --quiet -O "$NAME" "$URL"
+
+    echo pretest
+    tmpfile=$(mktemp mosdepth.XXXXXX)
+    mosdepth "$tmpfile" "$NAME" && rm "$tmpfile"*
     compare "$NAME" "$NAME"
 
   done
