@@ -7,14 +7,15 @@ else
 fi
 
 function compare {
+ tmpfile=$(mktemp mosdepth.XXXXXX)
  hyperfine --export-markdown $2.md --min-runs 5 \
-  "covtobed $1" \
-  "bamtocov $1" \
-  "mosdepth _$out $1" \
-  "mosdepth --fast-mode _$out $1" \
-  "megadepth --coverage $1" \
-  "megadepth --coverage --longreads $1"
-
+  "covtobed '$1'" \
+  "bamtocov '$1'" \
+  "mosdepth "$tmpfile" '$1'" \
+  "mosdepth --fast-mode _$out '$1'" \
+  "megadepth --coverage '$1'" \
+  "megadepth --coverage --longreads '$1'"
+  rm "$tmpfile"*
 }
 
 if [  -e "$1.bai" ]; then
@@ -34,4 +35,3 @@ else
   done
 fi
 
-rm _*
