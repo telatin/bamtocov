@@ -3,7 +3,7 @@ LABEL authors="Andrea Telatin" \
       description="Docker image containing all software requirements for the telatin/nextflow-example project"
 
 # Install the conda environment
-COPY env.yaml /environment.yml
+COPY benchmark/env.yaml /environment.yml
 COPY compare.sh /usr/local/bin/
 
 RUN conda env create -n env -f /environment.yml && conda clean -a
