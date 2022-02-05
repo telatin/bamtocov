@@ -4,9 +4,9 @@ LABEL authors="Andrea Telatin" \
 
 # Install the conda environment
 COPY benchmark/env.yaml /environment.yml
-COPY compare.sh /usr/local/bin/
+COPY benchmark/compare.sh /usr/local/bin/
 
-RUN conda env create -n env -f /environment.yml && conda clean -a
+RUN conda install -y -c conda-forge mamba && mamba env create -n env -f /environment.yml && conda clean -a
 
 # Add conda installation dir to PATH (instead of doing 'conda activate')
 ENV PATH /opt/conda/envs/env/bin:$PATH
