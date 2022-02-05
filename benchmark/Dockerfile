@@ -6,7 +6,7 @@ LABEL authors="Andrea Telatin" \
 COPY benchmark/env.yaml /environment.yml
 COPY benchmark/compare.sh /usr/local/bin/
 
-RUN conda install -y -c conda-forge mamba && mamba env create -n env -f /environment.yml && conda clean -a
+RUN conda install -q -y -c conda-forge mamba && mamba env create -q -n env -f /environment.yml && conda clean -a
 
 # Add conda installation dir to PATH (instead of doing 'conda activate')
 ENV PATH /opt/conda/envs/env/bin:$PATH
@@ -16,3 +16,4 @@ ENV PATH /opt/conda/envs/env/bin:$PATH
 RUN conda env export --name env > workflow.yml
 
 RUN compare.sh all
+RUN cat *md

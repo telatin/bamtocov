@@ -28,7 +28,7 @@ else
 	"https://zenodo.org/record/5636944/files/panel_01.bam?download=1";
   do
     NAME=$(basename "$URL" | cut -f 1 -d "?")
-    wget -O "$NAME" "$URL"
+    wget --quiet -O "$NAME" "$URL"
     compare "$NAME" "$NAME"
 
   done
