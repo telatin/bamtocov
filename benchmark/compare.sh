@@ -8,6 +8,7 @@ fi
 
 function compare {
  tmpfile=$(mktemp mosdepth.XXXXXX)
+ samtools index "$1"
  hyperfine --export-markdown $2.md --min-runs 5 \
   "covtobed '$1'" \
   "bamtocov '$1'" \
@@ -32,10 +33,7 @@ else
     
     NAME=$(basename "$URL" | cut -f 1 -d "?")
     wget --quiet -O "$NAME" "$URL"
-
-    echo pretest
-    tmpfile=$(mktemp mosdepth.XXXXXX)
-    mosdepth "$tmpfile" "$NAME" && rm "$tmpfile"*
+ 
     compare "$NAME" "$NAME"
 
   done
