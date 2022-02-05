@@ -23,7 +23,8 @@ accompanying the paper.
 
 ```bash
 wget -O cpara-ont.bam "https://zenodo.org/record/5636944/files/cpara-ont-noseq.bam?download=1"
-``
+```
+
 ### Human sample
 
 [SRR13615770](https://www.ncbi.nlm.nih.gov/sra/?term=SRR13615770), from the study
