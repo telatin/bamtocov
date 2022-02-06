@@ -19,6 +19,7 @@ proc handler() {.noconv.} =
 setControlCHook(handler)
 
 var
+  do_strict = false
   do_norm = false
   debug = false
   verbose = false
@@ -67,13 +68,20 @@ proc countsToString(c: stranded_counts, stranded: bool): string =
   else:
     $(c.fwd + c.rev)
 
-proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t): float =
+proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t, strict = false): float =
   var total: float = 0
   for read in bam:
     total += 1
+    if read.tid notin regions:
+      continue
+    if read.mapping_quality == 0 or ( (read.flag and 1796) != 0):
+      continue
+
     for region in regions[read.tid]:
-      #if read.start >= region.start and read.stop <= region.stop:
-      if (read.stop >= region.start and read.stop <= region.stop) or (read.start >= region.start and read.start <= region.stop):
+      
+      if (read.stop >= region.start and read.stop <= region.stop) or (read.start >= region.start  and read.start <= region.stop):
+        if strict and ( read.start < region.start or read.stop > region.stop ):
+            continue
         table[region.label].inc(read.flag.reverse)
   return total / 1000000
 
@@ -108,6 +116,7 @@ Options:
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: $env_fasta].
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: 1796]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
+  --strict                     Read must be contained, not just overlap, with feature
   --stranded                   Print strand-specific counts
   --coords                     Also print coordinates of each feature
 
@@ -137,6 +146,7 @@ Options:
   do_norm = bool(args["--norm-len"])
   do_strand = bool(args["--stranded"])
   do_coords = bool(args["--coords"])
+  do_strict = bool(args["--strict"])
   debug = bool(args["--debug"])
   verbose = bool(args["--verbose"])
   gffIdentifier = $args["--id"]
@@ -183,18 +193,20 @@ Options:
     try:
       targetTable = gff_to_table($args["<Target>"], gffField, gffSeparator, gffIdentifier)
     except Exception as e:
-      stderr.writeLine("ERROR: Unable to parse GFF file: ", $args["<Target>"])
+      stderr.writeLine("ERROR: Unable to parse GFF file: ", $args["<Target>"], ": ", e.msg)
       quit(1)
   else: 
     try:
       targetTable = bed_to_table($args["<Target>"])
     except Exception as e:
-      stderr.writeLine("ERROR: Unable to parse BED file: ", $args["<Target>"])
+      stderr.writeLine("ERROR: Unable to parse BED file: ", $args["<Target>"], ": ", e.msg)
       quit(1)  
 
 
   if debug:
     stderr.writeLine("[OK] Target table loaded")
+    
+    #stderr.writeLine("Target table: ", targetTable)
 
   if len(targetTable) == 0:
     stderr.writeLine("ERROR: No target regions found (try changing --id and --type): see an example line below")
@@ -213,10 +225,10 @@ Options:
   for index, chrName in bam.hdr.targets:
     #feature_coords  = tuple[chrom, starts, stops, name]
     if debug:
-      stderr.writeLine(" > BAM targets: ", chrName, "-", index)
+      stderr.writeLine(" > BAM targets: ", chrName, " - index:", index)
     if index in cookedTarget:
       if debug:
-        stderr.writeLine(" + Coocked targets: ", chrName, "-", index)
+        stderr.writeLine(" + Coocked targets: ", chrName, " - index:", index)
       for interval in cookedTarget[index]:
         let
           c : feature_coords = (chrom: chrName.name, starts: $interval.start, stops: $interval.stop, name: interval.label, length: int(interval.stop - interval.start))
@@ -253,7 +265,7 @@ Options:
 
   if debug:
     stderr.writeLine("\\/ Target regions: ", len(targetCounts))
-  let perMillion = targetCounts.alignments_count(bam, uint8(mapq), eflag, cookedTarget)  
+  let perMillion = targetCounts.alignments_count(bam, uint8(mapq), eflag, cookedTarget, do_strict)  
   if debug:
     stderr.writeLine("/\\ Counts done: ", perMillion) 
   

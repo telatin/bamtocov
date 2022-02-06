@@ -254,15 +254,19 @@ proc gff_line_to_region*(line: string, gffField = "CDS", gffSeparator = ";", gff
           # Try splitting on "="
           if len(splittedField) == 2:
             reg.name = splittedField[1].strip(chars = {'"', '\'', ' '})
+            
             break
           else:
             let resplittedField = gffAnnotPart.split(" ")
             if len(resplittedField) == 2:
-              reg.name = resplittedField[0].strip(chars = {'"', '\'', ' '})
+              reg.name = resplittedField[1].strip(chars = {'"', '\'', ' '})
+              
               break
             else:
               reg.name = "Error"
+
               break
+          
           
     except Exception as e:
       stderr.write_line("[warning] fields 8 is not a string):",  cse[8], "\n  ", e.msg)

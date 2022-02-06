@@ -1,0 +1,5 @@
+seq1	5	112	include_5
+seq1	410	532	overlap_2
+seq1	800	950	empty1_0
+seq2	300	532	shared1_10
+seq2	566	769	shared2_10
