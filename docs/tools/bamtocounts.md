@@ -5,7 +5,11 @@ sort: 2
 # BamToCounts
 
 A program that counts the number of reads per target in
-a BAM file.
+a BAM file. The BAM file does not need to be sorted.
+
+Overlapping features will be reported each with all the
+counts, so a read mapped in a shared interval will be counted
+more than once.
 
 ## Help screen
 
