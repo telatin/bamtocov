@@ -1,0 +1,996 @@
+2022-02-05T21:25:29.6922752Z Requested labels: ubuntu-latest
+2022-02-05T21:25:29.6922848Z Job defined at: telatin/bamtocov/.github/workflows/docker-image.yml@refs/heads/main
+2022-02-05T21:25:29.6922872Z Waiting for a runner to pick up this job...
+2022-02-05T21:25:31.1852378Z Job is waiting for a hosted runner to come online.
+2022-02-05T21:25:34.6487495Z Job is about to start running on the hosted runner: Hosted Agent (hosted)
+2022-02-05T21:25:37.6726181Z Current runner version: '2.287.1'
+2022-02-05T21:25:37.6758794Z ##[group]Operating System
+2022-02-05T21:25:37.6759444Z Ubuntu
+2022-02-05T21:25:37.6759780Z 20.04.3
+2022-02-05T21:25:37.6760088Z LTS
+2022-02-05T21:25:37.6760358Z ##[endgroup]
+2022-02-05T21:25:37.6760735Z ##[group]Virtual Environment
+2022-02-05T21:25:37.6761127Z Environment: ubuntu-20.04
+2022-02-05T21:25:37.6761500Z Version: 20220131.1
+2022-02-05T21:25:37.6762018Z Included Software: https://github.com/actions/virtual-environments/blob/ubuntu20/20220131.1/images/linux/Ubuntu2004-Readme.md
+2022-02-05T21:25:37.6762751Z Image Release: https://github.com/actions/virtual-environments/releases/tag/ubuntu20%2F20220131.1
+2022-02-05T21:25:37.6763265Z ##[endgroup]
+2022-02-05T21:25:37.6763633Z ##[group]Virtual Environment Provisioner
+2022-02-05T21:25:37.6764041Z 1.0.0.0-main-20220128-1
+2022-02-05T21:25:37.6764331Z ##[endgroup]
+2022-02-05T21:25:37.6765395Z ##[group]GITHUB_TOKEN Permissions
+2022-02-05T21:25:37.6766066Z Actions: write
+2022-02-05T21:25:37.6766548Z Checks: write
+2022-02-05T21:25:37.6766901Z Contents: write
+2022-02-05T21:25:37.6767273Z Deployments: write
+2022-02-05T21:25:37.6767642Z Discussions: write
+2022-02-05T21:25:37.6767951Z Issues: write
+2022-02-05T21:25:37.6768286Z Metadata: read
+2022-02-05T21:25:37.6768642Z Packages: write
+2022-02-05T21:25:37.6768935Z Pages: write
+2022-02-05T21:25:37.6769314Z PullRequests: write
+2022-02-05T21:25:37.6769651Z RepositoryProjects: write
+2022-02-05T21:25:37.6770041Z SecurityEvents: write
+2022-02-05T21:25:37.6770349Z Statuses: write
+2022-02-05T21:25:37.6770707Z ##[endgroup]
+2022-02-05T21:25:37.6775219Z Secret source: Actions
+2022-02-05T21:25:37.6775912Z Prepare workflow directory
+2022-02-05T21:25:37.7715589Z Prepare all required actions
+2022-02-05T21:25:37.7922712Z Getting action download info
+2022-02-05T21:25:37.9437763Z Download action repository 'actions/checkout@v2' (SHA:ec3a7ce113134d7a93b817d10a8272cb61118579)
+2022-02-05T21:25:38.4845573Z ##[group]Run actions/checkout@v2
+2022-02-05T21:25:38.4845923Z with:
+2022-02-05T21:25:38.4846228Z   repository: telatin/bamtocov
+2022-02-05T21:25:38.4846784Z   token: ***
+2022-02-05T21:25:38.4847039Z   ssh-strict: true
+2022-02-05T21:25:38.4847352Z   persist-credentials: true
+2022-02-05T21:25:38.4847634Z   clean: true
+2022-02-05T21:25:38.4847900Z   fetch-depth: 1
+2022-02-05T21:25:38.4848159Z   lfs: false
+2022-02-05T21:25:38.4848401Z   submodules: false
+2022-02-05T21:25:38.4848670Z ##[endgroup]
+2022-02-05T21:25:38.7932604Z Syncing repository: telatin/bamtocov
+2022-02-05T21:25:38.7935405Z ##[group]Getting Git version info
+2022-02-05T21:25:38.7936417Z Working directory is '/home/runner/work/bamtocov/bamtocov'
+2022-02-05T21:25:38.7937832Z [command]/usr/bin/git version
+2022-02-05T21:25:38.8077076Z git version 2.35.1
+2022-02-05T21:25:38.8141572Z ##[endgroup]
+2022-02-05T21:25:38.8142192Z Deleting the contents of '/home/runner/work/bamtocov/bamtocov'
+2022-02-05T21:25:38.8143563Z ##[group]Initializing the repository
+2022-02-05T21:25:38.8143991Z [command]/usr/bin/git init /home/runner/work/bamtocov/bamtocov
+2022-02-05T21:25:38.8238425Z hint: Using 'master' as the name for the initial branch. This default branch name
+2022-02-05T21:25:38.8239017Z hint: is subject to change. To configure the initial branch name to use in all
+2022-02-05T21:25:38.8239553Z hint: of your new repositories, which will suppress this warning, call:
+2022-02-05T21:25:38.8239934Z hint: 
+2022-02-05T21:25:38.8240408Z hint: 	git config --global init.defaultBranch <name>
+2022-02-05T21:25:38.8240766Z hint: 
+2022-02-05T21:25:38.8241256Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2022-02-05T21:25:38.8242383Z hint: 'development'. The just-created branch can be renamed via this command:
+2022-02-05T21:25:38.8242772Z hint: 
+2022-02-05T21:25:38.8243118Z hint: 	git branch -m <name>
+2022-02-05T21:25:38.8262045Z Initialized empty Git repository in /home/runner/work/bamtocov/bamtocov/.git/
+2022-02-05T21:25:38.8273571Z [command]/usr/bin/git remote add origin https://github.com/telatin/bamtocov
+2022-02-05T21:25:38.8350914Z ##[endgroup]
+2022-02-05T21:25:38.8351552Z ##[group]Disabling automatic garbage collection
+2022-02-05T21:25:38.8354889Z [command]/usr/bin/git config --local gc.auto 0
+2022-02-05T21:25:38.8439111Z ##[endgroup]
+2022-02-05T21:25:38.8452999Z ##[group]Setting up auth
+2022-02-05T21:25:38.8453600Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2022-02-05T21:25:38.8465487Z [command]/usr/bin/git submodule foreach --recursive git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :
+2022-02-05T21:25:38.8901024Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2022-02-05T21:25:38.8936919Z [command]/usr/bin/git submodule foreach --recursive git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :
+2022-02-05T21:25:38.9234269Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2022-02-05T21:25:38.9278263Z ##[endgroup]
+2022-02-05T21:25:38.9279215Z ##[group]Fetching the repository
+2022-02-05T21:25:38.9287530Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +0b0875b74c958ec6e179f29d75077c08f2fe5103:refs/remotes/origin/main
+2022-02-05T21:25:39.1075223Z remote: Enumerating objects: 389, done.        
+2022-02-05T21:25:39.1075750Z remote: Counting objects:   0% (1/389)        
+2022-02-05T21:25:39.1076161Z remote: Counting objects:   1% (4/389)        
+2022-02-05T21:25:39.1076621Z remote: Counting objects:   2% (8/389)        
+2022-02-05T21:25:39.1077056Z remote: Counting objects:   3% (12/389)        
+2022-02-05T21:25:39.1077465Z remote: Counting objects:   4% (16/389)        
+2022-02-05T21:25:39.1078076Z remote: Counting objects:   5% (20/389)        
+2022-02-05T21:25:39.1078489Z remote: Counting objects:   6% (24/389)        
+2022-02-05T21:25:39.1079570Z remote: Counting objects:   7% (28/389)        
+2022-02-05T21:25:39.1080104Z remote: Counting objects:   8% (32/389)        
+2022-02-05T21:25:39.1080506Z remote: Counting objects:   9% (36/389)        
+2022-02-05T21:25:39.1080945Z remote: Counting objects:  10% (39/389)        
+2022-02-05T21:25:39.1081327Z remote: Counting objects:  11% (43/389)        
+2022-02-05T21:25:39.1081732Z remote: Counting objects:  12% (47/389)        
+2022-02-05T21:25:39.1082131Z remote: Counting objects:  13% (51/389)        
+2022-02-05T21:25:39.1082516Z remote: Counting objects:  14% (55/389)        
+2022-02-05T21:25:39.1082916Z remote: Counting objects:  15% (59/389)        
+2022-02-05T21:25:39.1083292Z remote: Counting objects:  16% (63/389)        
+2022-02-05T21:25:39.1083688Z remote: Counting objects:  17% (67/389)        
+2022-02-05T21:25:39.1084087Z remote: Counting objects:  18% (71/389)        
+2022-02-05T21:25:39.1084489Z remote: Counting objects:  19% (74/389)        
+2022-02-05T21:25:39.1085288Z remote: Counting objects:  20% (78/389)        
+2022-02-05T21:25:39.1086794Z remote: Counting objects:  21% (82/389)        
+2022-02-05T21:25:39.1087101Z remote: Counting objects:  22% (86/389)        
+2022-02-05T21:25:39.1087557Z remote: Counting objects:  23% (90/389)        
+2022-02-05T21:25:39.1087845Z remote: Counting objects:  24% (94/389)        
+2022-02-05T21:25:39.1088155Z remote: Counting objects:  25% (98/389)        
+2022-02-05T21:25:39.1088463Z remote: Counting objects:  26% (102/389)        
+2022-02-05T21:25:39.1088763Z remote: Counting objects:  27% (106/389)        
+2022-02-05T21:25:39.1089071Z remote: Counting objects:  28% (109/389)        
+2022-02-05T21:25:39.1089362Z remote: Counting objects:  29% (113/389)        
+2022-02-05T21:25:39.1089663Z remote: Counting objects:  30% (117/389)        
+2022-02-05T21:25:39.1090088Z remote: Counting objects:  31% (121/389)        
+2022-02-05T21:25:39.1090371Z remote: Counting objects:  32% (125/389)        
+2022-02-05T21:25:39.1090656Z remote: Counting objects:  33% (129/389)        
+2022-02-05T21:25:39.1091188Z remote: Counting objects:  34% (133/389)        
+2022-02-05T21:25:39.1091478Z remote: Counting objects:  35% (137/389)        
+2022-02-05T21:25:39.1091744Z remote: Counting objects:  36% (141/389)        
+2022-02-05T21:25:39.1092030Z remote: Counting objects:  37% (144/389)        
+2022-02-05T21:25:39.1092316Z remote: Counting objects:  38% (148/389)        
+2022-02-05T21:25:39.1092582Z remote: Counting objects:  39% (152/389)        
+2022-02-05T21:25:39.1092864Z remote: Counting objects:  40% (156/389)        
+2022-02-05T21:25:39.1093130Z remote: Counting objects:  41% (160/389)        
+2022-02-05T21:25:39.1093413Z remote: Counting objects:  42% (164/389)        
+2022-02-05T21:25:39.1093696Z remote: Counting objects:  43% (168/389)        
+2022-02-05T21:25:39.1093964Z remote: Counting objects:  44% (172/389)        
+2022-02-05T21:25:39.1094253Z remote: Counting objects:  45% (176/389)        
+2022-02-05T21:25:39.1094519Z remote: Counting objects:  46% (179/389)        
+2022-02-05T21:25:39.1094803Z remote: Counting objects:  47% (183/389)        
+2022-02-05T21:25:39.1095071Z remote: Counting objects:  48% (187/389)        
+2022-02-05T21:25:39.1095352Z remote: Counting objects:  49% (191/389)        
+2022-02-05T21:25:39.1095631Z remote: Counting objects:  50% (195/389)        
+2022-02-05T21:25:39.1095896Z remote: Counting objects:  51% (199/389)        
+2022-02-05T21:25:39.1096174Z remote: Counting objects:  52% (203/389)        
+2022-02-05T21:25:39.1096440Z remote: Counting objects:  53% (207/389)        
+2022-02-05T21:25:39.1096720Z remote: Counting objects:  54% (211/389)        
+2022-02-05T21:25:39.1097224Z remote: Counting objects:  55% (214/389)        
+2022-02-05T21:25:39.1098215Z remote: Counting objects:  56% (218/389)        
+2022-02-05T21:25:39.1098507Z remote: Counting objects:  57% (222/389)        
+2022-02-05T21:25:39.1099218Z remote: Counting objects:  58% (226/389)        
+2022-02-05T21:25:39.1099510Z remote: Counting objects:  59% (230/389)        
+2022-02-05T21:25:39.1099799Z remote: Counting objects:  60% (234/389)        
+2022-02-05T21:25:39.1100067Z remote: Counting objects:  61% (238/389)        
+2022-02-05T21:25:39.1100349Z remote: Counting objects:  62% (242/389)        
+2022-02-05T21:25:39.1100614Z remote: Counting objects:  63% (246/389)        
+2022-02-05T21:25:39.1100908Z remote: Counting objects:  64% (249/389)        
+2022-02-05T21:25:39.1101360Z remote: Counting objects:  65% (253/389)        
+2022-02-05T21:25:39.1101682Z remote: Counting objects:  66% (257/389)        
+2022-02-05T21:25:39.1101981Z remote: Counting objects:  67% (261/389)        
+2022-02-05T21:25:39.1102283Z remote: Counting objects:  68% (265/389)        
+2022-02-05T21:25:39.1102570Z remote: Counting objects:  69% (269/389)        
+2022-02-05T21:25:39.1102871Z remote: Counting objects:  70% (273/389)        
+2022-02-05T21:25:39.1103164Z remote: Counting objects:  71% (277/389)        
+2022-02-05T21:25:39.1104193Z remote: Counting objects:  72% (281/389)        
+2022-02-05T21:25:39.1104517Z remote: Counting objects:  73% (284/389)        
+2022-02-05T21:25:39.1104806Z remote: Counting objects:  74% (288/389)        
+2022-02-05T21:25:39.1105105Z remote: Counting objects:  75% (292/389)        
+2022-02-05T21:25:39.1105390Z remote: Counting objects:  76% (296/389)        
+2022-02-05T21:25:39.1105690Z remote: Counting objects:  77% (300/389)        
+2022-02-05T21:25:39.1105977Z remote: Counting objects:  78% (304/389)        
+2022-02-05T21:25:39.1106285Z remote: Counting objects:  79% (308/389)        
+2022-02-05T21:25:39.1106586Z remote: Counting objects:  80% (312/389)        
+2022-02-05T21:25:39.1107231Z remote: Counting objects:  81% (316/389)        
+2022-02-05T21:25:39.1107837Z remote: Counting objects:  82% (319/389)        
+2022-02-05T21:25:39.1108124Z remote: Counting objects:  83% (323/389)        
+2022-02-05T21:25:39.1108424Z remote: Counting objects:  84% (327/389)        
+2022-02-05T21:25:39.1108733Z remote: Counting objects:  85% (331/389)        
+2022-02-05T21:25:39.1109302Z remote: Counting objects:  86% (335/389)        
+2022-02-05T21:25:39.1110031Z remote: Counting objects:  87% (339/389)        
+2022-02-05T21:25:39.1110620Z remote: Counting objects:  88% (343/389)        
+2022-02-05T21:25:39.1110928Z remote: Counting objects:  89% (347/389)        
+2022-02-05T21:25:39.1111238Z remote: Counting objects:  90% (351/389)        
+2022-02-05T21:25:39.1111526Z remote: Counting objects:  91% (354/389)        
+2022-02-05T21:25:39.1112200Z remote: Counting objects:  92% (358/389)        
+2022-02-05T21:25:39.1112780Z remote: Counting objects:  93% (362/389)        
+2022-02-05T21:25:39.1113081Z remote: Counting objects:  94% (366/389)        
+2022-02-05T21:25:39.1113389Z remote: Counting objects:  95% (370/389)        
+2022-02-05T21:25:39.1114006Z remote: Counting objects:  96% (374/389)        
+2022-02-05T21:25:39.1114605Z remote: Counting objects:  97% (378/389)        
+2022-02-05T21:25:39.1115551Z remote: Counting objects:  98% (382/389)        
+2022-02-05T21:25:39.1115865Z remote: Counting objects:  99% (386/389)        
+2022-02-05T21:25:39.1116529Z remote: Counting objects: 100% (389/389)        
+2022-02-05T21:25:39.1117131Z remote: Counting objects: 100% (389/389), done.        
+2022-02-05T21:25:39.1117492Z remote: Compressing objects:   0% (1/337)        
+2022-02-05T21:25:39.1118129Z remote: Compressing objects:   1% (4/337)        
+2022-02-05T21:25:39.1118747Z remote: Compressing objects:   2% (7/337)        
+2022-02-05T21:25:39.1119083Z remote: Compressing objects:   3% (11/337)        
+2022-02-05T21:25:39.1119728Z remote: Compressing objects:   4% (14/337)        
+2022-02-05T21:25:39.1120362Z remote: Compressing objects:   5% (17/337)        
+2022-02-05T21:25:39.1120677Z remote: Compressing objects:   6% (21/337)        
+2022-02-05T21:25:39.1121332Z remote: Compressing objects:   7% (24/337)        
+2022-02-05T21:25:39.1122081Z remote: Compressing objects:   8% (27/337)        
+2022-02-05T21:25:39.1122393Z remote: Compressing objects:   9% (31/337)        
+2022-02-05T21:25:39.1122889Z remote: Compressing objects:  10% (34/337)        
+2022-02-05T21:25:39.1126394Z remote: Compressing objects:  11% (38/337)        
+2022-02-05T21:25:39.1133523Z remote: Compressing objects:  12% (41/337)        
+2022-02-05T21:25:39.1201246Z remote: Compressing objects:  13% (44/337)        
+2022-02-05T21:25:39.1201746Z remote: Compressing objects:  14% (48/337)        
+2022-02-05T21:25:39.1202176Z remote: Compressing objects:  15% (51/337)        
+2022-02-05T21:25:39.1205834Z remote: Compressing objects:  16% (54/337)        
+2022-02-05T21:25:39.1214077Z remote: Compressing objects:  17% (58/337)        
+2022-02-05T21:25:39.1221100Z remote: Compressing objects:  18% (61/337)        
+2022-02-05T21:25:39.1224765Z remote: Compressing objects:  19% (65/337)        
+2022-02-05T21:25:39.1227265Z remote: Compressing objects:  20% (68/337)        
+2022-02-05T21:25:39.1227664Z remote: Compressing objects:  21% (71/337)        
+2022-02-05T21:25:39.1228088Z remote: Compressing objects:  22% (75/337)        
+2022-02-05T21:25:39.1229643Z remote: Compressing objects:  23% (78/337)        
+2022-02-05T21:25:39.1232143Z remote: Compressing objects:  24% (81/337)        
+2022-02-05T21:25:39.1240055Z remote: Compressing objects:  25% (85/337)        
+2022-02-05T21:25:39.1240511Z remote: Compressing objects:  26% (88/337)        
+2022-02-05T21:25:39.1240839Z remote: Compressing objects:  27% (91/337)        
+2022-02-05T21:25:39.1243999Z remote: Compressing objects:  28% (95/337)        
+2022-02-05T21:25:39.1244495Z remote: Compressing objects:  29% (98/337)        
+2022-02-05T21:25:39.1244939Z remote: Compressing objects:  30% (102/337)        
+2022-02-05T21:25:39.1245376Z remote: Compressing objects:  31% (105/337)        
+2022-02-05T21:25:39.1245825Z remote: Compressing objects:  32% (108/337)        
+2022-02-05T21:25:39.1246241Z remote: Compressing objects:  33% (112/337)        
+2022-02-05T21:25:39.1246695Z remote: Compressing objects:  34% (115/337)        
+2022-02-05T21:25:39.1247113Z remote: Compressing objects:  35% (118/337)        
+2022-02-05T21:25:39.1247840Z remote: Compressing objects:  36% (122/337)        
+2022-02-05T21:25:39.1248267Z remote: Compressing objects:  37% (125/337)        
+2022-02-05T21:25:39.1248682Z remote: Compressing objects:  38% (129/337)        
+2022-02-05T21:25:39.1249101Z remote: Compressing objects:  39% (132/337)        
+2022-02-05T21:25:39.1249526Z remote: Compressing objects:  40% (135/337)        
+2022-02-05T21:25:39.1249935Z remote: Compressing objects:  41% (139/337)        
+2022-02-05T21:25:39.1250356Z remote: Compressing objects:  42% (142/337)        
+2022-02-05T21:25:39.1250775Z remote: Compressing objects:  43% (145/337)        
+2022-02-05T21:25:39.1251182Z remote: Compressing objects:  44% (149/337)        
+2022-02-05T21:25:39.1251602Z remote: Compressing objects:  45% (152/337)        
+2022-02-05T21:25:39.1252008Z remote: Compressing objects:  46% (156/337)        
+2022-02-05T21:25:39.1252435Z remote: Compressing objects:  47% (159/337)        
+2022-02-05T21:25:39.1252858Z remote: Compressing objects:  48% (162/337)        
+2022-02-05T21:25:39.1253274Z remote: Compressing objects:  49% (166/337)        
+2022-02-05T21:25:39.1253691Z remote: Compressing objects:  50% (169/337)        
+2022-02-05T21:25:39.1254248Z remote: Compressing objects:  51% (172/337)        
+2022-02-05T21:25:39.1254555Z remote: Compressing objects:  52% (176/337)        
+2022-02-05T21:25:39.1254879Z remote: Compressing objects:  53% (179/337)        
+2022-02-05T21:25:39.1255184Z remote: Compressing objects:  54% (182/337)        
+2022-02-05T21:25:39.1255503Z remote: Compressing objects:  55% (186/337)        
+2022-02-05T21:25:39.1267344Z remote: Compressing objects:  56% (189/337)        
+2022-02-05T21:25:39.1272884Z remote: Compressing objects:  57% (193/337)        
+2022-02-05T21:25:39.1273247Z remote: Compressing objects:  58% (196/337)        
+2022-02-05T21:25:39.1273839Z remote: Compressing objects:  59% (199/337)        
+2022-02-05T21:25:39.1294661Z remote: Compressing objects:  60% (203/337)        
+2022-02-05T21:25:39.1295062Z remote: Compressing objects:  61% (206/337)        
+2022-02-05T21:25:39.1295381Z remote: Compressing objects:  62% (209/337)        
+2022-02-05T21:25:39.1295712Z remote: Compressing objects:  63% (213/337)        
+2022-02-05T21:25:39.1296026Z remote: Compressing objects:  64% (216/337)        
+2022-02-05T21:25:39.1296512Z remote: Compressing objects:  65% (220/337)        
+2022-02-05T21:25:39.1296850Z remote: Compressing objects:  66% (223/337)        
+2022-02-05T21:25:39.1297157Z remote: Compressing objects:  67% (226/337)        
+2022-02-05T21:25:39.1297810Z remote: Compressing objects:  68% (230/337)        
+2022-02-05T21:25:39.1298170Z remote: Compressing objects:  69% (233/337)        
+2022-02-05T21:25:39.1298490Z remote: Compressing objects:  70% (236/337)        
+2022-02-05T21:25:39.1298816Z remote: Compressing objects:  71% (240/337)        
+2022-02-05T21:25:39.1299131Z remote: Compressing objects:  72% (243/337)        
+2022-02-05T21:25:39.1299457Z remote: Compressing objects:  73% (247/337)        
+2022-02-05T21:25:39.1299771Z remote: Compressing objects:  74% (250/337)        
+2022-02-05T21:25:39.1300238Z remote: Compressing objects:  75% (253/337)        
+2022-02-05T21:25:39.1301141Z remote: Compressing objects:  76% (257/337)        
+2022-02-05T21:25:39.1301475Z remote: Compressing objects:  77% (260/337)        
+2022-02-05T21:25:39.1308522Z remote: Compressing objects:  78% (263/337)        
+2022-02-05T21:25:39.1311540Z remote: Compressing objects:  79% (267/337)        
+2022-02-05T21:25:39.1314304Z remote: Compressing objects:  80% (270/337)        
+2022-02-05T21:25:39.1317222Z remote: Compressing objects:  81% (273/337)        
+2022-02-05T21:25:39.1323058Z remote: Compressing objects:  82% (277/337)        
+2022-02-05T21:25:39.1323865Z remote: Compressing objects:  83% (280/337)        
+2022-02-05T21:25:39.1324163Z remote: Compressing objects:  84% (284/337)        
+2022-02-05T21:25:39.1324892Z remote: Compressing objects:  85% (287/337)        
+2022-02-05T21:25:39.1325205Z remote: Compressing objects:  86% (290/337)        
+2022-02-05T21:25:39.1325682Z remote: Compressing objects:  87% (294/337)        
+2022-02-05T21:25:39.1329528Z remote: Compressing objects:  88% (297/337)        
+2022-02-05T21:25:39.1331845Z remote: Compressing objects:  89% (300/337)        
+2022-02-05T21:25:39.1332662Z remote: Compressing objects:  90% (304/337)        
+2022-02-05T21:25:39.1332960Z remote: Compressing objects:  91% (307/337)        
+2022-02-05T21:25:39.1333263Z remote: Compressing objects:  92% (311/337)        
+2022-02-05T21:25:39.1333702Z remote: Compressing objects:  93% (314/337)        
+2022-02-05T21:25:39.1334371Z remote: Compressing objects:  94% (317/337)        
+2022-02-05T21:25:39.1335013Z remote: Compressing objects:  95% (321/337)        
+2022-02-05T21:25:39.1335298Z remote: Compressing objects:  96% (324/337)        
+2022-02-05T21:25:39.1335727Z remote: Compressing objects:  97% (327/337)        
+2022-02-05T21:25:39.1336041Z remote: Compressing objects:  98% (331/337)        
+2022-02-05T21:25:39.1336347Z remote: Compressing objects:  99% (334/337)        
+2022-02-05T21:25:39.1339213Z remote: Compressing objects: 100% (337/337)        
+2022-02-05T21:25:39.1339619Z remote: Compressing objects: 100% (337/337), done.        
+2022-02-05T21:25:39.1391936Z Receiving objects:   0% (1/389)
+2022-02-05T21:25:39.1393983Z Receiving objects:   1% (4/389)
+2022-02-05T21:25:39.1394415Z Receiving objects:   2% (8/389)
+2022-02-05T21:25:39.1396799Z Receiving objects:   3% (12/389)
+2022-02-05T21:25:39.1397090Z Receiving objects:   4% (16/389)
+2022-02-05T21:25:39.2043546Z Receiving objects:   5% (20/389)
+2022-02-05T21:25:39.2046296Z Receiving objects:   6% (24/389)
+2022-02-05T21:25:39.2046819Z Receiving objects:   7% (28/389)
+2022-02-05T21:25:39.2047200Z Receiving objects:   8% (32/389)
+2022-02-05T21:25:39.2047537Z Receiving objects:   9% (36/389)
+2022-02-05T21:25:39.2048072Z Receiving objects:  10% (39/389)
+2022-02-05T21:25:39.2048498Z Receiving objects:  11% (43/389)
+2022-02-05T21:25:39.2050726Z Receiving objects:  12% (47/389)
+2022-02-05T21:25:39.2052716Z Receiving objects:  13% (51/389)
+2022-02-05T21:25:39.2053117Z Receiving objects:  14% (55/389)
+2022-02-05T21:25:39.2054845Z Receiving objects:  15% (59/389)
+2022-02-05T21:25:39.2055444Z Receiving objects:  16% (63/389)
+2022-02-05T21:25:39.2057207Z Receiving objects:  17% (67/389)
+2022-02-05T21:25:39.2057656Z Receiving objects:  18% (71/389)
+2022-02-05T21:25:39.2059753Z Receiving objects:  19% (74/389)
+2022-02-05T21:25:39.2062655Z Receiving objects:  20% (78/389)
+2022-02-05T21:25:39.2064698Z Receiving objects:  21% (82/389)
+2022-02-05T21:25:39.2066563Z Receiving objects:  22% (86/389)
+2022-02-05T21:25:39.2067003Z Receiving objects:  23% (90/389)
+2022-02-05T21:25:39.2069521Z Receiving objects:  24% (94/389)
+2022-02-05T21:25:39.2071628Z Receiving objects:  25% (98/389)
+2022-02-05T21:25:39.2072077Z Receiving objects:  26% (102/389)
+2022-02-05T21:25:39.2074129Z Receiving objects:  27% (106/389)
+2022-02-05T21:25:39.2074579Z Receiving objects:  28% (109/389)
+2022-02-05T21:25:39.2076554Z Receiving objects:  29% (113/389)
+2022-02-05T21:25:39.2076969Z Receiving objects:  30% (117/389)
+2022-02-05T21:25:39.2078660Z Receiving objects:  31% (121/389)
+2022-02-05T21:25:39.2080494Z Receiving objects:  32% (125/389)
+2022-02-05T21:25:39.2080908Z Receiving objects:  33% (129/389)
+2022-02-05T21:25:39.2082624Z Receiving objects:  34% (133/389)
+2022-02-05T21:25:39.2083013Z Receiving objects:  35% (137/389)
+2022-02-05T21:25:39.2085112Z Receiving objects:  36% (141/389)
+2022-02-05T21:25:39.2092437Z Receiving objects:  37% (144/389)
+2022-02-05T21:25:39.2092916Z Receiving objects:  38% (148/389)
+2022-02-05T21:25:39.2093300Z Receiving objects:  39% (152/389)
+2022-02-05T21:25:39.2093666Z Receiving objects:  40% (156/389)
+2022-02-05T21:25:39.2094032Z Receiving objects:  41% (160/389)
+2022-02-05T21:25:39.2094384Z Receiving objects:  42% (164/389)
+2022-02-05T21:25:39.2094772Z Receiving objects:  43% (168/389)
+2022-02-05T21:25:39.2095143Z Receiving objects:  44% (172/389)
+2022-02-05T21:25:39.2100256Z Receiving objects:  45% (176/389)
+2022-02-05T21:25:39.2146831Z Receiving objects:  46% (179/389)
+2022-02-05T21:25:39.2173074Z Receiving objects:  47% (183/389)
+2022-02-05T21:25:39.2177108Z Receiving objects:  48% (187/389)
+2022-02-05T21:25:39.2179198Z Receiving objects:  49% (191/389)
+2022-02-05T21:25:39.2181722Z Receiving objects:  50% (195/389)
+2022-02-05T21:25:39.2184304Z Receiving objects:  51% (199/389)
+2022-02-05T21:25:39.2186792Z Receiving objects:  52% (203/389)
+2022-02-05T21:25:39.2188874Z Receiving objects:  53% (207/389)
+2022-02-05T21:25:39.2192767Z Receiving objects:  54% (211/389)
+2022-02-05T21:25:39.2199680Z Receiving objects:  55% (214/389)
+2022-02-05T21:25:39.2200159Z Receiving objects:  56% (218/389)
+2022-02-05T21:25:39.2200543Z Receiving objects:  57% (222/389)
+2022-02-05T21:25:39.2200907Z Receiving objects:  58% (226/389)
+2022-02-05T21:25:39.2201439Z Receiving objects:  59% (230/389)
+2022-02-05T21:25:39.4338827Z Receiving objects:  60% (234/389)
+2022-02-05T21:25:39.4339234Z Receiving objects:  61% (238/389)
+2022-02-05T21:25:39.4339559Z Receiving objects:  62% (242/389)
+2022-02-05T21:25:39.4351427Z Receiving objects:  63% (246/389)
+2022-02-05T21:25:39.4351902Z Receiving objects:  64% (249/389)
+2022-02-05T21:25:39.4358606Z Receiving objects:  65% (253/389)
+2022-02-05T21:25:39.4382939Z Receiving objects:  66% (257/389)
+2022-02-05T21:25:39.4388169Z Receiving objects:  67% (261/389)
+2022-02-05T21:25:39.4388509Z Receiving objects:  68% (265/389)
+2022-02-05T21:25:39.4388761Z Receiving objects:  69% (269/389)
+2022-02-05T21:25:39.4389287Z Receiving objects:  70% (273/389)
+2022-02-05T21:25:39.4389589Z Receiving objects:  71% (277/389)
+2022-02-05T21:25:39.4396549Z Receiving objects:  72% (281/389)
+2022-02-05T21:25:39.4397184Z Receiving objects:  73% (284/389)
+2022-02-05T21:25:39.4399565Z Receiving objects:  74% (288/389)
+2022-02-05T21:25:39.4400182Z Receiving objects:  75% (292/389)
+2022-02-05T21:25:39.4402513Z Receiving objects:  76% (296/389)
+2022-02-05T21:25:39.4403070Z Receiving objects:  77% (300/389)
+2022-02-05T21:25:39.4404075Z Receiving objects:  78% (304/389)
+2022-02-05T21:25:39.4404575Z Receiving objects:  79% (308/389)
+2022-02-05T21:25:39.4406824Z Receiving objects:  80% (312/389)
+2022-02-05T21:25:39.4407361Z Receiving objects:  81% (316/389)
+2022-02-05T21:25:39.4408372Z Receiving objects:  82% (319/389)
+2022-02-05T21:25:39.4408875Z Receiving objects:  83% (323/389)
+2022-02-05T21:25:39.4409795Z Receiving objects:  84% (327/389)
+2022-02-05T21:25:39.4410273Z Receiving objects:  85% (331/389)
+2022-02-05T21:25:39.4412514Z Receiving objects:  86% (335/389)
+2022-02-05T21:25:39.4413730Z Receiving objects:  87% (339/389)
+2022-02-05T21:25:39.4414803Z Receiving objects:  88% (343/389)
+2022-02-05T21:25:39.4422672Z Receiving objects:  89% (347/389)
+2022-02-05T21:25:39.4425787Z Receiving objects:  90% (351/389)
+2022-02-05T21:25:39.4526137Z Receiving objects:  91% (354/389)
+2022-02-05T21:25:39.4573067Z Receiving objects:  92% (358/389)
+2022-02-05T21:25:39.4573973Z remote: Total 389 (delta 54), reused 295 (delta 38), pack-reused 0        
+2022-02-05T21:25:39.4585644Z Receiving objects:  93% (362/389)
+2022-02-05T21:25:39.4586375Z Receiving objects:  94% (366/389)
+2022-02-05T21:25:39.4587245Z Receiving objects:  95% (370/389)
+2022-02-05T21:25:39.4587723Z Receiving objects:  96% (374/389)
+2022-02-05T21:25:39.4588617Z Receiving objects:  97% (378/389)
+2022-02-05T21:25:39.4593695Z Receiving objects:  98% (382/389)
+2022-02-05T21:25:39.4594325Z Receiving objects:  99% (386/389)
+2022-02-05T21:25:39.4595229Z Receiving objects: 100% (389/389)
+2022-02-05T21:25:39.4596026Z Receiving objects: 100% (389/389), 13.06 MiB | 40.76 MiB/s, done.
+2022-02-05T21:25:39.4638473Z Resolving deltas:   0% (0/54)
+2022-02-05T21:25:39.4639135Z Resolving deltas:   1% (1/54)
+2022-02-05T21:25:39.4639521Z Resolving deltas:   3% (2/54)
+2022-02-05T21:25:39.4640918Z Resolving deltas:   5% (3/54)
+2022-02-05T21:25:39.4641402Z Resolving deltas:   7% (4/54)
+2022-02-05T21:25:39.4642562Z Resolving deltas:   9% (5/54)
+2022-02-05T21:25:39.4643025Z Resolving deltas:  11% (6/54)
+2022-02-05T21:25:39.4644484Z Resolving deltas:  12% (7/54)
+2022-02-05T21:25:39.4644955Z Resolving deltas:  14% (8/54)
+2022-02-05T21:25:39.4645298Z Resolving deltas:  16% (9/54)
+2022-02-05T21:25:39.4646361Z Resolving deltas:  18% (10/54)
+2022-02-05T21:25:39.4646832Z Resolving deltas:  20% (11/54)
+2022-02-05T21:25:39.4648175Z Resolving deltas:  22% (12/54)
+2022-02-05T21:25:39.4648636Z Resolving deltas:  24% (13/54)
+2022-02-05T21:25:39.4650039Z Resolving deltas:  25% (14/54)
+2022-02-05T21:25:39.4650480Z Resolving deltas:  27% (15/54)
+2022-02-05T21:25:39.4651728Z Resolving deltas:  29% (16/54)
+2022-02-05T21:25:39.4652138Z Resolving deltas:  31% (17/54)
+2022-02-05T21:25:39.4652472Z Resolving deltas:  33% (18/54)
+2022-02-05T21:25:39.4653408Z Resolving deltas:  35% (19/54)
+2022-02-05T21:25:39.4653836Z Resolving deltas:  37% (20/54)
+2022-02-05T21:25:39.4655259Z Resolving deltas:  38% (21/54)
+2022-02-05T21:25:39.4655668Z Resolving deltas:  40% (22/54)
+2022-02-05T21:25:39.4656006Z Resolving deltas:  42% (23/54)
+2022-02-05T21:25:39.4657099Z Resolving deltas:  44% (24/54)
+2022-02-05T21:25:39.4657560Z Resolving deltas:  46% (25/54)
+2022-02-05T21:25:39.4658748Z Resolving deltas:  48% (26/54)
+2022-02-05T21:25:39.4659163Z Resolving deltas:  50% (27/54)
+2022-02-05T21:25:39.4660040Z Resolving deltas:  51% (28/54)
+2022-02-05T21:25:39.4660553Z Resolving deltas:  53% (29/54)
+2022-02-05T21:25:39.4662703Z Resolving deltas:  55% (30/54)
+2022-02-05T21:25:39.4663458Z Resolving deltas:  57% (31/54)
+2022-02-05T21:25:39.4664002Z Resolving deltas:  59% (32/54)
+2022-02-05T21:25:39.4664367Z Resolving deltas:  61% (33/54)
+2022-02-05T21:25:39.4665686Z Resolving deltas:  62% (34/54)
+2022-02-05T21:25:39.4666144Z Resolving deltas:  64% (35/54)
+2022-02-05T21:25:39.4667593Z Resolving deltas:  66% (36/54)
+2022-02-05T21:25:39.4668082Z Resolving deltas:  68% (37/54)
+2022-02-05T21:25:39.4669239Z Resolving deltas:  70% (38/54)
+2022-02-05T21:25:39.4670613Z Resolving deltas:  72% (39/54)
+2022-02-05T21:25:39.4671222Z Resolving deltas:  74% (40/54)
+2022-02-05T21:25:39.4672756Z Resolving deltas:  75% (41/54)
+2022-02-05T21:25:39.4673552Z Resolving deltas:  77% (42/54)
+2022-02-05T21:25:39.4675173Z Resolving deltas:  79% (43/54)
+2022-02-05T21:25:39.4677021Z Resolving deltas:  81% (44/54)
+2022-02-05T21:25:39.4677441Z Resolving deltas:  83% (45/54)
+2022-02-05T21:25:39.4678190Z Resolving deltas:  85% (46/54)
+2022-02-05T21:25:39.4678646Z Resolving deltas:  87% (47/54)
+2022-02-05T21:25:39.4680555Z Resolving deltas:  88% (48/54)
+2022-02-05T21:25:39.4681690Z Resolving deltas:  90% (49/54)
+2022-02-05T21:25:39.4683545Z Resolving deltas:  92% (50/54)
+2022-02-05T21:25:39.4766026Z Resolving deltas:  94% (51/54)
+2022-02-05T21:25:39.4799462Z Resolving deltas:  96% (52/54)
+2022-02-05T21:25:39.4836878Z Resolving deltas:  98% (53/54)
+2022-02-05T21:25:39.4840740Z Resolving deltas: 100% (54/54)
+2022-02-05T21:25:39.4841206Z Resolving deltas: 100% (54/54), done.
+2022-02-05T21:25:39.5161293Z From https://github.com/telatin/bamtocov
+2022-02-05T21:25:39.5162719Z  * [new ref]         0b0875b74c958ec6e179f29d75077c08f2fe5103 -> origin/main
+2022-02-05T21:25:39.5183243Z ##[endgroup]
+2022-02-05T21:25:39.5183772Z ##[group]Determining the checkout info
+2022-02-05T21:25:39.5185384Z ##[endgroup]
+2022-02-05T21:25:39.5185812Z ##[group]Checking out the ref
+2022-02-05T21:25:39.5190403Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2022-02-05T21:25:39.5819799Z Switched to a new branch 'main'
+2022-02-05T21:25:39.5825660Z branch 'main' set up to track 'origin/main'.
+2022-02-05T21:25:39.5834405Z ##[endgroup]
+2022-02-05T21:25:39.5902910Z [command]/usr/bin/git log -1 --format='%H'
+2022-02-05T21:25:39.5935899Z '0b0875b74c958ec6e179f29d75077c08f2fe5103'
+2022-02-05T21:25:39.6142736Z ##[group]Run docker build . --file benchmark/Dockerfile --tag my-image-name:$(date +%s)
+2022-02-05T21:25:39.6143206Z [36;1mdocker build . --file benchmark/Dockerfile --tag my-image-name:$(date +%s)[0m
+2022-02-05T21:25:39.6198686Z shell: /usr/bin/bash -e {0}
+2022-02-05T21:25:39.6199173Z ##[endgroup]
+2022-02-05T21:25:40.0814283Z Sending build context to Docker daemon  30.86MB
+2022-02-05T21:25:40.0814995Z 
+2022-02-05T21:25:40.0866323Z Step 1/9 : FROM nfcore/base:1.9
+2022-02-05T21:25:40.3560339Z 1.9: Pulling from nfcore/base
+2022-02-05T21:25:40.3569434Z b8f262c62ec6: Pulling fs layer
+2022-02-05T21:25:40.3569728Z 0a43c0154f16: Pulling fs layer
+2022-02-05T21:25:40.3569986Z 906d7b5da8fb: Pulling fs layer
+2022-02-05T21:25:40.3570754Z 067a79e18102: Pulling fs layer
+2022-02-05T21:25:40.3570987Z 067a79e18102: Waiting
+2022-02-05T21:25:40.8268293Z b8f262c62ec6: Verifying Checksum
+2022-02-05T21:25:40.8269260Z b8f262c62ec6: Download complete
+2022-02-05T21:25:41.1385192Z 906d7b5da8fb: Verifying Checksum
+2022-02-05T21:25:41.1385863Z 906d7b5da8fb: Download complete
+2022-02-05T21:25:41.2376588Z 067a79e18102: Verifying Checksum
+2022-02-05T21:25:41.2376990Z 067a79e18102: Download complete
+2022-02-05T21:25:41.3178264Z 0a43c0154f16: Verifying Checksum
+2022-02-05T21:25:41.3179057Z 0a43c0154f16: Download complete
+2022-02-05T21:25:42.2307289Z b8f262c62ec6: Pull complete
+2022-02-05T21:25:46.6904586Z 0a43c0154f16: Pull complete
+2022-02-05T21:25:49.4810910Z 906d7b5da8fb: Pull complete
+2022-02-05T21:25:49.7965561Z 067a79e18102: Pull complete
+2022-02-05T21:25:49.8013091Z Digest: sha256:bebedcb30fc6e93492e01fcedfba8a3d76930f98ffef816000eaa1e31ad2a237
+2022-02-05T21:25:49.8036696Z Status: Downloaded newer image for nfcore/base:1.9
+2022-02-05T21:25:49.8050980Z  ---> f1c63ec29383
+2022-02-05T21:25:49.8053187Z Step 2/9 : LABEL authors="Andrea Telatin"       description="Docker image containing all software requirements for the telatin/nextflow-example project"
+2022-02-05T21:25:49.8264070Z  ---> Running in 2d05d354f85f
+2022-02-05T21:25:50.5256752Z Removing intermediate container 2d05d354f85f
+2022-02-05T21:25:50.5257676Z  ---> 9bf431bac459
+2022-02-05T21:25:50.5258503Z Step 3/9 : COPY benchmark/env.yaml /environment.yml
+2022-02-05T21:25:51.2505134Z  ---> adabcba5b351
+2022-02-05T21:25:51.2505467Z Step 4/9 : COPY benchmark/compare.sh /usr/local/bin/
+2022-02-05T21:25:52.0498968Z  ---> 11bcd8d39256
+2022-02-05T21:25:52.0502183Z Step 5/9 : RUN conda install -q -y -c conda-forge mamba && mamba env create -q -n env -f /environment.yml && conda clean -a
+2022-02-05T21:25:52.0760624Z  ---> Running in afec3f130c60
+2022-02-05T21:26:02.1954526Z Collecting package metadata (current_repodata.json): ...working... done
+2022-02-05T21:26:04.4714271Z Solving environment: ...working... done
+2022-02-05T21:26:14.0749915Z 
+2022-02-05T21:26:14.0750272Z ## Package Plan ##
+2022-02-05T21:26:14.0750505Z 
+2022-02-05T21:26:14.0750672Z   environment location: /opt/conda
+2022-02-05T21:26:14.0750907Z 
+2022-02-05T21:26:14.0751042Z   added / updated specs:
+2022-02-05T21:26:14.0751630Z     - mamba
+2022-02-05T21:26:14.0751802Z 
+2022-02-05T21:26:14.0751810Z 
+2022-02-05T21:26:14.0751993Z The following packages will be downloaded:
+2022-02-05T21:26:14.0752236Z 
+2022-02-05T21:26:14.0752390Z     package                    |            build
+2022-02-05T21:26:14.0752887Z     ---------------------------|-----------------
+2022-02-05T21:26:14.0753488Z     _libgcc_mutex-0.1          |      conda_forge           3 KB  conda-forge
+2022-02-05T21:26:14.0754055Z     _openmp_mutex-4.5          |            1_gnu          22 KB  conda-forge
+2022-02-05T21:26:14.0754624Z     bzip2-1.0.8                |       h7f98852_4         484 KB  conda-forge
+2022-02-05T21:26:14.0755186Z     c-ares-1.18.1              |       h7f98852_0         113 KB  conda-forge
+2022-02-05T21:26:14.0755761Z     ca-certificates-2021.10.8  |       ha878542_0         139 KB  conda-forge
+2022-02-05T21:26:14.0756367Z     certifi-2021.10.8          |   py37h89c1867_1         145 KB  conda-forge
+2022-02-05T21:26:14.0757235Z     conda-4.11.0               |   py37h89c1867_0        16.9 MB  conda-forge
+2022-02-05T21:26:14.0757816Z     icu-68.2                   |       h9c3ff4c_0        13.1 MB  conda-forge
+2022-02-05T21:26:14.0758370Z     krb5-1.19.2                |       hcc1bbae_3         1.4 MB  conda-forge
+2022-02-05T21:26:14.0759064Z     libarchive-3.5.2           |       hccf745f_1         1.6 MB  conda-forge
+2022-02-05T21:26:14.0759614Z     libcurl-7.80.0             |       h0b77cf5_0         339 KB
+2022-02-05T21:26:14.0760160Z     libedit-3.1.20191231       |       h46ee950_2         121 KB  conda-forge
+2022-02-05T21:26:14.0760714Z     libev-4.33                 |       h516909a_1         104 KB  conda-forge
+2022-02-05T21:26:14.0761280Z     libgcc-ng-11.2.0           |      h1d223b6_12         904 KB  conda-forge
+2022-02-05T21:26:14.0761831Z     libgomp-11.2.0             |      h1d223b6_12         426 KB  conda-forge
+2022-02-05T21:26:14.0762395Z     libiconv-1.16              |       h516909a_0         1.4 MB  conda-forge
+2022-02-05T21:26:14.0762946Z     libnghttp2-1.46.0          |       hce63b2e_0         680 KB
+2022-02-05T21:26:14.0763501Z     libsolv-0.7.19             |       h780b84a_5         445 KB  conda-forge
+2022-02-05T21:26:14.0764054Z     libssh2-1.10.0             |       ha56f1ee_2         233 KB  conda-forge
+2022-02-05T21:26:14.0764614Z     libstdcxx-ng-11.2.0        |      he4da1e4_12         4.2 MB  conda-forge
+2022-02-05T21:26:14.0765183Z     libxml2-2.9.12             |       h72842e0_0         772 KB  conda-forge
+2022-02-05T21:26:14.0765719Z     lz4-c-1.9.3                |       h9c3ff4c_1         179 KB  conda-forge
+2022-02-05T21:26:14.0766260Z     lzo-2.10                   |    h516909a_1000         314 KB  conda-forge
+2022-02-05T21:26:14.0766815Z     mamba-0.15.3               |   py37h7f483ca_0         741 KB  conda-forge
+2022-02-05T21:26:14.0767351Z     openssl-1.1.1l             |       h7f98852_0         2.1 MB  conda-forge
+2022-02-05T21:26:14.0767913Z     python_abi-3.7             |          2_cp37m           4 KB  conda-forge
+2022-02-05T21:26:14.0768503Z     reproc-14.2.3              |       h7f98852_0          28 KB  conda-forge
+2022-02-05T21:26:14.0769070Z     reproc-cpp-14.2.3          |       h9c3ff4c_0          20 KB  conda-forge
+2022-02-05T21:26:14.0769628Z     tk-8.6.11                  |       h27826a3_1         3.3 MB  conda-forge
+2022-02-05T21:26:14.0770139Z     xz-5.2.5                   |       h516909a_1         343 KB  conda-forge
+2022-02-05T21:26:14.0770640Z     zstd-1.5.0                 |       ha4553b6_1         524 KB
+2022-02-05T21:26:14.0771166Z     ------------------------------------------------------------
+2022-02-05T21:26:14.0771575Z                                            Total:        50.9 MB
+2022-02-05T21:26:14.0771787Z 
+2022-02-05T21:26:14.0771976Z The following NEW packages will be INSTALLED:
+2022-02-05T21:26:14.0772202Z 
+2022-02-05T21:26:14.0795027Z   _openmp_mutex      conda-forge/linux-64::_openmp_mutex-4.5-1_gnu
+2022-02-05T21:26:14.0795839Z   bzip2              conda-forge/linux-64::bzip2-1.0.8-h7f98852_4
+2022-02-05T21:26:14.0796503Z   c-ares             conda-forge/linux-64::c-ares-1.18.1-h7f98852_0
+2022-02-05T21:26:14.0797123Z   icu                conda-forge/linux-64::icu-68.2-h9c3ff4c_0
+2022-02-05T21:26:14.0798428Z   krb5               conda-forge/linux-64::krb5-1.19.2-hcc1bbae_3
+2022-02-05T21:26:14.0799132Z   libarchive         conda-forge/linux-64::libarchive-3.5.2-hccf745f_1
+2022-02-05T21:26:14.0799806Z   libcurl            pkgs/main/linux-64::libcurl-7.80.0-h0b77cf5_0
+2022-02-05T21:26:14.0800450Z   libev              conda-forge/linux-64::libev-4.33-h516909a_1
+2022-02-05T21:26:14.0801087Z   libgomp            conda-forge/linux-64::libgomp-11.2.0-h1d223b6_12
+2022-02-05T21:26:14.0801752Z   libiconv           conda-forge/linux-64::libiconv-1.16-h516909a_0
+2022-02-05T21:26:14.0802413Z   libnghttp2         pkgs/main/linux-64::libnghttp2-1.46.0-hce63b2e_0
+2022-02-05T21:26:14.0803085Z   libsolv            conda-forge/linux-64::libsolv-0.7.19-h780b84a_5
+2022-02-05T21:26:14.0804001Z   libssh2            conda-forge/linux-64::libssh2-1.10.0-ha56f1ee_2
+2022-02-05T21:26:14.0804653Z   libxml2            conda-forge/linux-64::libxml2-2.9.12-h72842e0_0
+2022-02-05T21:26:14.0805291Z   lz4-c              conda-forge/linux-64::lz4-c-1.9.3-h9c3ff4c_1
+2022-02-05T21:26:14.0806034Z   lzo                conda-forge/linux-64::lzo-2.10-h516909a_1000
+2022-02-05T21:26:14.0806656Z   mamba              conda-forge/linux-64::mamba-0.15.3-py37h7f483ca_0
+2022-02-05T21:26:14.0807310Z   python_abi         conda-forge/linux-64::python_abi-3.7-2_cp37m
+2022-02-05T21:26:14.0808005Z   reproc             conda-forge/linux-64::reproc-14.2.3-h7f98852_0
+2022-02-05T21:26:14.0808691Z   reproc-cpp         conda-forge/linux-64::reproc-cpp-14.2.3-h9c3ff4c_0
+2022-02-05T21:26:14.0809350Z   zstd               pkgs/main/linux-64::zstd-1.5.0-ha4553b6_1
+2022-02-05T21:26:14.0809587Z 
+2022-02-05T21:26:14.0810581Z The following packages will be UPDATED:
+2022-02-05T21:26:14.0810843Z 
+2022-02-05T21:26:14.0811511Z   ca-certificates    pkgs/main::ca-certificates-2019.8.28-0 --> conda-forge::ca-certificates-2021.10.8-ha878542_0
+2022-02-05T21:26:14.0812405Z   certifi               pkgs/main::certifi-2019.9.11-py37_0 --> conda-forge::certifi-2021.10.8-py37h89c1867_1
+2022-02-05T21:26:14.0815797Z   conda                      pkgs/main::conda-4.7.12-py37_0 --> conda-forge::conda-4.11.0-py37h89c1867_0
+2022-02-05T21:26:14.0816640Z   libedit            pkgs/main::libedit-3.1.20181209-hc058~ --> conda-forge::libedit-3.1.20191231-h46ee950_2
+2022-02-05T21:26:14.0817519Z   libgcc-ng           pkgs/main::libgcc-ng-9.1.0-hdf63c60_0 --> conda-forge::libgcc-ng-11.2.0-h1d223b6_12
+2022-02-05T21:26:14.0818407Z   libstdcxx-ng       pkgs/main::libstdcxx-ng-9.1.0-hdf63c6~ --> conda-forge::libstdcxx-ng-11.2.0-he4da1e4_12
+2022-02-05T21:26:14.0819243Z   openssl              pkgs/main::openssl-1.1.1d-h7b6447c_2 --> conda-forge::openssl-1.1.1l-h7f98852_0
+2022-02-05T21:26:14.0819966Z   tk                         pkgs/main::tk-8.6.8-hbc83047_0 --> conda-forge::tk-8.6.11-h27826a3_1
+2022-02-05T21:26:14.0820732Z   xz                         pkgs/main::xz-5.2.4-h14c3975_4 --> conda-forge::xz-5.2.5-h516909a_1
+2022-02-05T21:26:14.0820968Z 
+2022-02-05T21:26:14.0821280Z The following packages will be SUPERSEDED by a higher-priority channel:
+2022-02-05T21:26:14.0821531Z 
+2022-02-05T21:26:14.0821890Z   _libgcc_mutex           pkgs/main::_libgcc_mutex-0.1-main --> conda-forge::_libgcc_mutex-0.1-conda_forge
+2022-02-05T21:26:14.0822159Z 
+2022-02-05T21:26:14.0822165Z 
+2022-02-05T21:26:14.3936706Z Preparing transaction: ...working... done
+2022-02-05T21:26:14.7311151Z Verifying transaction: ...working... done
+2022-02-05T21:26:16.4368322Z Executing transaction: ...working... done
+2022-02-05T21:26:45.0402345Z Warning: you have pip-installed dependencies in your environment file, but you do not list pip itself as one of your conda dependencies.  Conda may not use the correct pip to install your packages, and they may end up in the wrong place.  Please add an explicit pip dependency.  I'm adding one for you, but still nagging you.
+2022-02-05T21:26:45.3401905Z Preparing transaction: ...working... done
+2022-02-05T21:26:48.0689442Z Verifying transaction: ...working... done
+2022-02-05T21:26:49.0490486Z Executing transaction: ...working... done
+2022-02-05T21:26:50.5034787Z Installing pip dependencies: ...working... done
+2022-02-05T21:26:50.8543424Z Cache location: /opt/conda/pkgs
+2022-02-05T21:26:50.8544627Z Will remove the following tarballs:
+2022-02-05T21:26:50.8644244Z 
+2022-02-05T21:26:50.8644557Z /opt/conda/pkgs
+2022-02-05T21:26:50.8645062Z ---------------
+2022-02-05T21:26:50.8645473Z libffi-3.4.2-h7f98852_5.tar.bz2               57 KB
+2022-02-05T21:26:50.8646022Z libev-4.33-h516909a_1.tar.bz2                104 KB
+2022-02-05T21:26:50.8646663Z setuptools-58.0.4-py310h06a4308_0.conda      782 KB
+2022-02-05T21:26:50.8647224Z mosdepth-0.3.3-hdfd78af_1.tar.bz2            3.4 MB
+2022-02-05T21:26:50.8647671Z pip-21.2.4-py310h06a4308_0.conda             1.8 MB
+2022-02-05T21:26:50.8648467Z libdeflate-1.9-h7f98852_0.tar.bz2             77 KB
+2022-02-05T21:26:50.8648920Z pcre-8.45-h9c3ff4c_0.tar.bz2                 253 KB
+2022-02-05T21:26:50.8649414Z reproc-14.2.3-h7f98852_0.tar.bz2              28 KB
+2022-02-05T21:26:50.8649849Z libbigwig-0.4.6-h1b8c3c0_1.tar.bz2           331 KB
+2022-02-05T21:26:50.8650533Z python_abi-3.7-2_cp37m.tar.bz2                 4 KB
+2022-02-05T21:26:50.8651028Z _libgcc_mutex-0.1-conda_forge.tar.bz2          3 KB
+2022-02-05T21:26:50.8651476Z libgomp-11.2.0-h1d223b6_12.tar.bz2           426 KB
+2022-02-05T21:26:50.8652037Z libstdcxx-ng-11.2.0-he4da1e4_12.tar.bz2      4.2 MB
+2022-02-05T21:26:50.8652473Z xz-5.2.5-h516909a_1.tar.bz2                  343 KB
+2022-02-05T21:26:50.8653030Z certifi-2021.10.8-py37h89c1867_1.tar.bz2     145 KB
+2022-02-05T21:26:50.8653531Z mamba-0.15.3-py37h7f483ca_0.tar.bz2          741 KB
+2022-02-05T21:26:50.8653969Z bamtocov-2.5.0-h38613fd_1.tar.bz2            778 KB
+2022-02-05T21:26:50.8654470Z libedit-3.1.20191231-h46ee950_2.tar.bz2      121 KB
+2022-02-05T21:26:50.8654920Z wheel-0.37.1-pyhd3eb1b0_0.conda               33 KB
+2022-02-05T21:26:50.8655437Z bzip2-1.0.8-h7f98852_4.tar.bz2               484 KB
+2022-02-05T21:26:50.8655862Z readline-8.1-h46c0cb4_0.tar.bz2              295 KB
+2022-02-05T21:26:50.8656351Z libxml2-2.9.12-h72842e0_0.tar.bz2            772 KB
+2022-02-05T21:26:50.8656840Z libedit-3.1.20191231-he28a2e2_2.tar.bz2      121 KB
+2022-02-05T21:26:50.8657297Z libnghttp2-1.46.0-hce63b2e_0.conda           680 KB
+2022-02-05T21:26:50.8657835Z libnghttp2-1.46.0-h812cca2_0.tar.bz2         806 KB
+2022-02-05T21:26:50.8658277Z bedtools-2.30.0-h7d7f7ad_2.tar.bz2          17.9 MB
+2022-02-05T21:26:50.8658863Z ncurses-6.2-h58526e2_4.tar.bz2               985 KB
+2022-02-05T21:26:50.8659329Z libsolv-0.7.19-h780b84a_5.tar.bz2            445 KB
+2022-02-05T21:26:50.8659724Z libssh2-1.10.0-ha56f1ee_2.tar.bz2            233 KB
+2022-02-05T21:26:50.8660205Z c-ares-1.18.1-h7f98852_0.tar.bz2             113 KB
+2022-02-05T21:26:50.8660613Z libarchive-3.5.2-hccf745f_1.tar.bz2          1.6 MB
+2022-02-05T21:26:50.8661187Z ld_impl_linux-64-2.36.1-hea4e1c9_2.tar.bz2     667 KB
+2022-02-05T21:26:50.8661607Z megadepth-1.1.3-h00214ad_1.tar.bz2           104 KB
+2022-02-05T21:26:50.8662085Z libiconv-1.16-h516909a_0.tar.bz2             1.4 MB
+2022-02-05T21:26:50.8662655Z lzo-2.10-h516909a_1000.tar.bz2               314 KB
+2022-02-05T21:26:50.8663006Z tomli-2.0.0-pyhd8ed1ab_1.tar.bz2              15 KB
+2022-02-05T21:26:50.8663436Z ca-certificates-2021.10.8-ha878542_0.tar.bz2     139 KB
+2022-02-05T21:26:50.8663823Z libcurl-7.80.0-h0b77cf5_0.conda              339 KB
+2022-02-05T21:26:50.8664227Z libgcc-ng-11.2.0-h1d223b6_12.tar.bz2         904 KB
+2022-02-05T21:26:50.8664665Z certifi-2021.5.30-py310h06a4308_0.conda      148 KB
+2022-02-05T21:26:50.8665027Z reproc-cpp-14.2.3-h9c3ff4c_0.tar.bz2          20 KB
+2022-02-05T21:26:50.8665433Z bamtools-2.5.1-h9a82719_9.tar.bz2           1012 KB
+2022-02-05T21:26:50.8665794Z libzlib-1.2.11-h36c2ea0_1013.tar.bz2          59 KB
+2022-02-05T21:26:50.8666189Z libcurl-7.81.0-h2574ce0_0.tar.bz2            338 KB
+2022-02-05T21:26:50.8666559Z krb5-1.19.2-hcc1bbae_3.tar.bz2               1.4 MB
+2022-02-05T21:26:50.8667351Z lz4-c-1.9.3-h9c3ff4c_1.tar.bz2               179 KB
+2022-02-05T21:26:50.8667844Z tzdata-2021e-he74cb21_0.tar.bz2              121 KB
+2022-02-05T21:26:50.8668275Z libnsl-2.0.0-h7f98852_0.tar.bz2               31 KB
+2022-02-05T21:26:50.8668751Z openssl-1.1.1l-h7f98852_0.tar.bz2            2.1 MB
+2022-02-05T21:26:50.8669339Z zstd-1.5.0-ha4553b6_1.conda                  524 KB
+2022-02-05T21:26:50.8669847Z python-3.10.2-h62f1059_0_cpython.tar.bz2    30.0 MB
+2022-02-05T21:26:50.8670383Z _openmp_mutex-4.5-1_gnu.tar.bz2               22 KB
+2022-02-05T21:26:50.8670811Z libuuid-2.32.1-h14c3975_1000.tar.bz2          26 KB
+2022-02-05T21:26:50.8671289Z samtools-1.14-hb421002_0.tar.bz2             411 KB
+2022-02-05T21:26:50.8671746Z curl-7.81.0-h2574ce0_0.tar.bz2                90 KB
+2022-02-05T21:26:50.8672360Z htslib-1.14-h5138463_1.tar.bz2               2.2 MB
+2022-02-05T21:26:50.8672806Z sqlite-3.37.0-h9cd32fc_0.tar.bz2             1.5 MB
+2022-02-05T21:26:50.8673300Z conda-4.11.0-py37h89c1867_0.tar.bz2         16.9 MB
+2022-02-05T21:26:50.8673784Z icu-68.2-h9c3ff4c_0.tar.bz2                 13.1 MB
+2022-02-05T21:26:50.8674235Z tk-8.6.11-h27826a3_1.tar.bz2                 3.3 MB
+2022-02-05T21:26:50.8674820Z zlib-1.2.11-h36c2ea0_1013.tar.bz2             86 KB
+2022-02-05T21:26:50.8675238Z python_abi-3.10-2_cp310.tar.bz2                4 KB
+2022-02-05T21:26:50.8675730Z hyperfine-1.12.0-habb4d0f_0.tar.bz2          624 KB
+2022-02-05T21:26:50.8676224Z covtobed-1.3.5-h36a6f06_0.tar.bz2             67 KB
+2022-02-05T21:26:50.8676399Z 
+2022-02-05T21:26:50.8676705Z ---------------------------------------------------
+2022-02-05T21:26:50.8677102Z Total:                                     115.9 MB
+2022-02-05T21:26:50.8677303Z 
+2022-02-05T21:26:50.8677388Z Proceed ([y]/n)? 
+2022-02-05T21:26:50.9571887Z Removed libffi-3.4.2-h7f98852_5.tar.bz2
+2022-02-05T21:26:50.9572936Z Removed libev-4.33-h516909a_1.tar.bz2
+2022-02-05T21:26:50.9573844Z Removed setuptools-58.0.4-py310h06a4308_0.conda
+2022-02-05T21:26:50.9574633Z Removed mosdepth-0.3.3-hdfd78af_1.tar.bz2
+2022-02-05T21:26:50.9575492Z Removed pip-21.2.4-py310h06a4308_0.conda
+2022-02-05T21:26:50.9576507Z Removed libdeflate-1.9-h7f98852_0.tar.bz2
+2022-02-05T21:26:50.9577294Z Removed pcre-8.45-h9c3ff4c_0.tar.bz2
+2022-02-05T21:26:50.9578106Z Removed reproc-14.2.3-h7f98852_0.tar.bz2
+2022-02-05T21:26:50.9578839Z Removed libbigwig-0.4.6-h1b8c3c0_1.tar.bz2
+2022-02-05T21:26:50.9579682Z Removed python_abi-3.7-2_cp37m.tar.bz2
+2022-02-05T21:26:50.9580433Z Removed _libgcc_mutex-0.1-conda_forge.tar.bz2
+2022-02-05T21:26:50.9581330Z Removed libgomp-11.2.0-h1d223b6_12.tar.bz2
+2022-02-05T21:26:50.9582199Z Removed libstdcxx-ng-11.2.0-he4da1e4_12.tar.bz2
+2022-02-05T21:26:50.9582914Z Removed xz-5.2.5-h516909a_1.tar.bz2
+2022-02-05T21:26:50.9583774Z Removed certifi-2021.10.8-py37h89c1867_1.tar.bz2
+2022-02-05T21:26:50.9584545Z Removed mamba-0.15.3-py37h7f483ca_0.tar.bz2
+2022-02-05T21:26:50.9585415Z Removed bamtocov-2.5.0-h38613fd_1.tar.bz2
+2022-02-05T21:26:50.9586179Z Removed libedit-3.1.20191231-h46ee950_2.tar.bz2
+2022-02-05T21:26:50.9586998Z Removed wheel-0.37.1-pyhd3eb1b0_0.conda
+2022-02-05T21:26:50.9587811Z Removed bzip2-1.0.8-h7f98852_4.tar.bz2
+2022-02-05T21:26:50.9588518Z Removed readline-8.1-h46c0cb4_0.tar.bz2
+2022-02-05T21:26:50.9589751Z Removed libxml2-2.9.12-h72842e0_0.tar.bz2
+2022-02-05T21:26:50.9590874Z Removed libedit-3.1.20191231-he28a2e2_2.tar.bz2
+2022-02-05T21:26:50.9591754Z Removed libnghttp2-1.46.0-hce63b2e_0.conda
+2022-02-05T21:26:50.9592527Z Removed libnghttp2-1.46.0-h812cca2_0.tar.bz2
+2022-02-05T21:26:50.9593367Z Removed bedtools-2.30.0-h7d7f7ad_2.tar.bz2
+2022-02-05T21:26:50.9594232Z Removed ncurses-6.2-h58526e2_4.tar.bz2
+2022-02-05T21:26:50.9594953Z Removed libsolv-0.7.19-h780b84a_5.tar.bz2
+2022-02-05T21:26:50.9595776Z Removed libssh2-1.10.0-ha56f1ee_2.tar.bz2
+2022-02-05T21:26:50.9596492Z Removed c-ares-1.18.1-h7f98852_0.tar.bz2
+2022-02-05T21:26:50.9597323Z Removed libarchive-3.5.2-hccf745f_1.tar.bz2
+2022-02-05T21:26:50.9598249Z Removed ld_impl_linux-64-2.36.1-hea4e1c9_2.tar.bz2
+2022-02-05T21:26:50.9599020Z Removed megadepth-1.1.3-h00214ad_1.tar.bz2
+2022-02-05T21:26:50.9599857Z Removed libiconv-1.16-h516909a_0.tar.bz2
+2022-02-05T21:26:50.9600549Z Removed lzo-2.10-h516909a_1000.tar.bz2
+2022-02-05T21:26:50.9601330Z Removed tomli-2.0.0-pyhd8ed1ab_1.tar.bz2
+2022-02-05T21:26:50.9602152Z Removed ca-certificates-2021.10.8-ha878542_0.tar.bz2
+2022-02-05T21:26:50.9603058Z Removed libcurl-7.80.0-h0b77cf5_0.conda
+2022-02-05T21:26:50.9603908Z Removed libgcc-ng-11.2.0-h1d223b6_12.tar.bz2
+2022-02-05T21:26:50.9604688Z Removed certifi-2021.5.30-py310h06a4308_0.conda
+2022-02-05T21:26:50.9605614Z Removed reproc-cpp-14.2.3-h9c3ff4c_0.tar.bz2
+2022-02-05T21:26:50.9606361Z Removed bamtools-2.5.1-h9a82719_9.tar.bz2
+2022-02-05T21:26:50.9607109Z Removed libzlib-1.2.11-h36c2ea0_1013.tar.bz2
+2022-02-05T21:26:50.9607716Z Removed libcurl-7.81.0-h2574ce0_0.tar.bz2
+2022-02-05T21:26:50.9608147Z Removed krb5-1.19.2-hcc1bbae_3.tar.bz2
+2022-02-05T21:26:50.9608564Z Removed lz4-c-1.9.3-h9c3ff4c_1.tar.bz2
+2022-02-05T21:26:50.9608936Z Removed tzdata-2021e-he74cb21_0.tar.bz2
+2022-02-05T21:26:50.9609425Z Removed libnsl-2.0.0-h7f98852_0.tar.bz2
+2022-02-05T21:26:50.9609907Z Removed openssl-1.1.1l-h7f98852_0.tar.bz2
+2022-02-05T21:26:50.9610326Z Removed zstd-1.5.0-ha4553b6_1.conda
+2022-02-05T21:26:50.9610754Z Removed python-3.10.2-h62f1059_0_cpython.tar.bz2
+2022-02-05T21:26:50.9611213Z Removed _openmp_mutex-4.5-1_gnu.tar.bz2
+2022-02-05T21:26:50.9611691Z Removed libuuid-2.32.1-h14c3975_1000.tar.bz2
+2022-02-05T21:26:50.9612071Z Removed samtools-1.14-hb421002_0.tar.bz2
+2022-02-05T21:26:50.9612487Z Removed curl-7.81.0-h2574ce0_0.tar.bz2
+2022-02-05T21:26:50.9612850Z Removed htslib-1.14-h5138463_1.tar.bz2
+2022-02-05T21:26:50.9613285Z Removed sqlite-3.37.0-h9cd32fc_0.tar.bz2
+2022-02-05T21:26:50.9613710Z Removed conda-4.11.0-py37h89c1867_0.tar.bz2
+2022-02-05T21:26:50.9614134Z Removed icu-68.2-h9c3ff4c_0.tar.bz2
+2022-02-05T21:26:50.9614539Z Removed tk-8.6.11-h27826a3_1.tar.bz2
+2022-02-05T21:26:50.9614944Z Removed zlib-1.2.11-h36c2ea0_1013.tar.bz2
+2022-02-05T21:26:50.9615371Z Removed python_abi-3.10-2_cp310.tar.bz2
+2022-02-05T21:26:50.9615795Z Removed hyperfine-1.12.0-habb4d0f_0.tar.bz2
+2022-02-05T21:26:50.9616235Z Removed covtobed-1.3.5-h36a6f06_0.tar.bz2
+2022-02-05T21:26:50.9616600Z WARNING: /root/.conda/pkgs does not exist
+2022-02-05T21:26:50.9617091Z Cache location: /opt/conda/pkgs
+2022-02-05T21:26:50.9617473Z Will remove the following packages:
+2022-02-05T21:26:50.9617796Z /opt/conda/pkgs
+2022-02-05T21:26:50.9618157Z ---------------
+2022-02-05T21:26:50.9618349Z 
+2022-02-05T21:26:50.9618559Z python_abi-3.10-2_cp310                       11 KB
+2022-02-05T21:26:50.9619040Z _openmp_mutex-4.5-1_gnu                       93 KB
+2022-02-05T21:26:50.9619516Z _libgcc_mutex-0.1-conda_forge                  6 KB
+2022-02-05T21:26:50.9619964Z python_abi-3.7-2_cp37m                        11 KB
+2022-02-05T21:26:50.9620188Z 
+2022-02-05T21:26:50.9620461Z ---------------------------------------------------
+2022-02-05T21:26:50.9620789Z Total:                                       120 KB
+2022-02-05T21:26:50.9620989Z 
+2022-02-05T21:26:50.9621139Z Proceed ([y]/n)? 
+2022-02-05T21:26:51.1827393Z removing python_abi-3.10-2_cp310
+2022-02-05T21:26:51.1828427Z removing _openmp_mutex-4.5-1_gnu
+2022-02-05T21:26:51.1829645Z removing _libgcc_mutex-0.1-conda_forge
+2022-02-05T21:26:51.1830349Z removing python_abi-3.7-2_cp37m
+2022-02-05T21:27:02.5994076Z Removing intermediate container afec3f130c60
+2022-02-05T21:27:02.5994750Z  ---> da36f032743c
+2022-02-05T21:27:02.5995143Z Step 6/9 : ENV PATH /opt/conda/envs/env/bin:$PATH
+2022-02-05T21:27:02.6352448Z  ---> Running in 8677a7565ce6
+2022-02-05T21:27:04.2140954Z Removing intermediate container 8677a7565ce6
+2022-02-05T21:27:04.2141801Z  ---> d391a4147c45
+2022-02-05T21:27:04.2143157Z Step 7/9 : RUN conda env export --name env > workflow.yml
+2022-02-05T21:27:04.2292409Z  ---> Running in 5ede275076ab
+2022-02-05T21:27:06.8472794Z Removing intermediate container 5ede275076ab
+2022-02-05T21:27:06.8473826Z  ---> 02a3b3fcf418
+2022-02-05T21:27:06.8474497Z Step 8/9 : RUN compare.sh all
+2022-02-05T21:27:06.8688924Z  ---> Running in c7df37499bf1
+2022-02-05T21:27:07.1414458Z covtobed  : 1.3.5
+2022-02-05T21:27:07.1415210Z bamtocov  : 2.5.0
+2022-02-05T21:27:07.1415809Z megadepth : 1.1.2
+2022-02-05T21:27:07.1416189Z mosdepth  : 0.3.3
+2022-02-05T21:27:20.2851964Z Benchmark 1: covtobed 'cpara-illumina-noseq.bam' #1.3.5
+2022-02-05T21:28:33.0522200Z   Time (mean ± σ):     14.553 s ±  0.246 s    [User: 12.598 s, System: 1.953 s]
+2022-02-05T21:28:33.0716300Z   Range (min … max):   14.289 s … 14.895 s    5 runs
+2022-02-05T21:28:33.0716595Z  
+2022-02-05T21:28:33.0716985Z Benchmark 2: bamtocov 'cpara-illumina-noseq.bam' #2.5.0
+2022-02-05T21:29:26.9236341Z   Time (mean ± σ):     10.774 s ±  0.144 s    [User: 10.845 s, System: 2.251 s]
+2022-02-05T21:29:26.9237700Z   Range (min … max):   10.550 s … 10.939 s    5 runs
+2022-02-05T21:29:26.9350384Z  
+2022-02-05T21:29:26.9355176Z Benchmark 3: megadepth --coverage 'cpara-illumina-noseq.bam' #1.1.2
+2022-02-05T21:29:46.5926729Z   Time (mean ± σ):      3.932 s ±  0.077 s    [User: 3.882 s, System: 0.049 s]
+2022-02-05T21:29:46.5928687Z   Range (min … max):    3.842 s …  4.030 s    5 runs
+2022-02-05T21:29:46.5929275Z  
+2022-02-05T21:29:46.5929730Z Benchmark 4: megadepth --coverage --longreads 'cpara-illumina-noseq.bam' #1.1.2
+2022-02-05T21:30:07.2379282Z   Time (mean ± σ):      4.129 s ±  0.112 s    [User: 4.050 s, System: 0.077 s]
+2022-02-05T21:30:07.2381235Z   Range (min … max):    4.012 s …  4.313 s    5 runs
+2022-02-05T21:30:07.2473047Z  
+2022-02-05T21:30:07.2473622Z Benchmark 5: mosdepth mosdepth.X0pr36 'cpara-illumina-noseq.bam' #0.3.3
+2022-02-05T21:31:02.6897285Z   Time (mean ± σ):     11.090 s ±  0.135 s    [User: 10.770 s, System: 0.275 s]
+2022-02-05T21:31:02.6904337Z   Range (min … max):   10.908 s … 11.289 s    5 runs
+2022-02-05T21:31:02.6904765Z  
+2022-02-05T21:31:02.6905668Z Benchmark 6: mosdepth --fast-mode mosdepth.X0pr36 'cpara-illumina-noseq.bam' #0.3.3
+2022-02-05T21:31:02.6906362Z [91m 
+2022-02-05T21:31:02.6907659Z   Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet PC without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+2022-02-05T21:31:49.6312897Z [0m  Time (mean ± σ):      9.387 s ±  0.074 s    [User: 9.041 s, System: 0.288 s]
+2022-02-05T21:31:49.6322364Z   Range (min … max):    9.291 s …  9.468 s    5 runs
+2022-02-05T21:31:49.6322968Z  
+2022-02-05T21:31:49.6323432Z Summary
+2022-02-05T21:31:49.6324115Z   'megadepth --coverage 'cpara-illumina-noseq.bam' #1.1.2' ran
+2022-02-05T21:31:49.6325098Z     1.05 ± 0.04 times faster than 'megadepth --coverage --longreads 'cpara-illumina-noseq.bam' #1.1.2'
+2022-02-05T21:31:49.6326038Z     2.39 ± 0.05 times faster than 'mosdepth --fast-mode mosdepth.X0pr36 'cpara-illumina-noseq.bam' #0.3.3'
+2022-02-05T21:31:49.6326894Z     2.74 ± 0.07 times faster than 'bamtocov 'cpara-illumina-noseq.bam' #2.5.0'
+2022-02-05T21:31:49.6370818Z     2.82 ± 0.07 times faster than 'mosdepth mosdepth.X0pr36 'cpara-illumina-noseq.bam' #0.3.3'
+2022-02-05T21:31:49.6371382Z     3.70 ± 0.10 times faster than 'covtobed 'cpara-illumina-noseq.bam' #1.3.5'
+2022-02-05T21:31:52.2830199Z Benchmark 1: covtobed 'cpara-ont-noseq.bam' #1.3.5
+2022-02-05T21:31:55.2528184Z   Time (mean ± σ):     494.1 ms ±  14.3 ms    [User: 465.9 ms, System: 27.7 ms]
+2022-02-05T21:31:55.2529022Z   Range (min … max):   479.1 ms … 512.8 ms    6 runs
+2022-02-05T21:31:55.2529455Z  
+2022-02-05T21:31:55.2530117Z Benchmark 2: bamtocov 'cpara-ont-noseq.bam' #2.5.0
+2022-02-05T21:31:58.0957769Z   Time (mean ± σ):     236.3 ms ±  10.7 ms    [User: 368.3 ms, System: 42.9 ms]
+2022-02-05T21:31:58.0958285Z   Range (min … max):   224.2 ms … 253.5 ms    12 runs
+2022-02-05T21:31:58.0958529Z  
+2022-02-05T21:31:58.0958962Z Benchmark 3: megadepth --coverage 'cpara-ont-noseq.bam' #1.1.2
+2022-02-05T21:32:00.9029776Z   Time (mean ± σ):     400.3 ms ±  11.5 ms    [User: 391.2 ms, System: 9.0 ms]
+2022-02-05T21:32:00.9030648Z   Range (min … max):   387.4 ms … 419.2 ms    7 runs
+2022-02-05T21:32:00.9031077Z  
+2022-02-05T21:32:00.9031873Z Benchmark 4: megadepth --coverage --longreads 'cpara-ont-noseq.bam' #1.1.2
+2022-02-05T21:32:03.7532557Z   Time (mean ± σ):     406.4 ms ±  11.4 ms    [User: 394.2 ms, System: 11.7 ms]
+2022-02-05T21:32:03.7533385Z   Range (min … max):   392.1 ms … 424.8 ms    7 runs
+2022-02-05T21:32:03.7533826Z  
+2022-02-05T21:32:03.7534583Z Benchmark 5: mosdepth mosdepth.XMG5Wi 'cpara-ont-noseq.bam' #0.3.3
+2022-02-05T21:32:07.0810157Z   Time (mean ± σ):     664.9 ms ±  29.3 ms    [User: 643.4 ms, System: 20.9 ms]
+2022-02-05T21:32:07.0810621Z   Range (min … max):   629.0 ms … 687.7 ms    5 runs
+2022-02-05T21:32:07.0810865Z  
+2022-02-05T21:32:07.0811290Z Benchmark 6: mosdepth --fast-mode mosdepth.XMG5Wi 'cpara-ont-noseq.bam' #0.3.3
+2022-02-05T21:32:07.0811648Z [91m 
+2022-02-05T21:32:07.0814029Z   Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet PC without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+2022-02-05T21:32:09.7992032Z [0m  Time (mean ± σ):     542.8 ms ±  10.0 ms    [User: 534.0 ms, System: 8.7 ms]
+2022-02-05T21:32:09.7992857Z   Range (min … max):   535.5 ms … 560.0 ms    5 runs
+2022-02-05T21:32:09.7993120Z  
+2022-02-05T21:32:09.7993305Z Summary
+2022-02-05T21:32:09.7993675Z   'bamtocov 'cpara-ont-noseq.bam' #2.5.0' ran
+2022-02-05T21:32:09.7994290Z     1.69 ± 0.09 times faster than 'megadepth --coverage 'cpara-ont-noseq.bam' #1.1.2'
+2022-02-05T21:32:09.7994852Z     1.72 ± 0.09 times faster than 'megadepth --coverage --longreads 'cpara-ont-noseq.bam' #1.1.2'
+2022-02-05T21:32:09.7995433Z     2.09 ± 0.11 times faster than 'covtobed 'cpara-ont-noseq.bam' #1.3.5'
+2022-02-05T21:32:09.7995899Z     2.30 ± 0.11 times faster than 'mosdepth --fast-mode mosdepth.XMG5Wi 'cpara-ont-noseq.bam' #0.3.3'
+2022-02-05T21:32:09.7996454Z     2.81 ± 0.18 times faster than 'mosdepth mosdepth.XMG5Wi 'cpara-ont-noseq.bam' #0.3.3'
+2022-02-05T21:41:48.7574036Z Benchmark 1: covtobed 'HG00258.bam' #1.3.5
+2022-02-05T22:28:45.3939644Z   Time (mean ± σ):     563.326 s ±  8.611 s    [User: 489.595 s, System: 73.595 s]
+2022-02-05T22:28:45.3940160Z   Range (min … max):   555.070 s … 574.771 s    5 runs
+2022-02-05T22:28:45.3940385Z  
+2022-02-05T22:28:45.3940699Z Benchmark 2: bamtocov 'HG00258.bam' #2.5.0
+2022-02-05T22:59:04.4592656Z   Time (mean ± σ):     363.811 s ±  8.651 s    [User: 386.928 s, System: 92.597 s]
+2022-02-05T22:59:04.4593516Z   Range (min … max):   350.075 s … 373.599 s    5 runs
+2022-02-05T22:59:04.4593846Z  
+2022-02-05T22:59:04.4594316Z Benchmark 3: megadepth --coverage 'HG00258.bam' #1.1.2
+2022-02-05T23:13:32.0623968Z   Time (mean ± σ):     173.520 s ±  0.228 s    [User: 164.764 s, System: 8.327 s]
+2022-02-05T23:13:32.0625104Z   Range (min … max):   173.290 s … 173.810 s    5 runs
+2022-02-05T23:13:32.0625675Z  
+2022-02-05T23:13:32.0626705Z Benchmark 4: megadepth --coverage --longreads 'HG00258.bam' #1.1.2
+2022-02-05T23:27:58.4713914Z   Time (mean ± σ):     173.281 s ±  0.478 s    [User: 164.471 s, System: 8.422 s]
+2022-02-05T23:27:58.4715047Z   Range (min … max):   172.890 s … 173.919 s    5 runs
+2022-02-05T23:27:58.4715610Z  
+2022-02-05T23:27:58.4716616Z Benchmark 5: mosdepth mosdepth.pMD4Cm 'HG00258.bam' #0.3.3
+2022-02-06T00:07:06.4949935Z   Time (mean ± σ):     469.604 s ±  0.839 s    [User: 453.589 s, System: 14.500 s]
+2022-02-06T00:07:06.4950464Z   Range (min … max):   468.725 s … 471.000 s    5 runs
+2022-02-06T00:07:06.4950702Z  
+2022-02-06T00:07:06.4950941Z [91m 
+2022-02-06T00:07:06.4951699Z   Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet PC without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+2022-02-06T00:07:06.4952435Z [0mBenchmark 6: mosdepth --fast-mode mosdepth.pMD4Cm 'HG00258.bam' #0.3.3
+2022-02-06T00:45:23.3983978Z   Time (mean ± σ):     459.380 s ±  1.134 s    [User: 440.636 s, System: 16.454 s]
+2022-02-06T00:45:23.3984819Z   Range (min … max):   458.283 s … 461.134 s    5 runs
+2022-02-06T00:45:23.3987191Z  
+2022-02-06T00:45:23.3988525Z Summary
+2022-02-06T00:45:23.3989766Z   'megadepth --coverage --longreads 'HG00258.bam' #1.1.2' ran
+2022-02-06T00:45:23.3990687Z     1.00 ± 0.00 times faster than 'megadepth --coverage 'HG00258.bam' #1.1.2'
+2022-02-06T00:45:23.3991573Z     2.10 ± 0.05 times faster than 'bamtocov 'HG00258.bam' #2.5.0'
+2022-02-06T00:45:23.3992620Z     2.65 ± 0.01 times faster than 'mosdepth --fast-mode mosdepth.pMD4Cm 'HG00258.bam' #0.3.3'
+2022-02-06T00:45:23.3993590Z     2.71 ± 0.01 times faster than 'mosdepth mosdepth.pMD4Cm 'HG00258.bam' #0.3.3'
+2022-02-06T00:45:23.3994404Z     3.25 ± 0.05 times faster than 'covtobed 'HG00258.bam' #1.3.5'
+2022-02-06T00:45:26.4487256Z Benchmark 1: covtobed 'panel_01.bam' #1.3.5
+2022-02-06T00:45:29.4121273Z   Time (mean ± σ):     422.6 ms ±   3.7 ms    [User: 416.2 ms, System: 5.5 ms]
+2022-02-06T00:45:29.4121908Z   Range (min … max):   417.5 ms … 427.5 ms    7 runs
+2022-02-06T00:45:29.4122210Z  
+2022-02-06T00:45:29.4122631Z Benchmark 2: bamtocov 'panel_01.bam' #2.5.0
+2022-02-06T00:45:32.2932084Z   Time (mean ± σ):     191.3 ms ±   4.9 ms    [User: 277.7 ms, System: 37.4 ms]
+2022-02-06T00:45:32.2932921Z   Range (min … max):   185.7 ms … 204.4 ms    15 runs
+2022-02-06T00:45:32.2933151Z  
+2022-02-06T00:45:32.2933518Z Benchmark 3: megadepth --coverage 'panel_01.bam' #1.1.2
+2022-02-06T00:46:02.6513542Z   Time (mean ± σ):      6.069 s ±  0.037 s    [User: 5.655 s, System: 0.411 s]
+2022-02-06T00:46:02.6514019Z   Range (min … max):    6.021 s …  6.122 s    5 runs
+2022-02-06T00:46:02.6514279Z  
+2022-02-06T00:46:02.6584654Z Benchmark 4: megadepth --coverage --longreads 'panel_01.bam' #1.1.2
+2022-02-06T00:46:32.8964360Z   Time (mean ± σ):      6.050 s ±  0.020 s    [User: 5.642 s, System: 0.407 s]
+2022-02-06T00:46:32.8965737Z   Range (min … max):    6.023 s …  6.079 s    5 runs
+2022-02-06T00:46:32.8966489Z  
+2022-02-06T00:46:32.8967353Z Benchmark 5: mosdepth mosdepth.zCQZhW 'panel_01.bam' #0.3.3
+2022-02-06T00:50:06.5607735Z   Time (mean ± σ):     42.687 s ±  7.201 s    [User: 24.145 s, System: 4.893 s]
+2022-02-06T00:50:06.5628666Z   Range (min … max):   35.746 s … 51.458 s    5 runs
+2022-02-06T00:50:06.5636168Z  
+2022-02-06T00:50:06.5647780Z Benchmark 6: mosdepth --fast-mode mosdepth.zCQZhW 'panel_01.bam' #0.3.3
+2022-02-06T00:52:15.9523319Z   Time (mean ± σ):     25.917 s ±  0.166 s    [User: 23.335 s, System: 2.565 s]
+2022-02-06T00:52:16.0655400Z   Range (min … max):   25.730 s … 26.144 s    5 runs
+2022-02-06T00:52:16.0656490Z  
+2022-02-06T00:52:16.0657837Z Summary
+2022-02-06T00:52:16.0659229Z   'bamtocov 'panel_01.bam' #2.5.0' ran
+2022-02-06T00:52:16.0660186Z     2.21 ± 0.06 times faster than 'covtobed 'panel_01.bam' #1.3.5'
+2022-02-06T00:52:16.0661265Z    31.63 ± 0.81 times faster than 'megadepth --coverage --longreads 'panel_01.bam' #1.1.2'
+2022-02-06T00:52:16.0664013Z    31.72 ± 0.83 times faster than 'megadepth --coverage 'panel_01.bam' #1.1.2'
+2022-02-06T00:52:16.0696463Z   135.47 ± 3.55 times faster than 'mosdepth --fast-mode mosdepth.zCQZhW 'panel_01.bam' #0.3.3'
+2022-02-06T00:52:16.0698271Z   223.14 ± 38.07 times faster than 'mosdepth mosdepth.zCQZhW 'panel_01.bam' #0.3.3'
+2022-02-06T00:52:40.0440055Z Benchmark 1: covtobed 'w1118_f_hd_R1.junc.bam' #1.3.5
+2022-02-06T00:52:47.6994038Z   Time (mean ± σ):      1.530 s ±  0.021 s    [User: 1.220 s, System: 0.307 s]
+2022-02-06T00:52:47.7011982Z   Range (min … max):    1.502 s …  1.556 s    5 runs
+2022-02-06T00:52:47.7012595Z  
+2022-02-06T00:52:47.7016158Z Benchmark 2: bamtocov 'w1118_f_hd_R1.junc.bam' #2.5.0
+2022-02-06T00:52:54.8627425Z   Time (mean ± σ):      1.432 s ±  0.074 s    [User: 1.223 s, System: 0.396 s]
+2022-02-06T00:52:54.8627903Z   Range (min … max):    1.375 s …  1.523 s    5 runs
+2022-02-06T00:52:54.8628164Z  
+2022-02-06T00:52:54.8628386Z [91m 
+2022-02-06T00:52:54.8629461Z   Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet PC without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+2022-02-06T00:52:54.8630322Z [0mBenchmark 3: megadepth --coverage 'w1118_f_hd_R1.junc.bam' #1.1.2
+2022-02-06T00:52:57.9310988Z   Time (mean ± σ):     613.0 ms ±  12.5 ms    [User: 521.3 ms, System: 86.5 ms]
+2022-02-06T00:52:57.9311953Z   Range (min … max):   604.0 ms … 634.4 ms    5 runs
+2022-02-06T00:52:57.9312399Z  
+2022-02-06T00:52:57.9313199Z Benchmark 4: megadepth --coverage --longreads 'w1118_f_hd_R1.junc.bam' #1.1.2
+2022-02-06T00:53:01.0045904Z   Time (mean ± σ):     613.9 ms ±   3.4 ms    [User: 535.9 ms, System: 77.8 ms]
+2022-02-06T00:53:01.0046525Z   Range (min … max):   609.2 ms … 617.5 ms    5 runs
+2022-02-06T00:53:01.0046754Z  
+2022-02-06T00:53:01.0047161Z Benchmark 5: mosdepth mosdepth.7dbdyA 'w1118_f_hd_R1.junc.bam' #0.3.3
+2022-02-06T00:53:15.7044388Z   Time (mean ± σ):      2.939 s ±  0.017 s    [User: 2.721 s, System: 0.213 s]
+2022-02-06T00:53:15.7048588Z   Range (min … max):    2.913 s …  2.958 s    5 runs
+2022-02-06T00:53:15.7049068Z  
+2022-02-06T00:53:15.7049845Z Benchmark 6: mosdepth --fast-mode mosdepth.7dbdyA 'w1118_f_hd_R1.junc.bam' #0.3.3
+2022-02-06T00:53:30.2471724Z   Time (mean ± σ):      2.907 s ±  0.030 s    [User: 2.681 s, System: 0.219 s]
+2022-02-06T00:53:30.2476544Z   Range (min … max):    2.881 s …  2.953 s    5 runs
+2022-02-06T00:53:30.2476802Z  
+2022-02-06T00:53:30.2476985Z Summary
+2022-02-06T00:53:30.2477391Z   'megadepth --coverage 'w1118_f_hd_R1.junc.bam' #1.1.2' ran
+2022-02-06T00:53:30.2478068Z     1.00 ± 0.02 times faster than 'megadepth --coverage --longreads 'w1118_f_hd_R1.junc.bam' #1.1.2'
+2022-02-06T00:53:30.2478620Z     2.34 ± 0.13 times faster than 'bamtocov 'w1118_f_hd_R1.junc.bam' #2.5.0'
+2022-02-06T00:53:30.2479131Z     2.50 ± 0.06 times faster than 'covtobed 'w1118_f_hd_R1.junc.bam' #1.3.5'
+2022-02-06T00:53:30.2479737Z     4.74 ± 0.11 times faster than 'mosdepth --fast-mode mosdepth.7dbdyA 'w1118_f_hd_R1.junc.bam' #0.3.3'
+2022-02-06T00:53:30.2480344Z     4.80 ± 0.10 times faster than 'mosdepth mosdepth.7dbdyA 'w1118_f_hd_R1.junc.bam' #0.3.3'
+2022-02-06T00:54:42.1090704Z [91m[E::hts_idx_push] NO_COOR reads not in a single block at the end 35 -1
+2022-02-06T00:54:42.1091915Z [E::sam_index] Read 'Z7KPB:01332:11615' with ref_name='chr13_random', ref_length=608348, flags=16, pos=439846 cannot be indexed
+2022-02-06T00:54:42.1092741Z samtools index: failed to create index for "Library_01.bam"
+2022-02-06T00:54:42.1466816Z [0mBenchmark 1: covtobed 'Library_01.bam' #1.3.5
+2022-02-06T00:54:42.1499847Z [91mError: Command terminated with non-zero exit code: 2. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+2022-02-06T00:57:04.3995536Z [0mRemoving intermediate container c7df37499bf1
+2022-02-06T00:57:04.3996259Z  ---> b970b865f6b5
+2022-02-06T00:57:04.3996682Z Step 9/9 : RUN cat *md
+2022-02-06T00:57:04.4336258Z  ---> Running in 9a74681f4d5f
+2022-02-06T00:57:04.8433884Z | Command | Mean [s] | Min [s] | Max [s] | Relative |
+2022-02-06T00:57:04.8444846Z |:---|---:|---:|---:|---:|
+2022-02-06T00:57:04.8447727Z | `covtobed 'HG00258.bam' #1.3.5` | 563.326 ± 8.611 | 555.070 | 574.771 | 3.25 ± 0.05 |
+2022-02-06T00:57:04.8448280Z | `bamtocov 'HG00258.bam' #2.5.0` | 363.811 ± 8.651 | 350.075 | 373.599 | 2.10 ± 0.05 |
+2022-02-06T00:57:04.8448810Z | `megadepth --coverage 'HG00258.bam' #1.1.2` | 173.520 ± 0.228 | 173.290 | 173.810 | 1.00 ± 0.00 |
+2022-02-06T00:57:04.8449345Z | `megadepth --coverage --longreads 'HG00258.bam' #1.1.2` | 173.281 ± 0.478 | 172.890 | 173.919 | 1.00 |
+2022-02-06T00:57:04.8449872Z | `mosdepth mosdepth.pMD4Cm 'HG00258.bam' #0.3.3` | 469.604 ± 0.839 | 468.725 | 471.000 | 2.71 ± 0.01 |
+2022-02-06T00:57:04.8450430Z | `mosdepth --fast-mode mosdepth.pMD4Cm 'HG00258.bam' #0.3.3` | 459.380 ± 1.134 | 458.283 | 461.134 | 2.65 ± 0.01 |
+2022-02-06T00:57:04.8450781Z | Command | Mean [s] | Min [s] | Max [s] | Relative |
+2022-02-06T00:57:04.8451114Z |:---|---:|---:|---:|---:|
+2022-02-06T00:57:04.8451572Z | `covtobed 'cpara-illumina-noseq.bam' #1.3.5` | 14.553 ± 0.246 | 14.289 | 14.895 | 3.70 ± 0.10 |
+2022-02-06T00:57:04.8452076Z | `bamtocov 'cpara-illumina-noseq.bam' #2.5.0` | 10.774 ± 0.144 | 10.550 | 10.939 | 2.74 ± 0.07 |
+2022-02-06T00:57:04.8452628Z | `megadepth --coverage 'cpara-illumina-noseq.bam' #1.1.2` | 3.932 ± 0.077 | 3.842 | 4.030 | 1.00 |
+2022-02-06T00:57:04.8453220Z | `megadepth --coverage --longreads 'cpara-illumina-noseq.bam' #1.1.2` | 4.129 ± 0.112 | 4.012 | 4.313 | 1.05 ± 0.04 |
+2022-02-06T00:57:04.8453823Z | `mosdepth mosdepth.X0pr36 'cpara-illumina-noseq.bam' #0.3.3` | 11.090 ± 0.135 | 10.908 | 11.289 | 2.82 ± 0.07 |
+2022-02-06T00:57:04.8454440Z | `mosdepth --fast-mode mosdepth.X0pr36 'cpara-illumina-noseq.bam' #0.3.3` | 9.387 ± 0.074 | 9.291 | 9.468 | 2.39 ± 0.05 |
+2022-02-06T00:57:04.8454824Z | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
+2022-02-06T00:57:04.8455143Z |:---|---:|---:|---:|---:|
+2022-02-06T00:57:04.8455849Z | `covtobed 'cpara-ont-noseq.bam' #1.3.5` | 494.1 ± 14.3 | 479.1 | 512.8 | 2.09 ± 0.11 |
+2022-02-06T00:57:04.8456332Z | `bamtocov 'cpara-ont-noseq.bam' #2.5.0` | 236.3 ± 10.7 | 224.2 | 253.5 | 1.00 |
+2022-02-06T00:57:04.8456850Z | `megadepth --coverage 'cpara-ont-noseq.bam' #1.1.2` | 400.3 ± 11.5 | 387.4 | 419.2 | 1.69 ± 0.09 |
+2022-02-06T00:57:04.8457548Z | `megadepth --coverage --longreads 'cpara-ont-noseq.bam' #1.1.2` | 406.4 ± 11.4 | 392.1 | 424.8 | 1.72 ± 0.09 |
+2022-02-06T00:57:04.8458179Z | `mosdepth mosdepth.XMG5Wi 'cpara-ont-noseq.bam' #0.3.3` | 664.9 ± 29.3 | 629.0 | 687.7 | 2.81 ± 0.18 |
+2022-02-06T00:57:04.8458789Z | `mosdepth --fast-mode mosdepth.XMG5Wi 'cpara-ont-noseq.bam' #0.3.3` | 542.8 ± 10.0 | 535.5 | 560.0 | 2.30 ± 0.11 |
+2022-02-06T00:57:04.8459160Z | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
+2022-02-06T00:57:04.8459479Z |:---|---:|---:|---:|---:|
+2022-02-06T00:57:04.8459863Z | `covtobed 'panel_01.bam' #1.3.5` | 422.6 ± 3.7 | 417.5 | 427.5 | 2.21 ± 0.06 |
+2022-02-06T00:57:04.8460308Z | `bamtocov 'panel_01.bam' #2.5.0` | 191.3 ± 4.9 | 185.7 | 204.4 | 1.00 |
+2022-02-06T00:57:04.8460784Z | `megadepth --coverage 'panel_01.bam' #1.1.2` | 6068.9 ± 36.9 | 6021.0 | 6121.8 | 31.72 ± 0.83 |
+2022-02-06T00:57:04.8461307Z | `megadepth --coverage --longreads 'panel_01.bam' #1.1.2` | 6050.0 ± 19.7 | 6023.0 | 6078.5 | 31.63 ± 0.81 |
+2022-02-06T00:57:04.8461857Z | `mosdepth mosdepth.zCQZhW 'panel_01.bam' #0.3.3` | 42686.6 ± 7201.3 | 35745.8 | 51457.9 | 223.14 ± 38.07 |
+2022-02-06T00:57:04.8462402Z | `mosdepth --fast-mode mosdepth.zCQZhW 'panel_01.bam' #0.3.3` | 25916.5 ± 166.2 | 25730.0 | 26144.3 | 135.47 ± 3.55 |
+2022-02-06T00:57:04.8462766Z | Command | Mean [s] | Min [s] | Max [s] | Relative |
+2022-02-06T00:57:04.8463080Z |:---|---:|---:|---:|---:|
+2022-02-06T00:57:04.8463504Z | `covtobed 'w1118_f_hd_R1.junc.bam' #1.3.5` | 1.530 ± 0.021 | 1.502 | 1.556 | 2.50 ± 0.06 |
+2022-02-06T00:57:04.8463971Z | `bamtocov 'w1118_f_hd_R1.junc.bam' #2.5.0` | 1.432 ± 0.074 | 1.375 | 1.523 | 2.34 ± 0.13 |
+2022-02-06T00:57:04.8464620Z | `megadepth --coverage 'w1118_f_hd_R1.junc.bam' #1.1.2` | 0.613 ± 0.013 | 0.604 | 0.634 | 1.00 |
+2022-02-06T00:57:04.8465230Z | `megadepth --coverage --longreads 'w1118_f_hd_R1.junc.bam' #1.1.2` | 0.614 ± 0.003 | 0.609 | 0.618 | 1.00 ± 0.02 |
+2022-02-06T00:57:04.8465827Z | `mosdepth mosdepth.7dbdyA 'w1118_f_hd_R1.junc.bam' #0.3.3` | 2.939 ± 0.017 | 2.913 | 2.958 | 4.80 ± 0.10 |
+2022-02-06T00:57:04.8466517Z | `mosdepth --fast-mode mosdepth.7dbdyA 'w1118_f_hd_R1.junc.bam' #0.3.3` | 2.907 ± 0.030 | 2.881 | 2.953 | 4.74 ± 0.11 |
+2022-02-06T00:57:06.6404780Z Removing intermediate container 9a74681f4d5f
+2022-02-06T00:57:06.6408198Z  ---> 77c98ce4cabf
+2022-02-06T00:57:06.6711398Z Successfully built 77c98ce4cabf
+2022-02-06T00:57:06.6816003Z Successfully tagged my-image-name:1644096339
+2022-02-06T00:57:06.7821800Z Post job cleanup.
+2022-02-06T00:57:07.0178945Z [command]/usr/bin/git version
+2022-02-06T00:57:07.0292003Z git version 2.35.1
+2022-02-06T00:57:07.0348067Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2022-02-06T00:57:07.0403438Z [command]/usr/bin/git submodule foreach --recursive git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :
+2022-02-06T00:57:07.0809252Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2022-02-06T00:57:07.0863062Z http.https://github.com/.extraheader
+2022-02-06T00:57:07.0864090Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2022-02-06T00:57:07.0896537Z [command]/usr/bin/git submodule foreach --recursive git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :
+2022-02-06T00:57:07.1528202Z Cleaning up orphan processes
