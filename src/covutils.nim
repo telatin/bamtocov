@@ -221,8 +221,8 @@ proc gff_line_to_region*(line: string, gffField = "CDS", gffSeparator = ";", gff
   var
    cse = line.strip().split('\t')
 
-  if len(cse) < 5:
-    stderr.write_line("[warning] skipping GFF line (fields not found):", line.strip())
+  # Skip unexpectedly short lines
+  if len(cse) < 8:
     return nil
 
   # Skip non CDS fields (or user provided)
@@ -230,20 +230,44 @@ proc gff_line_to_region*(line: string, gffField = "CDS", gffSeparator = ";", gff
     return nil
 
   var
+    s, e: int
+  
+  try:
     s = parse_int(cse[3])  - 1
     e = parse_int(cse[4])
+  except:
+    stderr.write_line("[warning] fields 4 and 5 are not integers):",  cse[3], ", ", cse[4])
+    return nil
+  var
     reg = region_t(chrom: cse[0], start: s, stop: e)
-  
+
   # In the future, 8th field could be requireed [TODO]
   if len(cse) == 9:
-    for gffAnnotPartRaw in cse[8].split(gffSeparator):
-      let gffAnnotPart = gffAnnotPartRaw.strip(chars = {'"', '\'', ' '})
-      if gffAnnotPart.startsWith(gffIdentifier):
-        try:
-          reg.name = gffAnnotPart.split("=")[1].strip(chars = {'"', '\'', ' '}) 
-        except:
-          reg.name = gffAnnotPart.split(" ")[1].strip(chars = {'"', '\'', ' '})
-        break
+    try:
+      for gffAnnotPartRaw in cse[8].split(gffSeparator):
+        
+        let gffAnnotPart = gffAnnotPartRaw.strip(chars = {'"', '\'', ' '})
+        
+        if gffAnnotPart.startsWith(gffIdentifier):
+          let splittedField = gffAnnotPart.split("=")
+
+          # Try splitting on "="
+          if len(splittedField) == 2:
+            reg.name = splittedField[1].strip(chars = {'"', '\'', ' '})
+            break
+          else:
+            let resplittedField = gffAnnotPart.split(" ")
+            if len(resplittedField) == 2:
+              reg.name = resplittedField[0].strip(chars = {'"', '\'', ' '})
+              break
+            else:
+              reg.name = "Error"
+              break
+          
+    except Exception as e:
+      stderr.write_line("[warning] fields 8 is not a string):",  cse[8], "\n  ", e.msg)
+      return nil
+ 
   return reg
 
 # Convert a BED line to region object
@@ -322,22 +346,37 @@ proc gtf_to_table*(bed: string, gffField, gffSeparator, gffIdentifier: string): 
 
 proc gff_to_table*(bed: string, gffField, gffSeparator, gffIdentifier: string): TableRef[string, seq[region_t]] =
   var bed_regions = newTable[string, seq[region_t]]()
+
+
   var hf = hts.hts_open(cstring(bed), "r")
   var kstr: hts.kstring_t
   kstr.l = 0
   kstr.m = 0
   kstr.s = nil
   while hts_getline(hf, cint(10), addr kstr) > 0:
+    
     if ($kstr.s).startswith("##FASTA"):
       break
     if $kstr.s[0] == "#":
       continue
+    
+    var v: region_t
+    
+    try:
+      v = gff_line_to_region($kstr.s, gffField, gffSeparator, gffIdentifier)
+    except Exception as e:
+      stderr.write_line("[GFF/GTF error]:", e.msg)
+      continue
 
-    var v = gff_line_to_region($kstr.s, gffField, gffSeparator, gffIdentifier)
-    if v == nil: continue
+    
+    if v == nil:
+      continue
+    
     discard bed_regions.hasKeyOrPut(v.chrom, new_seq[region_t]())
+    
     bed_regions[v.chrom].add(v)
-
+    
+  
   # since it is read into mem, can also well sort.
   for chrom, ivs in bed_regions.mpairs:
     sort(ivs, proc (a, b: region_t): int = a.start - b.start)

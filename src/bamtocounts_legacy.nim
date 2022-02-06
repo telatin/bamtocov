@@ -4,11 +4,30 @@ import docopt
  
 import strutils
 import tables
-
+import algorithm
 
 import ./covutils
  
+#[
+  **bamToCounts**, part of MAGENTA Flow
+  based on count-reads in the "hts-nim-tools" suite by Brent Pedersen
+  see: "https://github.com/brentp/hts-nim-tools"
+  Static binary thanks to  "https://github.com/brentp/hts-nim"
 
+ 
+  0.4.1   Adding autoguess of GFF also from column count [experimental]
+
+  0.4.0   Fix: start coordinate of GFF; 
+          fix: buried total alignemnts print only when debug is ON
+          Auto --gff if file ends with gff.
+          Added --header; 
+  0.3.2   Code refactoring
+  0.3.1   Fix warnings while parsing GFF
+  0.3.0   Added RPKM calculastion (requires: sum of total alignments)
+          Added normalizaation by gene length
+  0.2.0   Added support for GFF files
+  0.1.0   Added debug mode
+]#
 
 
 type EKeyboardInterrupt = object of CatchableError
@@ -37,7 +56,10 @@ var
 
 # Expand 'toString' with normalized counts (no longer BED)
 
-
+proc get_alignments_per_million(bam:Bam): float =
+  for i in bam.hdr.targets:
+    result += float(stats(bam.idx,i.tid).mapped)
+  result /= 1000000
 #[ 
 proc legacytoline(r: region_t, s: var string) {.inline.} =
   r.renderString(s)
@@ -67,15 +89,67 @@ proc countsToString(c: stranded_counts, stranded: bool): string =
   else:
     $(c.fwd + c.rev)
 
-proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t): float =
-  var total: float = 0
-  for read in bam:
-    total += 1
-    for region in regions[read.tid]:
-      #if read.start >= region.start and read.stop <= region.stop:
-      if (read.stop >= region.start and read.stop <= region.stop) or (read.start >= region.start and read.start <= region.stop):
-        table[region.label].inc(read.flag.reverse)
-  return total / 1000000
+proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t) =
+ 
+  for chrom in regions.keys():
+    if debug:
+      stderr.writeLine("[alignments_count] Got chrom: ", chrom, " tot=", len(regions))
+    for aln in bam.query(chrom):
+      if not regions.contains(chrom) or regions[chrom].len == 0:
+        continue
+
+      var
+        target_idx: target_index_t
+
+      #for aln in bam.query(chrom):
+      if aln.mapping_quality < mapq: continue
+      if (aln.flag and eflag) != 0: continue
+        
+      let readAsInterval = (aln.tid, pos_t(aln.start), pos_t(aln.stop), aln.flag.reverse)
+      var
+        s: string
+        c = 0
+      try:     
+        for interval in intersections(readAsInterval, regions, target_idx):
+          # Returns: genomic_interval_t[tuple[l1: T, l2: string]]
+          s = $interval
+          c = c + 1
+          #let feature : target_feature = (chrom: "", cid: interval.chrom.int, start: interval.start.int, stop: interval.stop.int, feature: interval.label.l2)
+          #if interval.label.l2 notin table:
+          #  stderr.writeLine("[alignments_count] Warning: unknown feature: ", interval.label.l2)
+          #  table[interval.label.l2] = (fwd: 0, rev: 0)
+          
+          #try:
+          table[interval.label.l2].inc(aln.flag.reverse)
+          #except Exception as e:
+          #  stderr.writeLine("[alignments_count] Error key table: ", e.msg)
+          
+      
+      except Exception:
+        # ⛔️  [index not in ...]
+        if debug:
+          stderr.writeLine("[alignments_count] intersections loop broken at chr=", chrom, " aln=", aln.qname, " last=", s, " c=", c)
+
+ 
+
+
+proc targetSort(x, y: target_feature): int =
+  if x.cid < y.cid:
+    -1
+  elif x.cid > y.cid:
+    1
+  else:
+    if x.start < y.start:
+      -1
+    elif x.start > y.start:
+      1
+    else:
+      if x.stop < y.stop:
+        -1
+      elif x.stop > y.stop:
+        1
+      else:
+        0
 
 proc add(s: var feature_coords, z: feature_coords) = 
   # feature_coords  = tuple[chrom, starts, stops, name: string]
@@ -163,13 +237,22 @@ Options:
     quit(1)
 
   try:                                    #index=true,
-    open(bam, cstring($args["<BAM-or-CRAM>"]), threads=threads,  fai=fasta)
+    open(bam, cstring($args["<BAM-or-CRAM>"]), threads=threads,index=true,  fai=fasta)
     if debug:
       stderr.writeLine("Opening BAM/CRAM file: ", $args["<BAM-or-CRAM>"])
   except:
     stderr.writeLine("Unable to open BAM file: ", $args["<BAM-or-CRAM>"] )
     quit(1)
 
+  if do_rpkm:
+    alignmentsPerMillion = bam.get_alignments_per_million()
+    if debug:
+      stderr.writeLine("Total: ", 1000000 * bam.get_alignments_per_million())
+
+ 
+  if bam.idx == nil:
+    stderr.write_line("ERROR: requires BAM/CRAM index")
+    quit(1) 
 
   if ($args["<Target>"]).contains("gff") or ($args["<Target>"]).contains(".gtf"):
     if debug:
@@ -194,7 +277,7 @@ Options:
 
 
   if debug:
-    stderr.writeLine("[OK] Target table loaded")
+    stderr.writeLine("Target table loaded")
 
   if len(targetTable) == 0:
     stderr.writeLine("ERROR: No target regions found (try changing --id and --type): see an example line below")
@@ -205,7 +288,7 @@ Options:
       quit(1)
     quit(1)
   if debug or verbose:
-    stderr.writeLine("[OK] Target loaded: ", len(targetTable), " reference sequences")
+    stderr.writeLine("Target loaded: ", len(targetTable), " reference sequences")
     
   let cookedTarget = cookTarget(targetTable, bam)
   #let countsTable  = alignments_count(bam, uint8(mapq), eflag, cookedTarget)
@@ -213,28 +296,25 @@ Options:
   for index, chrName in bam.hdr.targets:
     #feature_coords  = tuple[chrom, starts, stops, name]
     if debug:
-      stderr.writeLine(" > BAM targets: ", chrName, "-", index)
+      stderr.writeLine("BAM targets: ", chrName, "-", index)
     if index in cookedTarget:
       if debug:
-        stderr.writeLine(" + Coocked targets: ", chrName, "-", index)
+        stderr.writeLine("Coocked targets: ", chrName, "-", index)
       for interval in cookedTarget[index]:
         let
           c : feature_coords = (chrom: chrName.name, starts: $interval.start, stops: $interval.stop, name: interval.label, length: int(interval.stop - interval.start))
         if debug:
-          stderr.writeLine("    > Interval: ",interval.label, "-", interval.start, "-", interval.stop)
+          stderr.writeLine("\tInterval: ",interval.label, "-", interval.start, "-", interval.stop)
         if interval.label notin targetCoords:
           if debug:
-            stderr.writeLine("      - Adding")
+            stderr.writeLine("\t - Adding")
           targetCoords[interval.label] = c
           targetCounts[interval.label] = (fwd: 0, rev: 0)
           
         else:
           if debug:
-            stderr.writeLine("      - Extending")
+            stderr.writeLine("\t - Extending")
           targetCoords[interval.label].add(c)
-    else:
-      if debug:
-        stderr.writeLine("No coocked targets: ", chrName, "-", index)
         
         
   if args["--header"]:
@@ -252,10 +332,10 @@ Options:
       echo header
 
   if debug:
-    stderr.writeLine("\\/ Target regions: ", len(targetCounts))
-  let perMillion = targetCounts.alignments_count(bam, uint8(mapq), eflag, cookedTarget)  
+    stderr.writeLine("Target regions: ", len(targetCounts))
+  targetCounts.alignments_count(bam, uint8(mapq), eflag, cookedTarget)  
   if debug:
-    stderr.writeLine("/\\ Counts done: ", perMillion) 
+    stderr.writeLine("Counts done") 
   
    
   for feature, rawcounts in targetCounts:
@@ -263,7 +343,7 @@ Options:
       coords = if do_coords: targetCoords[feature].chrom & "\t" & targetCoords[feature].starts & "\t" & targetCoords[feature].stops & "\t"
                  else: ""
       counts = countsToString(rawcounts, do_strand)
-      rpkm   = if do_rpkm: "\t" & rpkm(targetCoords[feature], perMillion, rawcounts).formatBiggestFloat(ffDecimal, digitsPrecision)
+      rpkm   = if do_rpkm: "\t" & rpkm(targetCoords[feature], alignmentsPerMillion, rawcounts).formatBiggestFloat(ffDecimal, digitsPrecision)
                else: "" 
       norm   = if do_norm:  "\t" & ( counts(rawcounts) / targetCoords[feature].length ).formatBiggestFloat(ffDecimal, digitsPrecision)
                else: ""

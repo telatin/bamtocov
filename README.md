@@ -24,6 +24,13 @@ The BamToCov package is available from :package: [BioConda](https://bioconda.git
 conda install -y -c bioconda bamtocov
 ```
 
+## Benchmarks
+
+Bamtocov has the smallest memory footprint of any other coverage tool, while maintaining reasonable speeds
+
+* Four BAM files used for the benchmarks are [available from Zenodo](https://zenodo.org/record/5636944#.Yf_cMe7P36Y)
+* A [Dockerfile](benchmark/) with an automatic speed test is available in this repository
+  
 ## References
 
 * Giovanni Birolo, Andrea Telatin [BamToCov: an efficient toolkit for sequence coverage calculations](https://doi.org/10.1101/2021.11.12.466787) (BioRχiv)
