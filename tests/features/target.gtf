@@ -1,3 +1,5 @@
-seq1	bamtocov	exon	1000	2000	.	+	.	gene_id "feature1"
-seq1	bamtocov	exon	5000	6000	.	+	.	gene_id "feature2"
-seq1	bamtocov	exon	10000	11000	.	+	.	gene_id "feature3"
+##gtf-version 3
+##sequence-region seq1 1 11000
+seq1	bamtocov	exon	1001	2000	.	+	.	gene_id "feature1"
+seq1	bamtocov	exon	5001	6000	.	+	.	gene_id "feature2"
+seq1	bamtocov	exon	10001	11000	.	+	.	gene_id "feature3"

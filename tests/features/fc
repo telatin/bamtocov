@@ -1,5 +1,5 @@
 # Program:featureCounts v2.0.1; Command:"featureCounts" "-a" "target.gtf" "-o" "fc" "seqs.bam" 
 Geneid	Chr	Start	End	Strand	Length	seqs.bam
-feature1	seq1	1000	2000	+	1001	3
-feature2	seq1	5000	6000	+	1001	7
-feature3	seq1	10000	11000	+	1001	2
+feature1	seq1	1001	2000	+	1000	3
+feature2	seq1	5001	6000	+	1000	7
+feature3	seq1	10001	11000	+	1000	2
