@@ -57,6 +57,7 @@ def loadBed(file, MinLen):
             if len(line) == 0:
                 continue
             if line[0] == '#':
+                print("Skipping comment line: {}".format(line), file=sys.stderr)
                 continue
             chromosome, start, end, strand = line.split()
             Cigar = str(int(end) - int(start) + 1) + 'M'

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Convert a BED file to a minimal GTF file
+Convert a BED file to a FASTA file
 """
 
 import random, sys
@@ -25,8 +25,9 @@ def makeSeq(name, len):
     for i in range(0, len):
         seq += random.choice("ACGT")
     return f">{name}\n{seq}"
+
 if __name__ == "__main__":
-    args = argparse.ArgumentParser(description="Convert a BED file to a minimal GTF file")
+    args = argparse.ArgumentParser(description=__doc__)
     args.add_argument("-i", "--bed", help="BED file", required=True)
     
     args.add_argument("-o", "--fasta", help="FASTA file") 
