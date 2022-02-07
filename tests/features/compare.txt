@@ -1,0 +1,10 @@
+==> bamtocounts.tsv <==
+feature1	3
+feature2	7
+feature3	2
+
+==> fc.tsv <==
+Geneid	seqs.bam
+feature1	3
+feature2	7
+feature3	2
