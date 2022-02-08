@@ -79,7 +79,7 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
 
     for region in regions[read.tid]:
       
-      if (read.stop >= region.start and read.stop <= region.stop) or (read.start >= region.start  and read.start <= region.stop):
+      if (read.start < region.start   and read.stop > region.stop) or (read.stop > region.start   and read.stop < region.stop) or (read.start > region.start  and read.start < region.stop):
         if strict and ( read.start < region.start or read.stop > region.stop ):
             continue
         table[region.label].inc(read.flag.reverse)

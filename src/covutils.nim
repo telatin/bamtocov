@@ -202,18 +202,23 @@ proc gtf_line_to_region*(line: string, gffField = "exon", gffSeparator = ";", gf
   var
     s = parse_int(cse[3]) - 1
     e = parse_int(cse[4])
-    reg = region_t(chrom: cse[0], start: s, stop: e)#counts_for: 0, counts_rev: 0)
+    reg = region_t(chrom: cse[0], start: s, stop: e) #counts_for: 0, counts_rev: 0)
   
-  # In the future, 8th field could be requireed [TODO]
+ 
   if len(cse) == 9:
-    for gffAnnotPartRaw in cse[8].split(gffSeparator):
+    let gtfAnnotationFull = if gffSeparator in cse[8]: cse[8].split(gffSeparator) 
+                            else: @[cse[8]]
+    for gffAnnotPartRaw in gtfAnnotationFull:
       let gffAnnotPart = gffAnnotPartRaw.strip(chars = {'"', '\'', ' '})
       if gffAnnotPart.startsWith(gffIdentifier):
-        try:
+        if "=" in gffAnnotPart:
           reg.name = gffAnnotPart.split("=")[1].strip(chars = {'"', '\'', ' '}) 
-        except:
+        elif " " in gffAnnotPart:
           reg.name = gffAnnotPart.split(" ")[1].strip(chars = {'"', '\'', ' '})
+        else:
+          reg.name = gffAnnotPart
         break
+    reg.name = reg.chrom & ":" & $reg.start & "-" & $reg.stop
   return reg
 
 # Converts a GFF line to region object
