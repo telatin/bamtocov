@@ -40,7 +40,9 @@ describe "Coverage tools tested by Shpec"
       assert equal $exitstatus 0
       assert file_present $TMPFILE
       LINES=$(cat "$TMPFILE" | wc -l)
+      STRING=$(cat "$TMPFILE")
       assert equal $LINES 7
+      assert grep  "${STRING}" "shared1_10"
       rm $TMPFILE
     end
 
