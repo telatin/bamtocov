@@ -16,7 +16,7 @@ import sets
 
 # FEATURES paper
 # ✅ TODO multi-bam report 
-# ✅ TODO quantized output 
+# ✅ TODO quantized output m
 # TODO max-min coverage?
 # TODO number of bases under X per target
 # ✅ TODO no output option, if one only wants the report

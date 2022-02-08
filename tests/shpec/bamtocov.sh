@@ -12,13 +12,18 @@ describe "Coverage tools tested by Shpec"
     DATADIR="$( cd -- "$( dirname -- "$SELFDIR"/../../input/mini.bam )" &> /dev/null && pwd )"
   fi
 
+  it "Binary found"
+    assert file_present "$BINDIR/bamtocov"
+    assert file_present "$BINDIR/bamtocounts"
+  end
   # PROGRAM: bamtocov
   describe "BamToCov"
     it "Binary exist"
         assert file_present "$BINDIR"/bamtocov
     end
-    it "Version emitted is 2.x"
-      VERSION=$("$BINDIR"/bamtocov --version)
+    VERSION=$("$BINDIR"/bamtocov --version)
+    it "Version emitted is 2.x [$VERSION]"
+      
       assert glob "$VERSION" "2.*"
     end
 
@@ -47,13 +52,13 @@ describe "Coverage tools tested by Shpec"
         assert file_present $TMPFILE
       end    
       
-      # it "Target BED: Report file ($TMPFILE)"
-      #   LINES=$(cat "$TMPFILE" | wc -l)
-      #   STRING=$(cat "$TMPFILE")
-      #   assert equal $LINES 7
-      #   assert grep  "${STRING}" "shared1_10"
-      #   rm $TMPFILE
-      # end
+      it "Target BED: Report file ($TMPFILE)"
+        LINES=$(cat "$TMPFILE" | wc -l)
+        STRING=$(cat "$TMPFILE")
+        assert equal $LINES 7
+        assert glob  "${STRING}" "interval*"
+        rm $TMPFILE
+      end
 
     end
 

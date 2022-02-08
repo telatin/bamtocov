@@ -3,16 +3,15 @@
 
 BIN=./bin
 SOURCE=./src
+NIM_PATHS= --colors:on --noNimblePath --path:/local/giovanni/bamtocov/nimbledeps/pkgs/hts-0.3.17 --path:/local/giovanni/bamtocov/nimbledeps/pkgs/docopt-0.6.8 --path:/local/giovanni/bamtocov/nimbledeps/pkgs/regex-0.19.0 --path:/local/giovanni/bamtocov/nimbledeps/pkgs/unicodedb-0.9.0 --path:/local/giovanni/bamtocov/nimbledeps/pkgs/lapper-0.1.7 
 VERSION := $(shell grep version bamtocov.nimble  | grep  -o "[0-9]\\+\.[0-9]\.[0-9]\\+")
 LIST=$(BIN)/bamtocov $(BIN)/bamtocounts $(BIN)/covtotarget $(BIN)/bamcountrefs $(BIN)/gff2bed $(BIN)/bamtocounts_legacy $(BIN)/bamtarget
 
 $(BIN)/%: $(SOURCE)/%.nim $(SOURCE)/covutils.nim bamtocov.nimble
-	nim c -d:NimblePkgVersion=$(VERSION) -d:release  --opt:speed -d:danger --out:$@ $<
+	nim c  $(NIM_PATHS)  -d:NimblePkgVersion=$(VERSION) -d:release  --opt:speed -d:danger --out:$@ $<
 
 all: $(LIST)
 
-#bin/bamtocov:
-#	nimble build
 
 test: testshpec 
 

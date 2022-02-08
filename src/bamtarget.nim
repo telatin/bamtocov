@@ -93,12 +93,11 @@ proc main(argv: var seq[string]): int =
   let doc = format("""
   BamTarget $version
 
-  Usage: BamTarget [options] [<Target>]
+  Usage: BamTarget [options] <Target> [<BAM>]
 
 Arguments:                                                                                                                                                 
   <Target>         A target to be parsed (GFF, GTF, BED)
-
-
+  <BAM>            A BAM file linked to the target
 
 Target files:
   -r, --regions <bed>          Target file in BED or GFF3/GTF format (detected with the extension)
@@ -177,12 +176,26 @@ Other options:
     target = bed_to_table($args["<Target>"])
    
   if debug:
-    stderr.writeLine "Target parsed: ", len(target), " regions"
+    stderr.writeLine "Target parsed: ", len(target), " reference sequences"
+
   for t in target.keys():
     if debug:
       echo "# Chromosome:" , t
     for region in target[t]:
       echo region.chrom, "\t", region.start, "\t", region.stop, "\t", region.name
+  
+  if fileExists($args["<BAM>"]):
+    if debug:
+      stderr.writeLine "BAM file: ", $args["<BAM>"]
+    var
+      bam: Bam
+    open(bam, cstring($args["<BAM>"]), threads=1)
+    let cooked = cookTarget(target, bam)
+    for t in cooked.keys():
+      if debug:
+        echo "# Chromosome:" , t
+      for region in cooked[t]:
+        echo "[",t,"]\t", region.start, "\t", region.stop, "\t", region.label
   
   return 0
 
