@@ -4,9 +4,9 @@
 BIN=./bin
 SOURCE=./src
 VERSION := $(shell grep version bamtocov.nimble  | grep  -o "[0-9]\\+\.[0-9]\.[0-9]\\+")
-LIST=$(BIN)/bamtocov $(BIN)/bamtocounts $(BIN)/covtotarget $(BIN)/bamcountrefs $(BIN)/gff2bed $(BIN)/bamtocounts_legacy
+LIST=$(BIN)/bamtocov $(BIN)/bamtocounts $(BIN)/covtotarget $(BIN)/bamcountrefs $(BIN)/gff2bed $(BIN)/bamtocounts_legacy $(BIN)/bamtarget
 
-$(BIN)/%: $(SOURCE)/%.nim $(SOURCE)/covutils.nim
+$(BIN)/%: $(SOURCE)/%.nim $(SOURCE)/covutils.nim bamtocov.nimble
 	nim c -d:NimblePkgVersion=$(VERSION) -d:release  --opt:speed -d:danger --out:$@ $<
 
 all: $(LIST)
