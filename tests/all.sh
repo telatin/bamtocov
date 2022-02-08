@@ -121,7 +121,7 @@ else
   FAIL=$((FAIL+1))
 fi
 
-"$BamToCov" --regions "$DATA"/mini.bed --report "$TMP"/report.tsv "$DATA"/mini.bam --skip-output
+REGIONS=$("$BamToCov" --regions "$DATA"/mini.bed --report "$TMP"/report.tsv "$DATA"/mini.bam --skip-output || true)
 
 ## Check that the tabular report is a proper table (will likely work locally where seqfu is installed)
 if [[ $TABCHECK == 1 ]]; then

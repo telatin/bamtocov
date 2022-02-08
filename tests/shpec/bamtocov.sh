@@ -32,6 +32,29 @@ describe "Coverage tools tested by Shpec"
       assert equal $((COV+0)) 1
     end
 
+    it "Target BED"
+      TMPFILE=$(mktemp)
+      "$BINDIR"/bamtocov -o $TMPFILE --regions "$DATADIR"/regions.bed "$DATADIR"/mini.bam 2> /dev/null > /dev/null
+      
+      exitstatus=$?
+      assert equal $exitstatus 0
+      assert file_present $TMPFILE
+      LINES=$(cat "$TMPFILE" | wc -l)
+      assert equal $LINES 7
+      rm $TMPFILE
+    end
+
+    it "Target GTF"
+      TMPFILE=$(mktemp)
+      "$BINDIR"/bamtocov -o $TMPFILE --regions "$DATADIR"/regions.gtf "$DATADIR"/mini.bam 2> /dev/null > /dev/null
+      exitstatus=$?
+      assert equal $exitstatus 0
+      assert file_present $TMPFILE
+      LINES=$(cat "$TMPFILE" | wc -l)
+      assert equal $LINES 4
+      rm $TMPFILE 
+    end
+
     it "Works with sorted file"
       "$BINDIR"/bamtocov "$DATADIR"/mini-sorted.bam 2> /dev/null > /dev/null
       exitstatus=$?
