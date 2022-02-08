@@ -109,5 +109,7 @@ jobs:
         #bash tests/all.sh
         tests/bin/shpec tests/shpec/bamtocov.sh
         tests/unit/bamtocov-base.sh
+        bin/bamtocov --regions input/regions.bed -o report.txt input/mini.bam > /dev/null
+        cat report.txt
         echo "WHERE: $HOME/htslib" 
         cat $HOME/htslib/version.h 
