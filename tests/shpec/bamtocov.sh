@@ -32,29 +32,47 @@ describe "Coverage tools tested by Shpec"
       assert equal $((COV+0)) 1
     end
 
-    it "Target BED"
+    it "Target"
+      it "Targets: Input files"
+        assert file_present "$DATADIR"/regions.gtf
+        assert file_present "$DATADIR"/regions.bed
+        assert file_present "$DATADIR"/mini.bam 
+      end
       TMPFILE=$(mktemp)
       "$BINDIR"/bamtocov -o $TMPFILE --regions "$DATADIR"/regions.bed "$DATADIR"/mini.bam 2> /dev/null > /dev/null
+      it "Target BED: Execution"
+        exitstatus=$?
+        assert equal $exitstatus 0
+      end     
+      it "Target BED: Report"
+        assert file_present $TMPFILE
+      end    
       
-      exitstatus=$?
-      assert equal $exitstatus 0
-      assert file_present $TMPFILE
-      LINES=$(cat "$TMPFILE" | wc -l)
-      STRING=$(cat "$TMPFILE")
-      assert equal $LINES 7
-      assert grep  "${STRING}" "shared1_10"
-      rm $TMPFILE
+      it "Target BED: Report file ($TMPFILE)"
+        LINES=$(cat "$TMPFILE" | wc -l)
+        STRING=$(cat "$TMPFILE")
+        assert equal $LINES 7
+        assert grep  "${STRING}" "shared1_10"
+        rm $TMPFILE
+      end
+
     end
 
     it "Target GTF"
       TMPFILE=$(mktemp)
       "$BINDIR"/bamtocov -o $TMPFILE --regions "$DATADIR"/regions.gtf "$DATADIR"/mini.bam 2> /dev/null > /dev/null
-      exitstatus=$?
-      assert equal $exitstatus 0
-      assert file_present $TMPFILE
-      LINES=$(cat "$TMPFILE" | wc -l)
-      assert equal $LINES 4
-      rm $TMPFILE 
+      it "Target GTF: execution"
+        exitstatus=$?
+        assert equal $exitstatus 0
+      end
+      it "Target GTF: report found  ($TMPFILE)"
+        assert file_present $TMPFILE
+      end
+      it "Target GTF: report file"
+        LINES=$(cat "$TMPFILE" | wc -l)
+        assert equal $LINES 4
+        rm $TMPFILE 
+      end
     end
 
     it "Works with sorted file"
