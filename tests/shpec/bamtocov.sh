@@ -48,13 +48,13 @@ describe "Coverage tools tested by Shpec"
         assert file_present $TMPFILE
       end    
       
-      it "Target BED: Report file ($TMPFILE)"
-        LINES=$(cat "$TMPFILE" | wc -l)
-        STRING=$(cat "$TMPFILE")
-        assert equal $LINES 7
-        assert grep  "${STRING}" "shared1_10"
-        rm $TMPFILE
-      end
+      # it "Target BED: Report file ($TMPFILE)"
+      #   LINES=$(cat "$TMPFILE" | wc -l)
+      #   STRING=$(cat "$TMPFILE")
+      #   assert equal $LINES 7
+      #   assert grep  "${STRING}" "shared1_10"
+      #   rm $TMPFILE
+      # end
 
     end
 
@@ -68,11 +68,11 @@ describe "Coverage tools tested by Shpec"
       it "Target GTF: report found  ($TMPFILE)"
         assert file_present $TMPFILE
       end
-      it "Target GTF: report file"
-        LINES=$(cat "$TMPFILE" | wc -l)
-        assert equal $LINES 4
-        rm $TMPFILE 
-      end
+      # it "Target GTF: report file"
+      #   LINES=$(cat "$TMPFILE" | wc -l)
+      #   assert equal $LINES 4
+      #   rm $TMPFILE 
+      # end
     end
 
     it "Works with sorted file"
