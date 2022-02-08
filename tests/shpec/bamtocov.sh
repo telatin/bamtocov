@@ -32,12 +32,11 @@ describe "Coverage tools tested by Shpec"
       assert equal $((COV+0)) 1
     end
 
-    it "Target"
-      it "Targets: Input files"
-        assert file_present "$DATADIR"/regions.gtf
-        assert file_present "$DATADIR"/regions.bed
-        assert file_present "$DATADIR"/mini.bam 
-      end
+    it "Target inputs"
+      assert file_present "$DATADIR"/regions.gtf
+      assert file_present "$DATADIR"/regions.bed
+      assert file_present "$DATADIR"/mini.bam 
+
       TMPFILE=$(mktemp)
       "$BINDIR"/bamtocov -o $TMPFILE --regions "$DATADIR"/regions.bed "$DATADIR"/mini.bam 2> /dev/null > /dev/null
       it "Target BED: Execution"
