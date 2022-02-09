@@ -218,7 +218,8 @@ proc gtf_line_to_region*(line: string, gffField = "exon", gffSeparator = ";", gf
         else:
           reg.name = gffAnnotPart
         break
-    reg.name = reg.chrom & ":" & $reg.start & "-" & $reg.stop
+    if reg.name == "":
+      reg.name = reg.chrom & ":" & $reg.start & "-" & $reg.stop
   return reg
 
 # Converts a GFF line to region object
