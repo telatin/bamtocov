@@ -34,13 +34,13 @@ Bamtocov has the smallest memory footprint of any other coverage tool, while mai
   
 ## See also
 
-* Giovanni Birolo, Andrea Telatin [BamToCov: an efficient toolkit for sequence coverage calculations](https://doi.org/10.1101/2021.11.12.466787) (BioRχiv)
 * Brent Pedersen,  Aaron Quinlan,
 [hts-nim: scripting high-performance genomic analyses](https://academic.oup.com/bioinformatics/article/34/19/3387/4990493) (Bioinformatics)
 * Giovanni Birolo, Andrea Telatin,
 [covtobed: a simple and fast tool to extract coverage tracks from BAM files](https://joss.theoj.org/papers/10.21105/joss.02119) (JOSS)
 
-Initially we also used [Lapper](https://brentp.github.io/nim-lapper/index.html), and I recommend checking out this library for fast interval operations.
+Initially we also used [Lapper](https://brentp.github.io/nim-lapper/index.html), 
+and I recommend checking out this library for fast interval operations.
 
 ## Cite
 
