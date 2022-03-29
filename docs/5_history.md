@@ -7,6 +7,12 @@ permalink: /history
 This project extends [covtobed](https://github.com/telatin/covtobed),
 reimplementing the core algorithm in Nim.
 
+* 2.7.0
+  * **bamtocounts** now supports `--paired` to count fragments
+  * **bamtocounts** fixed a bug that ignored the user flag to exclude
+  * [**EXPERIMENTAL**] testing `--extendRead INT` in bamtocov #6
+* 2.6.0
+  * **bamtocounts** algorithm rewritten to accept unsorted and non-indexed files. the requirement for indexed files will be permanently dropped, for consistency across the suite, while we recommend using sorted files, and, in the future, this requirement might be added again to allow for performance gains.
 * 2.5.0
   * **BamToCounts** rewritten with the target engine of BamToCov
 * 2.4.0

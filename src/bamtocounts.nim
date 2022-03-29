@@ -20,6 +20,7 @@ setControlCHook(handler)
 
 var
   do_strict = false
+  do_paired = false
   do_norm = false
   debug = false
   verbose = false
@@ -68,7 +69,10 @@ proc countsToString(c: stranded_counts, stranded: bool): string =
   else:
     $(c.fwd + c.rev)
 
-proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t, strict = false): float =
+type
+  counts_t*       = TableRef[interval_t[string], int]
+
+proc makeCountsTable(table: var OrderedTable[string, stranded_counts], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t, strict = false): float =
   var total: float = 0
   for read in bam:
     total += 1
@@ -76,6 +80,27 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
       continue
     if read.mapping_quality == 0 or ( (read.flag and 1796) != 0):
       continue
+
+    for region in regions[read.tid]:
+      
+      if (read.start < region.start   and read.stop > region.stop) or (read.stop > region.start   and read.stop < region.stop) or (read.start > region.start  and read.start < region.stop):
+        if strict and ( read.start < region.start or read.stop > region.stop ):
+            continue
+        table[region.label].inc(read.flag.reverse)
+  return total / 1000000
+
+
+proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t, strict = false, paired = false): float =
+  var total: float = 0
+  for read in bam:
+    total += 1
+    if read.tid notin regions:
+      continue
+    if read.mapping_quality == 0 or ( (read.flag and eflag) != 0):
+      continue
+    if paired and (read.flag.proper_pair == false or read.flag.read2 == true):
+      continue
+
 
     for region in regions[read.tid]:
       
@@ -113,9 +138,10 @@ Arguments:
 Options:
 
   -T, --threads <threads>      BAM decompression threads [default: 0]
-  -r, --fasta <fasta>          FASTA file for use with CRAM files [default: $env_fasta].
+  -r, --fasta <fasta>          FASTA file for use with CRAM files [default: $env_fasta]
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: 1796]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
+  --paired                     Count read pairs rather than single reads
   --strict                     Read must be contained, not just overlap, with feature
   --stranded                   Print strand-specific counts
   --coords                     Also print coordinates of each feature
@@ -147,6 +173,7 @@ Options:
   do_strand = bool(args["--stranded"])
   do_coords = bool(args["--coords"])
   do_strict = bool(args["--strict"])
+  do_paired = bool(args["--paired"])
   debug = bool(args["--debug"])
   verbose = bool(args["--verbose"])
   gffIdentifier = $args["--id"]
@@ -265,7 +292,9 @@ Options:
 
   if debug:
     stderr.writeLine("\\/ Target regions: ", len(targetCounts))
-  let perMillion = targetCounts.alignments_count(bam, uint8(mapq), eflag, cookedTarget, do_strict)  
+
+  ## GATHER THE COUNTS
+  let perMillion = targetCounts.alignments_count(bam, uint8(mapq), eflag, cookedTarget, do_strict, do_paired)  
   if debug:
     stderr.writeLine("/\\ Counts done: ", perMillion) 
   
@@ -281,27 +310,7 @@ Options:
                else: ""
     echo feature, "\t", coords, counts, rpkm, norm
 
-#[ 
-  # Print table
-  var tableKeys = newSeq[target_feature]()
-  for j in keys(countsTable):
-    tableKeys.add(j)
-  #tableKeys.sort(targetSort)
-  for feat in tableKeys: 
-    var fields = ""
-    let featCoords = if do_coords: #[feat.cid] & "\t" &  $feat.start & "\t" &  $feat.stop & "\t"
-                     else: ""
-    if do_rpkm#:
-      let 
-        kb   : float = (feat.stop - feat.start ) / 1000 
-        RPKM : float = float(counts(countsTable[feat])) / alignmentsPerMillion / kb
-      fields &= "\t" & $RPKM.formatBiggestFloat(ffDecimal, digitsPrecision)
-    if do_norm:
-      let normal = counts(countsTable[feat]) / (feat.stop - feat.start)
-      fields &= "\t" & $normal.formatBiggestFloat(ffDecimal, digitsPrecision) 
-    echo  featCoords,  "\t", feat.feature, "\t", counts(countsTable[feat]), fields ]#
-  return 0
-]#
+
  
 when isMainModule:
   var args = commandLineParams()

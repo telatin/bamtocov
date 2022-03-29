@@ -79,7 +79,7 @@ proc `$`[T](i: genomic_interval_t[T]): string =
 
 
 type
-  input_option_t = tuple[min_mapping_quality: uint8, eflag: uint16, physical: bool, target: raw_target_t]
+  input_option_t = tuple[min_mapping_quality: uint8, eflag: uint16, physical: bool, extendFrag: int, target: raw_target_t]
 
 proc alignment_stream(bam: Bam, opts: input_option_t, target: target_t): iterator (): genomic_interval_t[bool] =
   result = iterator(): genomic_interval_t[bool] {.closure.} =
@@ -244,7 +244,12 @@ proc coverage_iter(bam: Bam, opts: input_option_t, target: target_t): iterator()
 
         # increment coverage with aln starting here
         while more_alignments_for_ref and (next_change == aln.start):
-          coverage_ends.push(covEnd(stop: aln.stop, reverse: aln.label))
+          # EXP: --extendRead INT
+          let readEnd = if opts.extendFrag > 0: 
+                          if aln.start + opts.extendFrag > reflen: reflen
+                          else: aln.start + opts.extendFrag
+                        else: aln.stop
+          coverage_ends.push(covEnd(stop: readEnd, reverse: aln.label))
           cov.inc(aln.label)
           if debug: stderr.writeLine("Added aln: " & $aln)
 
@@ -623,6 +628,7 @@ BAM reading options:
   -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
 
 Other options:
+  --extendReads INT            [Experimental] artificially extend reads by INT bases [default: 0]
   --debug                      Enable diagnostics
   -h, --help                   Show help
   """ % ["version", version])
@@ -685,6 +691,7 @@ Other options:
       min_mapping_quality: uint8(parse_int($args["--mapq"])),
       eflag: uint16(parse_int($args["--flag"])),
       physical: bool(args["--physical"]),
+      extendFrag: parse_int($args["--extendReads"]),
       target: if format_gff: gff_to_table(target_file, gffField, gffSeparator, gffIdentifier) 
               elif format_gtf: gtf_to_table(target_file, gffField, gffSeparator, gffIdentifier) 
               else: bed_to_table(target_file)
