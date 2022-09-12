@@ -18,7 +18,11 @@ all: $(LIST)
 
 static: $(STATIC)
 
-$(BIN2)/%: $(SOURCE)/%.nim bamtocov.nimble
+./hts_nim_static_builder:
+	wget "https://github.com/brentp/hts-nim/releases/download/v0.2.8/hts_nim_static_builder"
+	chmod +x hts_nim_static_builder
+	
+$(BIN2)/%: $(SOURCE)/%.nim bamtocov.nimble ./hts_nim_static_builder
 	mkdir -p $(BIN2)
 	echo target: $@
 	echo base: $(shell basename $@)
