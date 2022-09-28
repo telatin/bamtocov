@@ -1,15 +1,15 @@
 fixedStep chrom=seq1 span=250
-0	5
-250	6
-500	1
-750	0
+5
+6
+1
+0
 fixedStep chrom=seq2 span=250
-0	0
-250	10
-500	10
-750	0
+0
+10
+10
+0
 fixedStep chrom=seq0 span=250
-0	0
-250	0
-500	0
-750	0
+0
+0
+0
+0

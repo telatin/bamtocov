@@ -95,11 +95,11 @@ describe "Coverage tools tested by Shpec"
       LINES=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 250 --op max | wc -l)
       assert equal $LINES 15
     end
-    it "Produces wig output (check lines at 750)"
-      LINES=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 250 --op max | grep -w 750 | wc -l)
-      assert equal $LINES 3
+    it "Produces wig output (check coverage 10X)"
+      LINES=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 250 --op max | grep -w 10 | wc -l)
+      assert equal $LINES 2
     end
-    it "Produces wig output (check lines at 1000 bases, unexpected)"
+    it "Produces wig output (check lines at 1000, unexpected)"
       LINES=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 250 --op max |  grep -w 1000 |wc -l)
       assert equal $LINES 0
     end
