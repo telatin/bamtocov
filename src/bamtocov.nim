@@ -344,7 +344,8 @@ proc output_wig_span(span: genomic_interval_t[coverage_t], opts: output_option_t
       case opts.span_func:
         of sf_max, sf_min: $tot
         of sf_mean: $(float(tot)/float(span_length))
-  echo $span.start & "\t" & value_str
+  #echo $span.start & "\t" & value_str
+  echo value_str
 
 
 

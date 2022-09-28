@@ -22,6 +22,7 @@ all: $(LIST)
 
 static: $(STATIC)
 
+
 $(BIN2)/%: $(SOURCE)/%.nim bamtocov.nimble ./hts_nim_static_builder
 	mkdir -p $(BIN2)
 	echo target: $@
