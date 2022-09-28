@@ -49,21 +49,17 @@ jobs:
         sudo apt-get update
         sudo apt-get -qy install bwa make build-essential cmake libncurses-dev ncurses-dev libbz2-dev lzma-dev liblzma-dev \
              curl libssl-dev libtool autoconf automake libcurl4-openssl-dev
-
-    # Setup htslib
     - name: Install htslib (linux)
       if: runner.os == 'Linux'
       run: |
         cd
         git clone --recursive https://github.com/samtools/htslib.git
-        cd htslib && git checkout 1.12 && autoheader && autoconf && ./configure --enable-libcurl
-        cd
-        sudo make -j 4 -C htslib install
+        cd htslib && git checkout 1.11 && autoheader && autoconf && ./configure --enable-libcurl
+        sudo make -j 4 install
+        sudo ldconfig
         #echo "::set-env name=LD_LIBRARY_PATH::${LD_LIBRARY_PATH}:${HOME}/htslib"
-        echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/htslib" >> $GITHUB_ENV
-        ls -lh $HOME/htslib/*.so
- 
-
+        #ls -lh $HOME/htslib/*.so
+        
     - name: Install hstlib (macos)
       if: runner.os == 'macOS'
       run: |
@@ -72,11 +68,6 @@ jobs:
     - uses: iffy/install-nim@v3.2.0
       with:
         version: ${{ matrix.nimversion }}
-
-#    - uses: actions-rs/toolchain@v1
-#      with:
-#        toolchain: stable
-#    - uses: actions-rs/cargo@v1
 
 
     # Build and Test
