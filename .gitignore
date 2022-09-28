@@ -27,3 +27,6 @@ _data/
 bin/covtotarget
 bin/gff2bed
 trash
+static/
+hts_nim_static_builder
+bin/*

@@ -179,7 +179,21 @@ type
   coverage_interval_t = genomic_interval_t[tuple[l1: coverage_t, l2: string]] # l2 is the target interval or the chromosome
   #coverage_end_t = tuple[stop: pos_t, rev: bool]
   #coverage_t = tuple[forward, reverse: int]
-
+proc getReadEnd(start, stop, reflen: pos_t, extend: int): pos_t =
+  if extend == 0:
+    return stop
+  elif start < stop:
+    if start + extend > reflen:
+      return reflen
+    else:
+      return start + extend
+  else:
+    # start > stop
+    if stop - extend < 0:
+      return 0
+    else:
+      return stop - extend
+    
 proc coverage_iter(bam: Bam, opts: input_option_t, target: target_t): iterator(): coverage_interval_t =
   result = iterator(): coverage_interval_t {.closure.} =
     var
@@ -245,10 +259,8 @@ proc coverage_iter(bam: Bam, opts: input_option_t, target: target_t): iterator()
         # increment coverage with aln starting here
         while more_alignments_for_ref and (next_change == aln.start):
           # EXP: --extendRead INT
-          let readEnd = if opts.extendFrag > 0: 
-                          if aln.start + opts.extendFrag > reflen: reflen
-                          else: aln.start + opts.extendFrag
-                        else: aln.stop
+          let readEnd = getReadEnd(aln.start, aln.stop, reflen, opts.extendFrag)
+
           coverage_ends.push(covEnd(stop: readEnd, reverse: aln.label))
           cov.inc(aln.label)
           if debug: stderr.writeLine("Added aln: " & $aln)
@@ -332,7 +344,8 @@ proc output_wig_span(span: genomic_interval_t[coverage_t], opts: output_option_t
       case opts.span_func:
         of sf_max, sf_min: $tot
         of sf_mean: $(float(tot)/float(span_length))
-  echo $span.start & "\t" & value_str
+  #echo $span.start & "\t" & value_str
+  echo value_str
 
 
 
