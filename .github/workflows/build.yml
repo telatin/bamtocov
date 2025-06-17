@@ -1,6 +1,4 @@
-# copied from Daniel Cook's Seq collection
 name: "Build Bamtocov"
-
 on:
   push:
     branches: [ "main" ]
@@ -8,103 +6,120 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
-
 jobs:
   build:
-
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04, macos-10.15]
+        os: [ubuntu-latest, macos-latest]  # Updated from ubuntu-18.04, macos-10.15
         nimversion:
-        - stable
-        - devel
-
-
+          - stable
+          - devel
+    
     steps:
-    - uses: actions/checkout@v2
-
-    # Caching
+    # Checkout repository code
+    - uses: actions/checkout@v4  # Updated from v2
+    
+    # Caching dependencies for faster builds
     - name: Cache choosenim
       id: cache-choosenim
-      uses: actions/cache@v1
+      uses: actions/cache@v4  # Updated from v1
       with:
         path: ~/.choosenim
-        key: ${{ runner.os }}-choosenim-stable
-
+        key: ${{ runner.os }}-choosenim-${{ matrix.nimversion }}
+        
     - name: Cache nimble
       id: cache-nimble
-      uses: actions/cache@v1
+      uses: actions/cache@v4  # Updated from v1
       with:
         path: ~/.nimble
-        key: ${{ runner.os }}-nimble-stable
-
+        key: ${{ runner.os }}-nimble-${{ matrix.nimversion }}
+        
     - name: Cache htslib
       id: cache-htslib
-      uses: actions/cache@v1
+      uses: actions/cache@v4  # Updated from v1
       with:
         path: $HOME/htslib
-        key: ${{ runner.os }}-htslib-1.12
-
-    # Install Dependencies
+        key: ${{ runner.os }}-htslib-1.19  # Updated version
+    
+    # Install system dependencies for Linux
     - name: Install dependencies (Linux)
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get -qy install bwa make build-essential cmake libncurses-dev ncurses-dev libbz2-dev lzma-dev liblzma-dev \
-             curl libssl-dev libtool autoconf automake libcurl4-openssl-dev
-    - name: Install htslib (linux)
+        sudo apt-get -qy install \
+          bwa make build-essential cmake \
+          libncurses-dev ncurses-dev \
+          libbz2-dev lzma-dev liblzma-dev \
+          curl libssl-dev libtool autoconf automake \
+          libcurl4-openssl-dev
+    
+    # Install htslib from source on Linux
+    - name: Install htslib (Linux)
       if: runner.os == 'Linux'
       run: |
-        cd
+        cd $HOME
         git clone --recursive https://github.com/samtools/htslib.git
-        cd htslib && git checkout 1.11 && autoheader && autoconf && ./configure --enable-libcurl
+        cd htslib && git checkout 1.19 && autoheader && autoconf  # Updated version
+        ./configure --enable-libcurl
         sudo make -j 4 install
         sudo ldconfig
-        #echo "::set-env name=LD_LIBRARY_PATH::${LD_LIBRARY_PATH}:${HOME}/htslib"
-        #ls -lh $HOME/htslib/*.so
-        
-    - name: Install hstlib (macos)
+        # Set library path for runtime linking
+        echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/htslib" >> $GITHUB_ENV
+    
+    # Install htslib via Homebrew on macOS
+    - name: Install htslib (macOS)
       if: runner.os == 'macOS'
       run: |
         brew install htslib
-
-    - uses: iffy/install-nim@v3.2.0
+    
+    # Install Nim programming language
+    - uses: iffy/install-nim@v5  # Updated from v3.2.0
       with:
         version: ${{ matrix.nimversion }}
-
-
-    # Build and Test
+    
+    # Build and test macOS executable
     - name: Build macOS executable
       if: runner.os == 'macOS'
       run: |
+        # Build all targets
         nimble build -y --verbose 
         ls -l bin/
         
+        # Test version commands
         bin/bamtocov --version
-        
-        bin/bamtocov input/mini.bam
-
         bin/bamtocounts --version
+        
+        # Test basic functionality
+        bin/bamtocov input/mini.bam
         bin/bamtocounts input/regions.bed input/mini.bam --debug --header
-        # TESTS
-        #bash tests/all.sh
-        
-        
+    
+    # Build and test Linux executable with comprehensive testing
     - name: Build and Test Linux executable
       if: runner.os == 'Linux'
       run: |
+        # Build all targets
         nimble build -y --verbose
         ls -l bin/
         
+        # Test version commands
         bin/bamtocov --version
         bin/bamtocounts --version
+        
+        # Test basic functionality
         bin/bamtocov input/mini.bam
         bin/bamtocounts input/regions.bed input/mini.bam --debug --header
-        #bash tests/all.sh
+        
+        # Run test suites
         tests/bin/shpec tests/shpec/bamtocov.sh
         tests/unit/bamtocov-base.sh
+        
+        # Test region-based coverage
         bin/bamtocov --regions input/regions.bed -o report.txt input/mini.bam > /dev/null
         cat report.txt
-        echo "WHERE: $HOME/htslib" 
-        cat $HOME/htslib/version.h 
+        
+        # Display htslib version for debugging
+        echo "Htslib location: $HOME/htslib" 
+        if [ -f "$HOME/htslib/version.h" ]; then
+          cat $HOME/htslib/version.h
+        fi
