@@ -1,5 +1,7 @@
 ---
-sort: 4
+title: feat-counts.py
+parent: Scripts
+nav_order: 4
 ---
 
 # feat-counts.py

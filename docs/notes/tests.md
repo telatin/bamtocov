@@ -1,3 +1,9 @@
+---
+title: Testing BamToCov
+parent: Notes
+nav_order: 4
+---
+
 # Testing BamToCov
 
 ## Testing scenarios

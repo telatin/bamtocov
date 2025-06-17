@@ -1,5 +1,7 @@
 ---
-sort: 3
+title: make-target-from-bam.py
+parent: Scripts
+nav_order: 3
 ---
 
 # make-target-from-bam.py

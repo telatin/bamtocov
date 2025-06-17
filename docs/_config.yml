@@ -6,9 +6,7 @@ description: "BamToCov - alignment coverage tools"
 readme_index:
   with_frontmatter: true
 
-theme: null
-
-remote_theme: rundocs/jekyll-rtd-theme
+remote_theme: just-the-docs/just-the-docs
 
 plugins:
   - jekyll-remote-theme
@@ -19,3 +17,11 @@ markdown: CommonMarkGhPages
 commonmark:
   options: ['SMART']
   extensions: ['table']
+
+# Just the Docs theme configuration
+nav_fold: false
+nav_sort: case_insensitive
+
+# Custom styles
+color_scheme: light
+aux_links_new_tab: false

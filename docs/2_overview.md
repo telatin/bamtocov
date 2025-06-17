@@ -1,5 +1,6 @@
 ---
-sort: 2
+title: Overview
+nav_order: 2
 permalink: /overview
 ---
 
@@ -8,7 +9,7 @@ permalink: /overview
 In bioinformatics, a common task is to align several (usually short) DNA sequences 
 against a reference sequence (e. g. a complete genome of the organism).
 
-![coverage in a genome browser](https://camo.githubusercontent.com/340658f1bbad9a553dd9b3e8d943f6696cb4a825840ee22b65a5fe754cda2afa/68747470733a2f2f6d69726f2e6d656469756d2e636f6d2f6d61782f323733342f312a68616f374a4d4c516c6f71626d68412d6535793141512e706e67)
+![coverage in a genome browser](bamtocov-1.png)
 
 <sub>The screenshot of  shows the alignment of several short DNA sequences (*reads*)
 against a reference genome. The program graphically displays the *coverage track*</sub>

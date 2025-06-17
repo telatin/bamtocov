@@ -1,5 +1,6 @@
 ---
-sort: 1
+title: Installation
+nav_order: 1
 permalink: /installation
 ---
 

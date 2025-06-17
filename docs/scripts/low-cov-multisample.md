@@ -1,5 +1,7 @@
 ---
-sort: 2
+title: low-cov-multisample.py
+parent: Scripts
+nav_order: 2
 ---
 
 # low-cov-multisample.py

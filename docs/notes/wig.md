@@ -1,3 +1,9 @@
+---
+title: Wig Format
+parent: Notes
+nav_order: 5
+---
+
 # Wig format
 
 The Wiggle format is used to plot quantitaitve data in a genome browser, and a detailed description

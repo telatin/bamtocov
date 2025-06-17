@@ -1,5 +1,6 @@
 ---
-sort: 5
+title: History
+nav_order: 5
 permalink: /history
 ---
 # History

@@ -1,3 +1,9 @@
+---
+title: Simulated BAMs
+parent: Notes
+nav_order: 3
+---
+
 # Simulated BAMs
 
 A script to generate simulated BAM files for a single-chromosome genome ships

@@ -1,5 +1,7 @@
 ---
-sort: 1
+title: BamToCov
+parent: Tools
+nav_order: 1
 ---
 
 # BamToCov

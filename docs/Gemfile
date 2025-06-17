@@ -20,6 +20,6 @@ group :jekyll_plugins do
   gem "github-pages"
   gem 'jekyll-commonmark-ghpages'
   gem "jekyll-remote-theme"
-  gem 'faraday', '< 1'
-  gem 'liquid', '>= 4.0.1'
+  gem "jemoji"
+  gem "jekyll-gist"
 end

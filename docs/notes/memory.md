@@ -1,3 +1,9 @@
+---
+title: Memory Usage
+parent: Notes
+nav_order: 2
+---
+
 # Memory usage
 
 *BamToCov* is an extremely memory efficient tools, and the only one not

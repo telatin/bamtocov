@@ -1,0 +1,478 @@
+{"0": {
+    "doc": "Installation",
+    "title": "Installation",
+    "content": " ",
+    "url": "/installation",
+    
+    "relUrl": "/installation"
+  },"1": {
+    "doc": "Installation",
+    "title": "Install via Miniconda",
+    "content": "You can install bamtocov from BioConda, if you have conda installed: . conda install -c conda-forge -c bioconda bamtocov . ",
+    "url": "/installation#install-via-miniconda",
+    
+    "relUrl": "/installation#install-via-miniconda"
+  },"2": {
+    "doc": "Installation",
+    "title": "Compiling from source",
+    "content": ". | Install nim and nimble. | Install hts-lib | Compile with nimble build | . ",
+    "url": "/installation#compiling-from-source",
+    
+    "relUrl": "/installation#compiling-from-source"
+  },"3": {
+    "doc": "Overview",
+    "title": "Overview",
+    "content": "In bioinformatics, a common task is to align several (usually short) DNA sequences against a reference sequence (e. g. a complete genome of the organism). The screenshot of shows the alignment of several short DNA sequences (reads) against a reference genome. The program graphically displays the coverage track . IGV itself displays a coverage track, but for computational reasons only if the zoom is below 50 kbp. On the other hand, it is possible to visualize a BED track spanning the whole chromosome. bamtocov reads an alignment file in BAM format and prints a BED track with the nucleotide coverage and can be used to select the regions with a coverage of interest (e. g. uncovered regions with 0X coverage, low coverage regions &lt;5X, etc.). ",
+    "url": "/overview",
+    
+    "relUrl": "/overview"
+  },"4": {
+    "doc": "Overview",
+    "title": "Features",
+    "content": ":white_check_mark: can read sorted BAM files even without the index . :white_check_mark: can read sorted BAM files from streams (from a pipe) . :white_check_mark: can calculate the physical coverage to check the assembly integrity . :white_check_mark: can calculate the per-strand coverage to check for strand bias . :white_check_mark: lowest memory usage for a coverage tool . ",
+    "url": "/overview#features",
+    
+    "relUrl": "/overview#features"
+  },"5": {
+    "doc": "Overview",
+    "title": "File formats",
+    "content": "BED files . A BED file (.bed) is a tab-delimited text file that defines a feature track. In this context the magnitude refers to the nucleotide coverage of the interval. The columns are chromosome name, start position (inclusive, zero-based), end position (non-inclusive, zero-based) and coverage. An example is: . seq1 0 9 0 seq1 9 109 5 seq1 109 189 0 seq1 189 200 2 . Target statistics . :warning: this format is not final. For each sample, 5 columns are printed: . | bam_bases | bam_mean | bam_min | bam_max | bam_length | . | interval | bam_bases | bam_mean | bam_min | bam_max | bam_length | . | target1_8X | 699 | 3.495 | 1 | 6 | 200 | . | target2_0X | 0 | 0.0 | 0 | 0 | 50 | . | target3_1X | . | . | . | . | . | . | for_rev_10Xa | 100 | 10.0 | 10 | 10 | 10 | . | for_rev_10Xb | 100 | 10.0 | 10 | 10 | 10 | . | for_rev_10Xc | . | . | . | . | . | . ",
+    "url": "/overview#file-formats",
+    
+    "relUrl": "/overview#file-formats"
+  },"6": {
+    "doc": "Overview",
+    "title": "Further reading",
+    "content": "For a more detailed introduction to coverage analysis see: Coverage Analysis from the Command Line. ",
+    "url": "/overview#further-reading",
+    
+    "relUrl": "/overview#further-reading"
+  },"7": {
+    "doc": "Usage",
+    "title": "Usage",
+    "content": " ",
+    "url": "/usage",
+    
+    "relUrl": "/usage"
+  },"8": {
+    "doc": "Usage",
+    "title": "Tools",
+    "content": "BamToCov is inspired by the UNIX Phylosophy and the tools are designed for efficient computation of a very specific task. Integration of multiple samples and specific tasks can be achieved with scripts and we provide a set to demonstrate the process. bamtocov will produce a coverage BED from a single BAM file, or a count matrix from a set of alignments and a target (in BED, GTF or GFF format). Used without a target, it is a drop-in replacement for covtobed, but discarding invalid alignments by default. When providing the target, it can produce coverage statistics for each region in the target, also with multiple BAM files. bamtocounts will count the number of reads covering each target region, rather than the nucleotidic coverage . bamcountrefs is a shortcut to count the number of reads per chromosome, with filters on the read flags, length and quality . covtotarget (legacy) is an utility to create a count table from the output of the original covtobed program. ",
+    "url": "/usage#tools",
+    
+    "relUrl": "/usage#tools"
+  },"9": {
+    "doc": "Usage",
+    "title": "Quick start",
+    "content": "bamtocov alignment.bam &gt; coverage.bed . will produce a coverage BED file from the alignment file. ",
+    "url": "/usage#quick-start",
+    
+    "relUrl": "/usage#quick-start"
+  },"10": {
+    "doc": "Usage",
+    "title": "File formats",
+    "content": "BED files . A BED file (.bed) is a tab-delimited text file that defines a feature track. In this context the magnitude refers to the nucleotide coverage of the interval. The columns are chromosome name, start position (inclusive, zero-based), end position (non-inclusive, zero-based) and coverage. An example is: . seq1 0 9 0 seq1 9 109 5 seq1 109 189 0 seq1 189 200 2 . Target statistics . :warning: this format is not final. For each sample, 5 columns are printed: . | bam_bases | bam_mean | bam_min | bam_max | bam_length | . | interval | bam_bases | bam_mean | bam_min | bam_max | bam_length | . | target1_8X | 699 | 3.495 | 1 | 6 | 200 | . | target2_0X | 0 | 0.0 | 0 | 0 | 50 | . | target3_1X | . | . | . | . | . | . | for_rev_10Xa | 100 | 10.0 | 10 | 10 | 10 | . | for_rev_10Xb | 100 | 10.0 | 10 | 10 | 10 | . | for_rev_10Xc | . | . | . | . | . | . ",
+    "url": "/usage#file-formats",
+    
+    "relUrl": "/usage#file-formats"
+  },"11": {
+    "doc": "Examples",
+    "title": "Examples",
+    "content": " ",
+    "url": "/examples",
+    
+    "relUrl": "/examples"
+  },"12": {
+    "doc": "Examples",
+    "title": "Produce the coverage BED from a BAM file",
+    "content": "bamtocov alignments.bam &gt; coverage.bed . ",
+    "url": "/examples#produce-the-coverage-bed-from-a-bam-file",
+    
+    "relUrl": "/examples#produce-the-coverage-bed-from-a-bam-file"
+  },"13": {
+    "doc": "Examples",
+    "title": "Use a target file to count the coverage in each region",
+    "content": "bamtocov --regions target.bed --report target-stats.tsv alignments.bam &gt; coverage.bed . ",
+    "url": "/examples#use-a-target-file-to-count-the-coverage-in-each-region",
+    
+    "relUrl": "/examples#use-a-target-file-to-count-the-coverage-in-each-region"
+  },"14": {
+    "doc": "Examples",
+    "title": "Generate a matrix from multiple outputs",
+    "content": "The output of multiple files in BED format makes no sense, so at this moment we require to explicitly specifying a --skip-output flag. The report matrix is saved with --report (or -o). bamtocov --regions target.bed --report target-stats.tsv --skip-output *.bam . ",
+    "url": "/examples#generate-a-matrix-from-multiple-outputs",
+    
+    "relUrl": "/examples#generate-a-matrix-from-multiple-outputs"
+  },"15": {
+    "doc": "Examples",
+    "title": "Count the coverage per target using legacy “covtobed” output",
+    "content": "covtobed file.bam | covtotarget ... ",
+    "url": "/examples#count-the-coverage-per-target-using-legacy-covtobed-output",
+    
+    "relUrl": "/examples#count-the-coverage-per-target-using-legacy-covtobed-output"
+  },"16": {
+    "doc": "History",
+    "title": "History",
+    "content": "This project extends covtobed, reimplementing the core algorithm in Nim. | 2.7.0 . | bamtocounts now supports --paired to count fragments | bamtocounts fixed a bug that ignored the user flag to exclude | [EXPERIMENTAL] testing --extendRead INT in bamtocov #6 | . | 2.6.0 . | bamtocounts algorithm rewritten to accept unsorted and non-indexed files. the requirement for indexed files will be permanently dropped, for consistency across the suite, while we recommend using sorted files, and, in the future, this requirement might be added again to allow for performance gains. | . | 2.5.0 . | BamToCounts rewritten with the target engine of BamToCov | . | 2.4.0 . | Standed analysis is now supported with Wig-like output | . | 2.3.0: . | Improved Wig support | Improved GTF format detection | Expanded test suite | . | 2.2.0: . | Support for wiggle output (--wig STEP and --op FUNCT) | . | 2.1.1: . | Help screen for all the tools updated to reflect the new tool names | Added --tag STRING in bamcountrefs to customise the reference column name | Initial support for Wig files | Expanded test suite and memory/speed benchmarks | . | 2.1.0: . | Bug Fix: an assertion caused the program to fail if an alignment ended at the end of a chromosome. | Updated compilation instructions for Nimble and Bioconda builds | Speed improvements | . | 2.0.4: . | Added new internal classes, like output_t and coverage_t | . | 2.0.2: . | Added covtocounts | Added target support | Performance improvement | . | 2.0.0: . | Initial release: Nim porting of the original C++ code | . | . ",
+    "url": "/history",
+    
+    "relUrl": "/history"
+  },"17": {
+    "doc": "Tools",
+    "title": "Tools",
+    "content": ". | BamCountRefs . | BamToCounts . | BamToCov . | CovToTarget . | . ",
+    "url": "/tools/",
+    
+    "relUrl": "/tools/"
+  },"18": {
+    "doc": "Scripts",
+    "title": "Scripts",
+    "content": ". | BamCountRefs . | BamToCounts . | BamToCov . | CovToTarget . | . ",
+    "url": "/scripts/",
+    
+    "relUrl": "/scripts/"
+  },"19": {
+    "doc": "Notes",
+    "title": "Notes",
+    "content": ". | BamCountRefs . | BamToCounts . | BamToCov . | CovToTarget . | . ",
+    "url": "/notes/",
+    
+    "relUrl": "/notes/"
+  },"20": {
+    "doc": "average-coverage.py",
+    "title": "average-coverage.py",
+    "content": "Calculates the average coverage per contig over multiple samples . ",
+    "url": "/scripts/average-coverage.html",
+    
+    "relUrl": "/scripts/average-coverage.html"
+  },"21": {
+    "doc": "average-coverage.py",
+    "title": "Usage",
+    "content": "usage: average-coverage.py [-h] [-o OUTPUT] [-t] [-b BIN] bam [bam ...] Return statistics of coverage of a BAM file using \"bamtocov\". Will print a three columns report: chromosome, length, average coverage positional arguments: bam BAM file optional arguments: -h, --help show this help message and exit -o OUTPUT, --output OUTPUT Output file -t, --total Print total coverage -b BIN, --bin BIN bamtocov binary [default: bamtocov] . ",
+    "url": "/scripts/average-coverage.html#usage",
+    
+    "relUrl": "/scripts/average-coverage.html#usage"
+  },"22": {
+    "doc": "average-coverage.py",
+    "title": "Example",
+    "content": "average-coverage.py input/{mini,mini2,mini3}.bam -b bin/bamtocov -t . Produces: . Chromosome mini mini2 mini3 seq1 1.5 1.5 2.3 seq2 1.0 1.0 0.0 seq0 0.0 0.1 0.0 #Total 0.83 0.87 0.77 . ",
+    "url": "/scripts/average-coverage.html#example",
+    
+    "relUrl": "/scripts/average-coverage.html#example"
+  },"23": {
+    "doc": "BamCountRefs",
+    "title": "BamCountsRefs",
+    "content": "A program to build a count table from multiple BAM files (having the same reference sequence). BamCountRefs 2.2.0 Usage: bamcountrefs [options] &lt;BAM-or-CRAM&gt;... Arguments: &lt;BAM-or-CRAM&gt; the alignment file for which to calculate depth BAM/CRAM processing options: -T, --threads &lt;threads&gt; BAM decompression threads [default: 0] -r, --fasta &lt;fasta&gt; FASTA file for use with CRAM files [default: ]. -F, --flag &lt;FLAG&gt; Exclude reads with any of the bits in FLAG set [default: 1796] -Q, --mapq &lt;mapq&gt; Mapping quality threshold [default: 0] Annotation options: -g, --gff Force GFF for input (otherwise autodetected by .gff extension) -t, --type &lt;feat&gt; GFF feature type to parse [default: CDS] -i, --id &lt;ID&gt; GFF identifier [default: ID] -n, --rpkm Add a RPKM column -l, --norm-len Add a counts/length column (after RPKM when both used) Other options; --tag STR First column name [default: ViralSequence] --multiqc Print output as MultiQC table --header Print header --debug Enable diagnostics -h, --help Show help . ",
+    "url": "/tools/bamcountrefs.html#bamcountsrefs",
+    
+    "relUrl": "/tools/bamcountrefs.html#bamcountsrefs"
+  },"24": {
+    "doc": "BamCountRefs",
+    "title": "Example",
+    "content": "bin/bamcountrefs --tag \"Chrom\" input/mini.bam input/mini2.bam . Output: . Chrom mini mini2 seq0 0 1 seq1 15 15 seq2 10 10 . ",
+    "url": "/tools/bamcountrefs.html#example",
+    
+    "relUrl": "/tools/bamcountrefs.html#example"
+  },"25": {
+    "doc": "BamCountRefs",
+    "title": "BamCountRefs",
+    "content": " ",
+    "url": "/tools/bamcountrefs.html",
+    
+    "relUrl": "/tools/bamcountrefs.html"
+  },"26": {
+    "doc": "BamToCounts",
+    "title": "BamToCounts",
+    "content": "A program that counts the number of reads per target in a BAM file. The BAM file does not need to be sorted. Overlapping features will be reported each with all the counts, so a read mapped in a shared interval will be counted more than once. ",
+    "url": "/tools/bamtocounts.html",
+    
+    "relUrl": "/tools/bamtocounts.html"
+  },"27": {
+    "doc": "BamToCounts",
+    "title": "Help screen",
+    "content": "BamToCounts 2.7.0 Usage: bamtocounts [options] &lt;Target&gt; &lt;BAM-or-CRAM&gt;... Arguments: &lt;Target&gt; the BED (or GFF) file containing regions in which to count reads &lt;BAM-or-CRAM&gt; the alignment file for which to calculate depth Options: -T, --threads &lt;threads&gt; BAM decompression threads [default: 0] -r, --fasta &lt;fasta&gt; FASTA file for use with CRAM files [default: ] -F, --flag &lt;FLAG&gt; Exclude reads with any of the bits in FLAG set [default: 1796] -Q, --mapq &lt;mapq&gt; Mapping quality threshold [default: 0] --paired Count read pairs rather than single reads --strict Read must be contained, not just overlap, with feature --stranded Print strand-specific counts --coords Also print coordinates of each feature -g, --gff Force GFF for input (otherwise autodetected by .gff extension) -t, --type &lt;feat&gt; GFF feature type to parse [default: CDS] -i, --id &lt;ID&gt; GFF identifier [default: ID] -n, --rpkm Add a RPKM column -l, --norm-len Add a counts/length column (after RPKM when both used) -p, --precision INT Digits for floating point precision [default: 3] --header Print header --verbose Print verbose output --debug Enable diagnostics -h, --help Show help . ",
+    "url": "/tools/bamtocounts.html#help-screen",
+    
+    "relUrl": "/tools/bamtocounts.html#help-screen"
+  },"28": {
+    "doc": "BamToCounts",
+    "title": "Example output",
+    "content": "Given a BED file with the annotation and a BAM file, the output produced by the program is a table with the following columns: . | Feature identifier (always present) | . If --coords is enabled: . | Chromosome(s) | Start(s) | Ends(s) | . If --stranded is enabled: . | Counts Forward | Counts Reverse Otherwise | Counts | . If --rpkm: . | RPKM (Reads Per Kilobase per Million) | . If --norm: . | Normalized counts (per target length) | . Examples . Using only --header: . #Feature counts feature_1 7 feature_2 7 second_half 0 . Adding --stranded: . #Feature for rev feature_1 7 0 feature_2 0 7 second_half 0 0 . Adding --stranded and --coords: . #Feature Chrom start end for rev feature_1 seq1 100 200 7 0 feature_2 seq1 300 400 0 7 second_half seq1 500 1000 0 0 . ",
+    "url": "/tools/bamtocounts.html#example-output",
+    
+    "relUrl": "/tools/bamtocounts.html#example-output"
+  },"29": {
+    "doc": "BamToCov",
+    "title": "BamToCov",
+    "content": "The main program of the suite that parses a sorted BAM file and generates a coverage file in BED format. ",
+    "url": "/tools/bamtocov.html",
+    
+    "relUrl": "/tools/bamtocov.html"
+  },"30": {
+    "doc": "BamToCov",
+    "title": "Splash screen",
+    "content": "BamToCov 2.2.0 Usage: bamtocov [options] [&lt;BAM&gt;]... Arguments: &lt;BAM&gt; the alignment file for which to calculate depth (default: STDIN) Core options: -p, --physical Calculate physical coverage -s, --stranded Report coverage separate by strand -q, --quantize &lt;breaks&gt; Comma separated list of breaks for quantized output -w, --wig &lt;SPAN&gt; Output in WIG format (using fixed &lt;SPAN&gt;), 0 will print in BED format [default: 0] --op &lt;func&gt; How to summarize coverage for each WIG span (mean/min/max) [default: max] -o, --report &lt;TXT&gt; Output coverage report --skip-output Do not output per-base coverage --report-low &lt;min&gt; Report coverage for bases with coverage &lt; min [default: 0] Target files: -r, --regions &lt;bed&gt; Target file in BED or GFF3/GTF format (detected with the extension) -t, --gff-type &lt;feat&gt; GFF feature type to parse [default: CDS] -i, --gff-id &lt;ID&gt; GFF identifier [default: ID] --gff-separator &lt;sep&gt; GFF attributes separator [default: ;] --gff Force GFF input (otherwise assumed by extension .gff) BAM reading options: -T, --threads &lt;threads&gt; BAM decompression threads [default: 0] -F, --flag &lt;FLAG&gt; Exclude reads with any of the bits in FLAG set [default: 1796] -Q, --mapq &lt;mapq&gt; Mapping quality threshold [default: 0] Other options: --debug Enable diagnostics -h, --help Show help . ",
+    "url": "/tools/bamtocov.html#splash-screen",
+    
+    "relUrl": "/tools/bamtocov.html#splash-screen"
+  },"31": {
+    "doc": "BamToCov",
+    "title": "Bam To BedGraph",
+    "content": "To produce a BED graph file with the coverage of an input BAM file, the syntax can be as minimal as: . bamtocov input.bam &gt; coverage.bed . The output format will be in BED graph, having as columns: chromosome name, start position, end position, coverage. seq1 0 9 0 seq1 9 109 5 seq1 109 189 0 . To filter the reads in input: . | --flag INT to exclude reads with any of the bits in the FLAG set | --mapq INT to exclude reads with a mapping quality lower than INT | . To manipulate the output: . | --quantize STRING to produce a quantized output, where the coverage is divided in bins specified in comma separated list as INT,INT… | --physical-coverage to calculate the physical coverage of paired libraries | and --stranded to print a separate column for the forward and negative strands | . Stranded output . When --stranded is used, the output is a five column BED-like file, where the columns are: . | Chromosome name | Interval start | Interval end | Coverage in the forward strand | Coverage in the reverse strand | . seq1 0 9 0 0 seq1 9 109 5 0 seq1 109 189 0 0 seq1 189 200 2 0 seq1 200 250 4 0 . ",
+    "url": "/tools/bamtocov.html#bam-to-bedgraph",
+    
+    "relUrl": "/tools/bamtocov.html#bam-to-bedgraph"
+  },"32": {
+    "doc": "BamToCov",
+    "title": "Bam To Wiggle",
+    "content": "The Wiggle format is commonly used to prepare track for genome browsers. BamToCov can produce a wiggle file with a fixed step specified via --wig INT. By default the maximum coverage will be printed, but mean and min can be specified via --op mean|max|min. bamtocov --wig 200 input.bam &gt; coverage.wig . The output is similar to: . fixedStep chrom=seq1 span=100 0 5 100 5 200 6 300 3 400 2 500 0 . An alternative program to perform this analysis is bam2wig, that will take into account the CIGAR operations, if required. ",
+    "url": "/tools/bamtocov.html#bam-to-wiggle",
+    
+    "relUrl": "/tools/bamtocov.html#bam-to-wiggle"
+  },"33": {
+    "doc": "CovToTarget",
+    "title": "CovToTarget",
+    "content": "This tool produce a coverage per feature report based on a target (annotation file in BED or GFF3 format) and the output of covtobed 1.0. :warning: Note that while bamtocov produces an identical coverage output, it also includes the built-in feature to restrict the analysis to the target. ",
+    "url": "/tools/covtotarget.html",
+    
+    "relUrl": "/tools/covtotarget.html"
+  },"34": {
+    "doc": "CovToTarget",
+    "title": "Help screen",
+    "content": "covToTarget $version Usage: covtotarget [options] &lt;Target&gt; [&lt;covtobed-output&gt;] Arguments: &lt;Target&gt; the BED (or GFF) file containing regions in which to count reads &lt;covtobed-output&gt; covtobed output, or STDIN if not provided Options: -g, --gff Force GFF for input (otherwise autodetected by .gff extension) -t, --type &lt;feat&gt; GFF feature type to parse [default: CDS] -i, --id &lt;ID&gt; GFF identifier [default: ID] -l, --norm-len Normalize by gene length -b, --bed-output Output format is BED-like (default is feature_name [tab] counts) -h, --help Show help . ",
+    "url": "/tools/covtotarget.html#help-screen",
+    
+    "relUrl": "/tools/covtotarget.html#help-screen"
+  },"35": {
+    "doc": "CovToTarget",
+    "title": "Usage",
+    "content": "This program extends covtobed, so it can be used in a stream: . covtobed input/mini.bam | covtotarget input/mini.bed &gt; output/counts.tsv . ",
+    "url": "/tools/covtotarget.html#usage",
+    
+    "relUrl": "/tools/covtotarget.html#usage"
+  },"36": {
+    "doc": "CovToTarget",
+    "title": "Output format",
+    "content": "A table of features and counts per feature: . target1_8X 699 target2_0X 0 target3_1X 50 for_rev_10Xa 690 for_rev_10Xb 0 for_rev_10Xc 0 . ",
+    "url": "/tools/covtotarget.html#output-format",
+    
+    "relUrl": "/tools/covtotarget.html#output-format"
+  },"37": {
+    "doc": "feat-counts.py",
+    "title": "feat-counts.py",
+    "content": "Counts feature across multiple samples producing a count matrix. usage: feat-counts.py [-h] -t TARGET [-o OUTPUT] [--feat FEAT] [--id ID] [--binary BINARY] [--verbose] BAM [BAM ...] Count reads in multiple BAM files using a target file (BED or GFF or GTF) positional arguments: BAM BAM file optional arguments: -h, --help show this help message and exit -t TARGET, --target TARGET Target file -o OUTPUT, --output OUTPUT Output file --feat FEAT Feature type [default: exon] --id ID ID attribute [default: gene_id] --binary BINARY Binary to bamtocounts [default: bamtocounts] --verbose Verbose output . ",
+    "url": "/scripts/feat-counts.html",
+    
+    "relUrl": "/scripts/feat-counts.html"
+  },"38": {
+    "doc": "feat-counts.py",
+    "title": "Example",
+    "content": ":warning: All the input files must be sorted and indexed. Using the files in the repository it is possible to test the tool using a minimal dataset: . feat-counts.py -t input/regions.bed input/min{i,i2,i3}.bam . ",
+    "url": "/scripts/feat-counts.html#example",
+    
+    "relUrl": "/scripts/feat-counts.html#example"
+  },"39": {
+    "doc": "feat-counts.py",
+    "title": "Example output",
+    "content": "By default the matrix is produced with four columns (BED coordinates and name) and then the counts for each sample. The sample name is the filename, removed the .bam extension. Chr Start Stop Name mini3 mini2 mini seq0 0 210 empty0_0 0 1 0 seq1 5 112 include_5 5 5 5 seq1 410 532 overlap_2 1 2 2 seq1 800 950 empty1_0 0 0 0 seq2 300 532 shared1_10 0 10 10 seq2 566 769 shared2_10 0 10 10 . ",
+    "url": "/scripts/feat-counts.html#example-output",
+    
+    "relUrl": "/scripts/feat-counts.html#example-output"
+  },"40": {
+    "doc": "Long Reads Testing",
+    "title": "Testing on long reads",
+    "content": " ",
+    "url": "/notes/longreads.html#testing-on-long-reads",
+    
+    "relUrl": "/notes/longreads.html#testing-on-long-reads"
+  },"41": {
+    "doc": "Long Reads Testing",
+    "title": "Speed measures",
+    "content": "The speed test is performed via hyperfine: . hyperfine \\ \"bin/bamtocov $FILE\" \\ \"megadepth --coverage --longreads $FILE\" \\ \"mosdepth -x /tmp/x $FILE\" \\ --max-runs 3 --export-markdown $FILE.md . ",
+    "url": "/notes/longreads.html#speed-measures",
+    
+    "relUrl": "/notes/longreads.html#speed-measures"
+  },"42": {
+    "doc": "Long Reads Testing",
+    "title": "Datasets",
+    "content": "Fungal dataset . The alignment of whole genome shotgun reads coming from a unicellular fungus sequences with MinION in our laboratory is available in the Zenodo dataset accompanying the paper. wget -O cpara-ont.bam \"https://zenodo.org/record/5636944/files/cpara-ont-noseq.bam?download=1\" . Human sample . SRR13615770, from the study Cas9 targeted enrichment of mobile elements using nanopore sequencing is composed by 123,254 reads. # Download reference wget -O db/hg19.fa.gz http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.fa.masked.gz # Download sample curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR136/070/SRR13615770/SRR13615770_1.fastq.gz \\ -o SRR13615770_L1Hs_MinION_1.fastq.gz # Select reads &gt; 2500bp seqfu cat -m 2500 SRR13615770_L1Hs_MinION_1.fastq.gz | gzip -c &gt; SRR13615770_L1Hs_MinION_1.min2500.fastq.gz # Map minimap2 -ax map-ont -t 4 db/hg19.fa.gz SRR13615770_L1Hs_MinION_1.min2500.fastq.gz | \\ samtools view -bS | samtools sort -o SRR13615770.bam - . ",
+    "url": "/notes/longreads.html#datasets",
+    
+    "relUrl": "/notes/longreads.html#datasets"
+  },"43": {
+    "doc": "Long Reads Testing",
+    "title": "Benchmark result",
+    "content": "hyperfine \\ \"bin/bamtocov $FILE\" \\ \"megadepth --coverage --longreads $FILE\" \\ \"mosdepth -x /tmp/x $FILE\" \\ --max-runs 2 --export-markdown $FILE.md . ",
+    "url": "/notes/longreads.html#benchmark-result",
+    
+    "relUrl": "/notes/longreads.html#benchmark-result"
+  },"44": {
+    "doc": "Long Reads Testing",
+    "title": "Results",
+    "content": ". | SRR13615770_L1Hs_MinION_1 (full sample) | . | Command | Mean [s] | Min [s] | Max [s] | Relative | . | bin/bamtocov SRR13615770_L1Hs_MinION_1.bam | 32.357 ± 0.261 | 32.172 | 32.541 | 1.00 | . | megadepth --coverage --longreads SRR13615770_L1Hs_MinION_1.bam | 46.115 ± 0.954 | 45.440 | 46.789 | 1.43 ± 0.03 | . | mosdepth -x /tmp/x SRR13615770_L1Hs_MinION_1.bam | 92.359 ± 5.448 | 88.506 | 96.211 | 2.85 ± 0.17 | . | SRR13615770_2500bp (size selection: &gt; 2,500 bp) | . | Command | Mean [s] | Min [s] | Max [s] | Relative | . | bin/bamtocov SRR13615770.bam | 29.113 ± 0.121 | 28.981 | 29.219 | 1.00 | . | megadepth --coverage --longreads SRR13615770.bam | 43.366 ± 0.327 | 42.994 | 43.607 | 1.49 ± 0.01 | . | mosdepth -x /tmp/x SRR13615770.bam | 86.483 ± 2.312 | 83.878 | 88.293 | 2.97 ± 0.08 | . | Fungus LR | . | Command | Mean [ms] | Min [ms] | Max [ms] | Relative | . | bin/bamtocov _test/cpara-ont-noseq.bam | 310.5 ± 23.0 | 275.5 | 339.0 | 1.00 | . | megadepth --coverage --longreads _test/cpara-ont-noseq.bam | 557.4 ± 13.5 | 540.5 | 572.7 | 1.80 ± 0.14 | . | mosdepth -x /tmp/x _test/cpara-ont-noseq.bam | 792.5 ± 176.9 | 654.5 | 1092.7 | 2.55 ± 0.60 | . ",
+    "url": "/notes/longreads.html#results",
+    
+    "relUrl": "/notes/longreads.html#results"
+  },"45": {
+    "doc": "Long Reads Testing",
+    "title": "Long Reads Testing",
+    "content": " ",
+    "url": "/notes/longreads.html",
+    
+    "relUrl": "/notes/longreads.html"
+  },"46": {
+    "doc": "low-cov-multisample.py",
+    "title": "low-cov-multisample.py",
+    "content": "Identifies low coverage regions common to multiple samples. Can be configured to use bedtools, bamtocov or megadepth, but requires bedtools for the intersection. ",
+    "url": "/scripts/low-cov-multisample.html",
+    
+    "relUrl": "/scripts/low-cov-multisample.html"
+  },"47": {
+    "doc": "low-cov-multisample.py",
+    "title": "Usage",
+    "content": "usage: low-cov-multisample.py [-h] [--min MIN] [--max MAX] [--shared SHARED] [-t {bamtocov,bedtools,megadepth}] [--bamtocov BAMTOCOV] [--bedtools BEDTOOLS] [--megadepth MEGADEPTH] [--verbose] BAM [BAM ...] Detect low coverage regions in multiple BAM files using bamtocov, megadepth or bedtools positional arguments: BAM BAM file(s) to process optional arguments: -h, --help show this help message and exit --verbose Print verbose output Coverage filters: --min MIN Minimum coverage to consider a region as low coverage [default: 10] --max MAX Maximum coverage to consider a region as low coverage [default: 10] --shared SHARED Ratio of input samples sharing the interval [default: 1.0] External tools: -t {bamtocov,bedtools,megadepth}, --tool {bamtocov,bedtools,megadepth} Tool to use for coverage detection --bamtocov BAMTOCOV Path to bamtocov executable --bedtools BEDTOOLS Path to bedtools executable --megadepth MEGADEPTH Path to megadepth executable . ",
+    "url": "/scripts/low-cov-multisample.html#usage",
+    
+    "relUrl": "/scripts/low-cov-multisample.html#usage"
+  },"48": {
+    "doc": "low-cov-multisample.py",
+    "title": "Example",
+    "content": "make-target-from-bam.py input/mini.bam . Produces a BED having as feature name the chromosome names. seq1 0 1000 seq1 seq2 0 1000 seq2 seq0 0 1000 seq0 . ",
+    "url": "/scripts/low-cov-multisample.html#example",
+    
+    "relUrl": "/scripts/low-cov-multisample.html#example"
+  },"49": {
+    "doc": "make-target-from-bam.py",
+    "title": "make-target-from-bam.py",
+    "content": "Generate a BED target comprising the whole length of all the chromosomes. ",
+    "url": "/scripts/make-target-from-bam.html",
+    
+    "relUrl": "/scripts/make-target-from-bam.html"
+  },"50": {
+    "doc": "make-target-from-bam.py",
+    "title": "Usage",
+    "content": "usage: make-target-from-bam.py [-h] [-o OUT] bam Generate a target covering the full chromosomes from a BAM file positional arguments: bam BAM file optional arguments: -h, --help show this help message and exit -o OUT, --out OUT Output file . ",
+    "url": "/scripts/make-target-from-bam.html#usage",
+    
+    "relUrl": "/scripts/make-target-from-bam.html#usage"
+  },"51": {
+    "doc": "make-target-from-bam.py",
+    "title": "Example",
+    "content": "make-target-from-bam.py input/mini.bam . Produces a BED having as feature name the chromosome names. seq1 0 1000 seq1 seq2 0 1000 seq2 seq0 0 1000 seq0 . ",
+    "url": "/scripts/make-target-from-bam.html#example",
+    
+    "relUrl": "/scripts/make-target-from-bam.html#example"
+  },"52": {
+    "doc": "Memory Usage",
+    "title": "Memory usage",
+    "content": "BamToCov is an extremely memory efficient tools, and the only one not using a vector (as long as the chromosome) to store the changes in coverage. ",
+    "url": "/notes/memory.html#memory-usage",
+    
+    "relUrl": "/notes/memory.html#memory-usage"
+  },"53": {
+    "doc": "Memory Usage",
+    "title": "Results",
+    "content": "Memory usage (in bytes) has been measured for alignments against: . | Candida parapsilosis, Illumina dataset | Candida parapsilosis, Nanopore dataset | Human exome HG00258, Illumina | Human targeted sequencing, 16 genes, Illumina | . | | Fungus, Illumina | Fungus, ONT | HG00258 Exome | Human panel | . | bamtocov | 2,740 | 4,376 | 5,700 | 2,172 | . | covtobed | 4,080 | 5,008 | 6,588 | 4,052 | . | mosdepth | 13,952 | 19,140 | 1,983,928 | 6,425,744 | . | megadepth | 11,644 | 11,636 | 995,232 | 980,040 | . | bedtools | 12,940 | 14,876 | n/a | 1,951,288 | . For reference, this is the speed: . | Command | Mean (ms) | Min (ms) | Max (ms) | Relative | . | bamtocov &quot;panel_01.bam&quot; | 358.9 ± 18.3 | 341.6 | 387.9 | 1.00 | . | covtobed &quot;panel_01.bam&quot; | 533.2 ± 8.8 | 527.1 | 548.4 | 1.49 ± 0.08 | . | megadepth --coverage &quot;panel_01.bam&quot; | 9246.8 ± 1509.7 | 8026.7 | 11072.8 | 25.77 ± 4.41 | . | mosdepthprefix &quot;panel_01.bam&quot; | 53499.6 ± 875.1 | 52284.1 | 54548.5 | 149.08 ± 7.97 | . ",
+    "url": "/notes/memory.html#results",
+    
+    "relUrl": "/notes/memory.html#results"
+  },"54": {
+    "doc": "Memory Usage",
+    "title": "Scripts",
+    "content": "memusg . Evaluation of memory usage has been performed with memusg bu Jaeho Sigh, as reported below: . #!/usr/bin/env bash # memusg -- Measure memory usage of processes # Usage: memusg COMMAND [ARGS]... # # Author: Jaeho Shin &lt;netj@sparcs.org&gt; # Created: 2010-08-16 ############################################################################ # Copyright 2010 Jaeho Shin. # # # # Licensed under the Apache License, Version 2.0 (the \"License\"); # # you may not use this file except in compliance with the License. # # You may obtain a copy of the License at # # # # http://www.apache.org/licenses/LICENSE-2.0 # # # # Unless required by applicable law or agreed to in writing, software # # distributed under the License is distributed on an \"AS IS\" BASIS, # # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. # # See the License for the specific language governing permissions and # # limitations under the License. # ############################################################################ set -um # check input [[ $# -gt 0 ]] || { sed -n '2,/^#$/ s/^# //p' &lt;\"$0\"; exit 1; } # TODO support more options: peak, footprint, sampling rate, etc. pgid=$(ps -o pgid= $$) # make sure we're in a separate process group if [[ \"$pgid\" == \"$(ps -o pgid= $(ps -o ppid= $$))\" ]]; then cmd= set -- \"$0\" \"$@\" for a; do cmd+=\"'${a//\"'\"/\"'\\\\''\"}' \"; done exec bash -i -c \"$cmd\" fi # detect operating system and prepare measurement case $(uname) in Darwin|*BSD) sizes() { /bin/ps -o rss= -g $1; } ;; Linux) sizes() { /bin/ps -o rss= -$1; } ;; *) echo \"$(uname): unsupported operating system\" &gt;&amp;2; exit 2 ;; esac # monitor the memory usage in the background. ( peak=0 while sizes=$(sizes $pgid) do set -- $sizes sample=$((${@/#/+})) let peak=\"sample &gt; peak ? sample : peak\" sleep 0.1 done echo \"memusg: peak=$peak\" &gt;&amp;2 ) &amp; monpid=$! # run the given command exec \"$@\" . Memory.sh . To compare the memory usage of multiple tools: . echo MegaDepth: memusg /local/miniconda3/envs/mega/bin/megadepth --coverage $1 &gt; /dev/null sleep 3; echo \"\" echo BamToCov: memusg bin/bamtocov $1 &gt; /dev/null sleep 3; echo \"\" echo CovToBed: memusg covtobed $1 &gt; /dev/null sleep 3; echo \"\" echo Mosdepth: memusg mosdepth /tmp/prefix $1 sleep 3; echo \"\" . ",
+    "url": "/notes/memory.html#scripts",
+    
+    "relUrl": "/notes/memory.html#scripts"
+  },"55": {
+    "doc": "Memory Usage",
+    "title": "Memory Usage",
+    "content": " ",
+    "url": "/notes/memory.html",
+    
+    "relUrl": "/notes/memory.html"
+  },"56": {
+    "doc": "Simulated BAMs",
+    "title": "Simulated BAMs",
+    "content": "A script to generate simulated BAM files for a single-chromosome genome ships with the repository, to measure the effects of read length and coverage on the performance of the program. ",
+    "url": "/notes/simulations.html",
+    
+    "relUrl": "/notes/simulations.html"
+  },"57": {
+    "doc": "Simulated BAMs",
+    "title": "Using the script",
+    "content": "usage: simulate-long-bam.py [-h] -o OUTPUT [-l LENGTH] [-c COVERAGE] [-m MIN_LEN] [-M MAX_LEN] [-s SEED] [-r] [--progress PROGRESS] Simulate a BAM file with long reads mapped against a hypothetical genome optional arguments: -h, --help show this help message and exit -o OUTPUT, --output OUTPUT Output BAM file -l LENGTH, --length LENGTH Length of the genome [default: 10M] -c COVERAGE, --coverage COVERAGE Approximate coverage [default: 50] -m MIN_LEN, --min-len MIN_LEN Minimum read length [default: 1000] -M MAX_LEN, --max-len MAX_LEN Minimum read length [default: 10000] -s SEED, --seed SEED Random seed [default: 42] -r, --randomcigar Generate a random CIGAR --progress PROGRESS Print progress every INT reads [default: 10000] . In normal mode all reads have no INDELs, while in --randomcigar mode they have random insertion and deletions. Some program will check CIGAR operations (BamToCov does not). ",
+    "url": "/notes/simulations.html#using-the-script",
+    
+    "relUrl": "/notes/simulations.html#using-the-script"
+  },"58": {
+    "doc": "Simulated BAMs",
+    "title": "Example datasets",
+    "content": "The basic dataset is a 10 Mbp genome, 10X coverage: . # Long reads (genome size: 10 Mbp) with perfect matches and random CIGARs simulate-long-bam.py -m 1000 -M 10000 -o test/sim/short_match.bam simulate-long-bam.py -m 1000 -M 10000 -r -o test/sim/short_cigar.bam # Short reads (genome size: 10 Mbp) with perfect matches and random CIGARs simulate-long-bam.py -m 100 -M 300 -o test/sim/short_match.bam simulate-long-bam.py -m 100 -M 300 -r -o test/sim/short_match.bam . Effect of coverage and genome size have been checked varying the appropriate parameters. ",
+    "url": "/notes/simulations.html#example-datasets",
+    
+    "relUrl": "/notes/simulations.html#example-datasets"
+  },"59": {
+    "doc": "Simulated BAMs",
+    "title": "Results",
+    "content": "Memory . Peak memory usage in synthetic BAM files with a single chromosome 10 Mbp long and 10X coverage (long and short refers to read lengths) . | Tool | long match | long INDELs | short match | short INDELs | . | bamtocov | 2,172 | 2,176 | 2,176 | 2,236 | . | covtobed | 3,784 | 3,768 | 3,856 | 3,840 | . | megadepth | 45,516 | 45,488 | 45,612 | 45,552 | . | mosdepth | 82,268 | 82,148 | 82,272 | 82,284 | . | mosdepth fast | 82,180 | 82,204 | 82,468 | 82,244 | . Speed . Long reads (1000 bp to 10,000 bp): . | Command | Mean (s) | Min (s) | Max (s) | Relative | . | megadepth --coverage long_100M_match.bam | 1.954 ± 0.169 | 1.838 | 2.148 | 1.21 ± 0.13 | . | bamtocov long_100M_match.bam | 1.617 ± 0.106 | 1.510 | 1.722 | 1.00 | . | covtobed long_100M_match.bam | 4.703 ± 0.066 | 4.628 | 4.748 | 2.91 ± 0.19 | . | mosdepth -x prefix long_100M_match.bam | 3.873 ± 0.437 | 3.568 | 4.373 | 2.40 ± 0.31 | . Short reads (100 bp to 300 bp): . | Command | Mean (s) | Min (s) | Max (s) | Relative | . | megadepth --coverage short_100M_match.bam | 5.552 ± 0.334 | 5.288 | 5.928 | 1.00 | . | bamtocov short_100M_match.bam | 21.147 ± 0.362 | 20.742 | 21.439 | 3.81 ± 0.24 | . | covtobed short_100M_match.bam | 25.036 ± 0.788 | 24.579 | 25.946 | 4.51 ± 0.31 | . | mosdepth -x prefix short_100M_match.bam | 10.778 ± 0.894 | 9.949 | 11.725 | 1.94 ± 0.20 | . ",
+    "url": "/notes/simulations.html#results",
+    
+    "relUrl": "/notes/simulations.html#results"
+  },"60": {
+    "doc": "Simulated BAMs",
+    "title": "Large files",
+    "content": "simulate-long-bam.py -l 400M -c 100 -m 1000 -M 10000 -x 3 -r --progress 100 -o local/400Mb_100X3_1000-10000.bam simulate-long-bam.py -l 400M -c 100 -m 100 -M 300 -x 3 -r --progress 100 -o local/400Mb_100X3_100-300.bam . ",
+    "url": "/notes/simulations.html#large-files",
+    
+    "relUrl": "/notes/simulations.html#large-files"
+  },"61": {
+    "doc": "Testing BamToCov",
+    "title": "Testing BamToCov",
+    "content": " ",
+    "url": "/notes/tests.html",
+    
+    "relUrl": "/notes/tests.html"
+  },"62": {
+    "doc": "Testing BamToCov",
+    "title": "Testing scenarios",
+    "content": "To create minimal examples a set of scripts is provided in scripts/benchmarking/ to generate artificial BAM files. Some examples are provided in the repository (with screenshots): . | Target (1 chromosome, 3 features) | 3 chromosomes, 1 feature each | . ",
+    "url": "/notes/tests.html#testing-scenarios",
+    
+    "relUrl": "/notes/tests.html#testing-scenarios"
+  },"63": {
+    "doc": "Testing BamToCov",
+    "title": "Test suite",
+    "content": "The program default test suite can be invoked by: . make test . An extended (and redundant) set of tests can be run with: . make testall . This runs both the default tests, plus a legacy Bash script . Shpec tests . The default test suite was written using the Shpec framework, and can be individually run as: . # Same as \"make test\" ./tests/bin/shpec ./tests/shpec/bamtocov.sh . And will produce an indented output covering the binaries tested, similar to the example below: . Make test BamToCov Binary exist Version emitted is 2.x Mini coverage, verify output line number One line with empty chromosome seq0 (empty chromosome) Works with sorted file Fails with unsorted file Produces wig output (check lines) Produces wig output (check lines at 750) Produces wig output (check lines at 1000 bases, unexpected) Produces wig output header BamToCounts Binary exists Version 2.x Counts target Coverage check(x6) 14 examples, 0 failures . Legacy test suite . A minimal test suite is provided in tests/all.sh. The output will show the passing and failing tests as well as a check on the versions (ensuring that the current development version is different from the released one): . PASS: covtobed style output, lines PASS: covtobed style output, MD5 PASS: target report, tabcheck PASS: Current nimble version is different from GitHub release (should be newer) PASS: Nimble version matches binary Checking version for bamcountrefs: 2.2.1 Checking version for bamtocounts: 2.2.1 Checking version for bamtocov: covtobed 2.2.1 Checking version for covtotarget: 2.2.1 -------------------------- SUMMARY (PASS=11,FAIL=0) Last release: v2.1.0 Current release: v2.2.1 Binary release: v2.2.1 -------------------------- FINAL RESULT: PASS . ",
+    "url": "/notes/tests.html#test-suite",
+    
+    "relUrl": "/notes/tests.html#test-suite"
+  },"64": {
+    "doc": "Wig Format",
+    "title": "Wig format",
+    "content": "The Wiggle format is used to plot quantitaitve data in a genome browser, and a detailed description can be found at this website (genome.ucsc.edu). The native output of “BamToCov” is BED, and specifically bedGraph, that can be converted to bigWig via bedGraphToBigWig. For convenience we report some succint examples taken from the website aforementioned. ",
+    "url": "/notes/wig.html#wig-format",
+    
+    "relUrl": "/notes/wig.html#wig-format"
+  },"65": {
+    "doc": "Wig Format",
+    "title": "Examples",
+    "content": "Variable step . This format is used for data with irregular intervals between new data points, and is the more commonly used wiggle format. The span parameter is optional. variableStep chrom=chr21 span=5 9411191 50 9411196 40 9411201 60 9411206 20 9411211 20 . track type=wiggle_0 name=\"variableStep\" description=\"variableStep format\" visibility=full autoScale=off viewLimits=0.0:25.0 color=50,150,255 yLineMark=11.76 yLineOnOff=on priority=10 variableStep chrom=chr19 span=150 49304701 10.0 49304901 12.5 49305401 15.0 49305601 17.5 49305901 20.0 49306081 17.5 49306301 15.0 49306691 12.5 . The variableStep format becomes very inefficient when there are only a few data points per 1,024 bases. Fixed step . fixedStep chrom=chr3 start=400601 step=100 span=5 11 22 33 . start, step and span are all optional. ",
+    "url": "/notes/wig.html#examples",
+    
+    "relUrl": "/notes/wig.html#examples"
+  },"66": {
+    "doc": "Wig Format",
+    "title": "Wig Format",
+    "content": " ",
+    "url": "/notes/wig.html",
+    
+    "relUrl": "/notes/wig.html"
+  },"67": {
+    "doc": "BamToCov",
+    "title": "BamToCov",
+    "content": "# BamToCov ![CovToBam logo](/bamtocov-banner.png) - :package: Github: - :book: Documentation: **BamToCov** is a suite of tools for coverage analysis written in Nim and built upon the memory efficient algorithm of [**covtobed**](https://github.com/telatin/covtobed). The program uses [_htslib_](https://www.htslib.org) to parse BAM/CRAM files, and specifically the Nim-wrapper [_hts-nim_](https://github.com/brentp/hts-nim). We designed **BamToCov** to fill some gaps in coverage analysis: 1. Accepting input streams (i.e. not requiring the BAM index, at the expense of speed) 1. Enabling _per strand_ coverage analysis 1. Enabling the _physical coverage_ analysis 1. Using a minimum amount of memory (minimum memory usage) This makes **BamToCov** a useful companion especially when testing pipelines on small datasets. For coverage analysis of large datasets it can be useful to consider [Mosdepth](https://github.com/brentp/mosdepth), that uses indexed BAM/CRAM files as input. Another interesting alternative is [Megadepth](https://github.com/ChristopherWilks/megadepth), a fast and memory efficient tool. ",
+    "url": "/",
+    
+    "relUrl": "/"
+  }
+}

@@ -1,5 +1,7 @@
 ---
-sort: 4
+title: CovToTarget
+parent: Tools
+nav_order: 4
 ---
 
 # CovToTarget

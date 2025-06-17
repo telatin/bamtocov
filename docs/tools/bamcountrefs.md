@@ -1,5 +1,7 @@
 ---
-sort: 3
+title: BamCountRefs
+parent: Tools
+nav_order: 3
 ---
 
 # BamCountsRefs

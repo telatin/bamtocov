@@ -1,5 +1,7 @@
 ---
-sort: 1
+title: average-coverage.py
+parent: Scripts
+nav_order: 1
 ---
 
 # average-coverage.py

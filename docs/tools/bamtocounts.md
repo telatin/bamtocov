@@ -1,5 +1,7 @@
 ---
-sort: 2
+title: BamToCounts
+parent: Tools
+nav_order: 2
 ---
 
 # BamToCounts
