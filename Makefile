@@ -1,18 +1,32 @@
 # Create "make test"
 .PHONY: testshpec testshunit2 test clean build
 
+
+# Auto-detect htslib path with proper rpath handling
+HTSLIB_PATH := $(shell \
+	if [ -f /usr/lib/x86_64-linux-gnu/libhts.so ]; then \
+		echo "-L/usr/lib/x86_64-linux-gnu -lhts"; \
+	elif [ -f /opt/homebrew/lib/libhts.dylib ]; then \
+		echo "-L/opt/homebrew/lib -lhts -rpath /opt/homebrew/lib"; \
+	elif [ -f /usr/local/lib/libhts.dylib ]; then \
+		echo "-L/usr/local/lib -lhts -rpath /usr/local/lib"; \
+	else \
+		echo "-lhts"; \
+	fi)
+
 BIN=./bin
 BIN2=./static
 SOURCE=./src
 LIBPATH=$(shell dirname $(shell which samtools) | sed 's/bin/lib/')
-NIM_PATHS= --colors:on --noNimblePath --path:/local/giovanni/bamtocov/nimbledeps/pkgs/hts-0.3.17 --path:/local/giovanni/bamtocov/nimbledeps/pkgs/docopt-0.6.8 --path:/local/giovanni/bamtocov/nimbledeps/pkgs/regex-0.19.0 --path:/local/giovanni/bamtocov/nimbledeps/pkgs/unicodedb-0.9.0 --path:/local/giovanni/bamtocov/nimbledeps/pkgs/lapper-0.1.7 
+NIM_PATHS= --colors:on 
 VERSION := $(shell grep version bamtocov.nimble  | grep  -o "[0-9]\\+\.[0-9]\.[0-9]\\+")
 LIST=$(BIN)/bamtocov $(BIN)/bamtocounts $(BIN)/covtotarget $(BIN)/bamcountrefs $(BIN)/gff2bed $(BIN)/bamtocounts_legacy $(BIN)/bamtarget
 STATIC=$(BIN2)/bamtocov $(BIN2)/bamtocounts $(BIN2)/covtotarget $(BIN2)/bamcountrefs $(BIN2)/gff2bed $(BIN2)/bamtocounts_legacy $(BIN2)/bamtarget
 
-
 $(BIN)/%: $(SOURCE)/%.nim $(SOURCE)/covutils.nim bamtocov.nimble
-	nim c  $(NIM_PATHS) -d:NimblePkgVersion=$(VERSION) -d:danger --opt:speed  --out:$@ $<
+	nim c  $(NIM_PATHS) -d:NimblePkgVersion=$(VERSION) -d:release \
+		--passL:"$(HTSLIB_PATH)" \
+		--opt:speed  --out:$@ $<
 
 all: $(LIST)
 

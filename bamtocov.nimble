@@ -7,7 +7,12 @@ license       = "MIT"
 
 # Dependencies
 
-requires "hts >= 0.3.1", "docopt >= 0.6.8", "nim >= 1.0.0", "lapper"
+when defined(macosx):
+  --passL:"-L/opt/homebrew/Cellar/htslib/1.21/lib"
+  --passL:"-lhts"
+  --passL:"-rpath /opt/homebrew/Cellar/htslib/1.21/lib"
+  
+requires "hts >= 0.3.1", "docopt >= 0.6.8", "nim >= 1.6.6", "lapper"
 srcDir = "src"
 binDir = "bin"
 bin = @["covtotarget", "bamtocounts", "bamtocov", "bamcountrefs", "gff2bed", "bamtarget"]
