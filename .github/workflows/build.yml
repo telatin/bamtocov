@@ -86,6 +86,9 @@ jobs:
         nimble build -y --verbose 
         ls -l bin/
         
+        # Set library path for htslib
+        export DYLD_LIBRARY_PATH="/opt/homebrew/lib:$DYLD_LIBRARY_PATH"
+        
         # Test version commands
         bin/bamtocov --version
         bin/bamtocounts --version
