@@ -60,7 +60,7 @@ jobs:
       run: |
         cd $HOME
         git clone --recursive https://github.com/samtools/htslib.git
-        cd htslib && git checkout 1.19 && autoheader && autoconf  # Updated version
+        cd htslib && git checkout 1.19 && autoreconf -i  # Generate auxiliary files
         ./configure --enable-libcurl
         sudo make -j 4 install
         sudo ldconfig
