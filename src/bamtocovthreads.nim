@@ -1,13 +1,11 @@
-import os
-import hts
-import docopt
-import heapqueue
-import strutils
-import tables
-import algorithm 
+# Standard library
+import std/[algorithm, heapqueue, os, sets, strutils, tables]
+
+# External dependencies
+import docopt, hts, threadpool
+
+# Local modules
 import ./covutils
-import sets
-import threadpool
 
 
 # ✅ Fixed: total min/max coverage cannot be computed from the two strands! - DONE

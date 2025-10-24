@@ -1,11 +1,10 @@
-import os
-import system
-import docopt
-import lapper
-import strutils
-import tables
-import algorithm
+# Standard library
+import std/[algorithm, os, strutils, tables]
 
+# External dependencies
+import docopt, lapper
+
+# Local modules
 import ./covutils
 
 type EKeyboardInterrupt = object of CatchableError

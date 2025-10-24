@@ -1,10 +1,10 @@
-import os
-import hts
-import docopt
-import lapper
-import strutils
-import tables
-import algorithm
+# Standard library
+import std/[algorithm, os, strutils, tables]
+
+# External dependencies
+import docopt, hts, lapper
+
+# Local modules
 import ./covutils
 
 var

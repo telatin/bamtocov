@@ -1,11 +1,10 @@
-import os
-import hts
-import docopt
- 
-import strutils
-import tables
+# Standard library
+import std/[os, strutils, tables]
 
+# External dependencies
+import docopt, hts
 
+# Local modules
 import ./covutils
  
 

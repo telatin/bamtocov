@@ -1,9 +1,8 @@
-import os
-import hts
-import docopt
-import strutils
-import tables
-import algorithm
+# Standard library
+import std/[algorithm, os, strutils, tables]
+
+# External dependencies
+import docopt, hts
 
 type EKeyboardInterrupt = object of CatchableError
 

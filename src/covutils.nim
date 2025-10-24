@@ -1,10 +1,13 @@
-import strutils
-import tables
-import hts
-import algorithm
-import posix
+# Standard library
+import std/[algorithm, strutils, tables]
 
+# External dependencies
+import hts
+
+# Signal handling
+import posix
 signal(SIG_PIPE, SIG_IGN)
+
 const NimblePkgVersion {.strdefine.} = "prerelease"
 
 let

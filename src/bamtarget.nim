@@ -1,12 +1,11 @@
-import os
-import hts
-import docopt
-import heapqueue
-import strutils
-import tables
-import algorithm 
-import ./covutils
-import sets 
+# Standard library
+import std/[heapqueue, os, sets, strutils, tables]
+
+# External dependencies
+import docopt, hts
+
+# Local modules
+import ./covutils 
 
 type
   coverage_t = object
