@@ -53,6 +53,7 @@ testall: testbash testshpec testshunit2
 testshpec:
 	@echo " --- Test shpec --- "
 	./tests/bin/shpec ./tests/shpec/bamtocov.sh
+	./tests/bin/shpec ./tests/shpec/bamcountrefs.sh
 
 testshunit2:
 	@echo " --- Test shunit2 --- "

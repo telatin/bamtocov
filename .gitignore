@@ -30,3 +30,4 @@ trash
 static/
 hts_nim_static_builder
 bin/*
+*.bam.bai
