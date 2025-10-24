@@ -8,6 +8,9 @@ permalink: /history
 This project extends [covtobed](https://github.com/telatin/covtobed),
 reimplementing the core algorithm in Nim.
 
+* 2.8.0
+  * **bamcountrefs** bugfix for multiple files; optimised
+  * refactoring: unified imports, added tests, fixed Make test to use the environment's shell
 * 2.7.0
   * **bamtocounts** now supports `--paired` to count fragments
   * **bamtocounts** fixed a bug that ignored the user flag to exclude
