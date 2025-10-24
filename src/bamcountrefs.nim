@@ -6,12 +6,19 @@ import docopt, hts
 
 const NimblePkgVersion {.strdefine.} = "prerelease"
 
+# Named constants for clarity
+const
+  DEFAULT_EXCLUDE_FLAGS = 1796  # Unmapped(4) + Secondary(256) + QC-fail(512) + Duplicate(1024) = 1796
+  READS_PER_MILLION = 1_000_000
+  BASES_PER_KILOBASE = 1000
+
 let
   version = NimblePkgVersion
 
 var
   tableCounts = initTable[string, seq[int]]()
   tableValues = initTable[string, seq[float]]()
+  tableLengths = initTable[string, int]()  # Store reference lengths for RPKM calculation
 
 type EKeyboardInterrupt = object of CatchableError
  
@@ -22,12 +29,8 @@ setControlCHook(handler)
 
 
 var
-  do_norm = false
   debug = false
   do_rpkm = false
-  gffIdentifier = "ID"
-  gffSeparator  = ";"
-  gffField      = "CDS"
 
 type
   referenceCounts = tuple[refName: string, order: int, length: int, counts: int, value: float]
@@ -36,15 +39,15 @@ proc get_alignments_per_million(bam:Bam): float =
   # Calculate total mapped reads and normalize to "per million"
   for i in bam.hdr.targets:
     result += float(stats(bam.idx,i.tid).mapped)
-  result /= 1000000
+  result /= READS_PER_MILLION
 
-proc count_alignments_per_ref(bam:Bam, mapq:uint8, eflag:uint16, factor: float): seq[referenceCounts] =
+proc count_alignments_per_ref(bam:Bam, mapq:uint8, eflag:uint16, factor: float, expectedSamples: int): seq[referenceCounts] =
   # Performance optimization: check if we can use BAM index statistics
   # Index stats give us mapped read counts (reads without flag 4 = unmapped)
   # We can only use them when no additional filtering is required:
   #   - mapq == 0: no mapping quality filter
   #   - eflag == 4: only exclude unmapped reads (already excluded by index)
-  # For default eflag=1796 (excludes secondary, qc-fail, duplicate), we must iterate
+  # For default eflag=DEFAULT_EXCLUDE_FLAGS (excludes secondary, qc-fail, duplicate), we must iterate
   let canUseIndexStats = (mapq == 0) and (eflag == 4)
 
   if canUseIndexStats and debug:
@@ -72,13 +75,19 @@ proc count_alignments_per_ref(bam:Bam, mapq:uint8, eflag:uint16, factor: float):
         rawCounts += 1
 
     chromCounts.counts = rawCounts
-    chromCounts.value  = float(rawCounts) / factor
+    # Calculate normalized value once to avoid duplicate float conversion and division
+    let normalizedValue = float(rawCounts) / factor
+    chromCounts.value = normalizedValue
 
-    # Initialize table entries on first access, then append counts for this sample
-    discard tableCounts.hasKeyOrPut(chromosome.name, newSeq[int]())
-    discard tableValues.hasKeyOrPut(chromosome.name, newSeq[float]())
+    # Initialize table entries on first access with pre-allocated capacity
+    # This avoids expensive reallocations when processing multiple BAM files
+    discard tableCounts.hasKeyOrPut(chromosome.name, newSeqOfCap[int](expectedSamples))
+    discard tableValues.hasKeyOrPut(chromosome.name, newSeqOfCap[float](expectedSamples))
+    # Store reference length for RPKM calculation (only needs to be set once)
+    if chromosome.name notin tableLengths:
+      tableLengths[chromosome.name] = chromCounts.length
     tableCounts[chromosome.name].add( rawCounts )
-    tableValues[chromosome.name].add( float(rawCounts) / factor )
+    tableValues[chromosome.name].add( normalizedValue )
 
     result.add(chromCounts)
 
@@ -97,34 +106,25 @@ BAM/CRAM processing options:
 
   -T, --threads <threads>      BAM decompression threads [default: 0]
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: $env_fasta].
-  -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: 1796]
+  -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: $default_flags]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
 
-Annotation options:
-  -g, --gff                    Force GFF for input (otherwise autodetected by .gff extension)
-  -t, --type <feat>            GFF feature type to parse [default: CDS]
-  -i, --id <ID>                GFF identifier [default: ID]
-  -n, --rpkm                   Add a RPKM column
-  -l, --norm-len               Add a counts/length column (after RPKM when both used)
+Output options:
+  -n, --rpkm                   Output RPKM values (reads per kilobase per million)
 
-Other options;
+Other options:
   --tag STR                    First column name [default: ViralSequence]
   --multiqc                    Print output as MultiQC table
-  --header                     Print header
   --debug                      Enable diagnostics    
   -h, --help                   Show help
-  """ % ["version", version, "env_fasta", env_fasta])
+  """ % ["version", version, "env_fasta", env_fasta, "default_flags", $DEFAULT_EXCLUDE_FLAGS])
 
   let args = docopt(doc, version=version, argv=argv)
   let
     mapq = parse_int($args["--mapq"])
     columnName = $args["--tag"]
-  var prokkaGff : bool = args["--gff"]
   do_rpkm = args["--rpkm"]
-  do_norm = args["--norm-len"]
   debug = args["--debug"]
-  gffIdentifier = $args["--id"]
-  gffField      = $args["--type"]
 
   var fasta: cstring 
   if $args["--fasta"] != "nil":
@@ -138,16 +138,26 @@ Other options;
   var
     samples = @[columnName]
 
+  # Pre-calculate the number of BAM files for memory pre-allocation optimization
+  # This allows us to allocate sequences with the correct capacity upfront,
+  # avoiding expensive reallocations as we process each sample
+  let numBamFiles = len(@(args["<BAM-or-CRAM>"]))
+
+  if debug:
+    stderr.writeLine("[debug] Processing ", numBamFiles, " BAM file(s)")
+
   for bamFile in @(args["<BAM-or-CRAM>"]):
     var sampleName = extractFilename(bamFile)
-    samples.add(sampleName.split('.')[0])
+    # Cache the base name to avoid duplicate string split operations
+    let sampleBaseName = sampleName.split('.')[0]
+    samples.add(sampleBaseName)
     try:
       open(bam, cstring(bamFile), threads=threads, index=true, fai=fasta)
       if debug:
         stderr.writeLine("Opening BAM/CRAM file: ", bamFile)
     except:
       stderr.writeLine("Unable to open BAM file: ", bamFile )
-         
+
 
     if bam.idx == nil:
       stderr.write_line("ERROR: requires BAM/CRAM index")
@@ -158,10 +168,10 @@ Other options;
     let currentAlignmentsPerMillion = bam.get_alignments_per_million()
 
     if debug:
-      stderr.writeLine("[debug] Sample: ", sampleName.split('.')[0],
+      stderr.writeLine("[debug] Sample: ", sampleBaseName,
                        " - alignments per million: ", formatFloat(currentAlignmentsPerMillion, ffDecimal, 3))
 
-    let sampleCounts = count_alignments_per_ref(bam, uint8(mapq), eflag, currentAlignmentsPerMillion)
+    discard count_alignments_per_ref(bam, uint8(mapq), eflag, currentAlignmentsPerMillion, numBamFiles)
     
   
   if args["--multiqc"]:
@@ -172,7 +182,13 @@ Other options;
   echo samples.join("\t")
   for reference in tableCounts.keys:
     if do_rpkm:
-      echo reference, "\t", tableValues[reference].join("\t")
+      # Calculate proper RPKM: reads per kilobase per million mapped reads
+      let refLengthKb = float(tableLengths[reference]) / float(BASES_PER_KILOBASE)
+      var rpkmValues: seq[string] = @[]
+      for normalizedValue in tableValues[reference]:
+        let rpkm = normalizedValue / refLengthKb
+        rpkmValues.add(formatFloat(rpkm, ffDecimal, 3))
+      echo reference, "\t", rpkmValues.join("\t")
     else:
       echo reference, "\t", tableCounts[reference].join("\t")
 
