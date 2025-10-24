@@ -1,3 +1,5 @@
+SHELL := /usr/bin/env bash
+
 # Create "make test"
 .PHONY: testshpec testshunit2 test clean build
 
