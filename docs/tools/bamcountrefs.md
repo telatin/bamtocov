@@ -14,8 +14,8 @@ BamCountRefs 2.2.0
 
   Usage: bamcountrefs [options]  <BAM-or-CRAM>...
 
-Arguments:                                                                                                                                                 
- 
+Arguments:
+
   <BAM-or-CRAM>  the alignment file for which to calculate depth
 
 BAM/CRAM processing options:
@@ -25,25 +25,30 @@ BAM/CRAM processing options:
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: 1796]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
 
-Annotation options:
-  -g, --gff                    Force GFF for input (otherwise autodetected by .gff extension)
-  -t, --type <feat>            GFF feature type to parse [default: CDS]
-  -i, --id <ID>                GFF identifier [default: ID]
-  -n, --rpkm                   Add a RPKM column
-  -l, --norm-len               Add a counts/length column (after RPKM when both used)
+Output options:
+  -o, --output <BASENAME>      Output file basename (generates multiple files: <BASENAME>_counts.tsv, etc.)
+                               If not specified, outputs counts to stdout in TSV format
+  -n                           [DEPRECATED: use --rpkm] Output RPKM values
+  --rpkm                       Calculate RPKM (reads per kilobase per million mapped reads)
+  --tpm                        Calculate TPM (transcripts per million)
+  --mean                       Calculate mean coverage depth (approximate method, no extra memory)
+  --all-metrics                Enable all available metrics (RPKM, TPM, and mean)
 
-Other options;
+Other options:
   --tag STR                    First column name [default: ViralSequence]
-  --multiqc                    Print output as MultiQC table
-  --header                     Print header
-  --debug                      Enable diagnostics    
+  --multiqc                    Print output as MultiQC table (stdout only)
+  --debug                      Enable diagnostics
   -h, --help                   Show help
 ```
 
-## Example
+## Examples
+
+### Basic Usage (stdout)
+
+Output counts to stdout:
 
 ```bash
-bin/bamcountrefs --tag "Chrom" input/mini.bam input/mini2.bam  
+bin/bamcountrefs --tag "Chrom" input/mini.bam input/mini2.bam
 ```
 
 Output:
@@ -53,4 +58,26 @@ Chrom   mini    mini2
 seq0    0       1
 seq1    15      15
 seq2    10      10
+```
+
+### Multi-file Output
+
+Generate separate files for different metrics:
+
+```bash
+bin/bamcountrefs --output results/sample --rpkm --tpm --mean input/mini.bam input/mini2.bam
+```
+
+This creates:
+- `results/sample_counts.tsv` - Raw read counts
+- `results/sample_rpkm.tsv` - RPKM normalized values
+- `results/sample_tpm.tsv` - TPM normalized values
+- `results/sample_mean.tsv` - Mean coverage depth
+
+### All Metrics at Once
+
+Generate all available metrics with a single command:
+
+```bash
+bin/bamcountrefs --output results/sample --all-metrics input/*.bam
 ```
