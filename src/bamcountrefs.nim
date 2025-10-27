@@ -26,10 +26,13 @@ type
     sampleCounts: seq[int]
     # Per-sample depth tracking for mean coverage (approximate method)
     sampleTotalDepth: seq[int64]
+    # Per-sample breadth tracking (bases with coverage > 0)
+    sampleCoveredBases: seq[int]
     # Per-sample normalized values (one per BAM file)
     sampleRPKM: seq[float]
     sampleTPM: seq[float]
     sampleMean: seq[float]
+    sampleCoveredRatio: seq[float]
 
 var
   # Main data structure: ordered table to preserve BAM order
@@ -50,14 +53,15 @@ proc get_alignments_per_million(bam:Bam): float =
     result += float(stats(bam.idx,i.tid).mapped)
   result /= READS_PER_MILLION
 
-proc count_alignments_per_ref(bam:Bam, mapq:uint8, eflag:uint16, sampleIndex: int) =
+proc count_alignments_per_ref(bam:Bam, mapq:uint8, eflag:uint16, sampleIndex: int, trackBreadth: bool) =
   # Performance optimization: check if we can use BAM index statistics
   # Index stats give us mapped read counts (reads without flag 4 = unmapped)
   # We can only use them when no additional filtering is required:
   #   - mapq == 0: no mapping quality filter
   #   - eflag == 4: only exclude unmapped reads (already excluded by index)
   # For default eflag=DEFAULT_EXCLUDE_FLAGS (excludes secondary, qc-fail, duplicate), we must iterate
-  let canUseIndexStats = (mapq == 0) and (eflag == 4)
+  # Note: trackBreadth forces iteration since we need per-base coverage info
+  let canUseIndexStats = (mapq == 0) and (eflag == 4) and (not trackBreadth)
 
   if canUseIndexStats and debug:
     stderr.writeLine("[debug] Using fast index statistics (no additional filtering needed)")
@@ -70,23 +74,35 @@ proc count_alignments_per_ref(bam:Bam, mapq:uint8, eflag:uint16, sampleIndex: in
     let refOrder = chromosome.tid
     var rawCounts = 0
     var totalDepth: int64 = 0
+    var coveredBases = 0
+
+    # Per-base coverage tracking for breadth calculation
+    var coveredPositions: seq[bool]
+    if trackBreadth:
+      coveredPositions = newSeq[bool](refLength)
 
     if canUseIndexStats:
       # Fast path: use pre-computed index statistics
       # This is 10-100x faster for large BAM files
       rawCounts = int(stats(bam.idx, chromosome.tid).mapped)
-      # Cannot calculate approximate depth with index stats alone
-      # Would need to iterate anyway, so depth calculation is skipped for fast path
-      # This means --mean will force iteration even if mapq=0 and eflag=4
+      # Cannot calculate depth or breadth with index stats alone
     else:
       # Standard path: iterate and apply filters
       for aln in bam.query(refName):
         if aln.mapping_quality < mapq: continue
         if (aln.flag and eflag) != 0: continue
         rawCounts += 1
+
         # Approximate mean coverage: sum alignment lengths
         # This slightly overestimates when reads overlap, but requires no extra memory
         totalDepth += int64(aln.stop - aln.start)
+
+        # Track covered positions for breadth calculation
+        if trackBreadth:
+          for pos in aln.start ..< aln.stop:
+            if pos < refLength and not coveredPositions[pos]:
+              coveredPositions[pos] = true
+              coveredBases += 1
 
     # Initialize or update metrics table entry
     if refName notin metricsTable:
@@ -97,15 +113,18 @@ proc count_alignments_per_ref(bam:Bam, mapq:uint8, eflag:uint16, sampleIndex: in
         length: refLength,
         sampleCounts: @[],
         sampleTotalDepth: @[],
+        sampleCoveredBases: @[],
         sampleRPKM: @[],
         sampleTPM: @[],
-        sampleMean: @[]
+        sampleMean: @[],
+        sampleCoveredRatio: @[]
       )
       metricsTable[refName] = metrics
 
-    # Add count and depth for this sample
+    # Add count, depth, and covered bases for this sample
     metricsTable[refName].sampleCounts.add(rawCounts)
     metricsTable[refName].sampleTotalDepth.add(totalDepth)
+    metricsTable[refName].sampleCoveredBases.add(coveredBases)
 
 proc calculateRPKM(totalMappedReads: seq[float]) =
   # Calculate RPKM for all references and all samples
@@ -167,6 +186,17 @@ proc calculateMean() =
       let meanCoverage = totalDepth / metrics.length.float
       metrics.sampleMean.add(meanCoverage)
 
+proc calculateCoveredRatio() =
+  # Calculate coverage breadth (covered bases ratio) for all references and all samples
+  # Ratio = covered_bases / reference_length
+  for refName, metrics in metricsTable.mpairs:
+    metrics.sampleCoveredRatio = newSeqOfCap[float](metrics.sampleCoveredBases.len)
+
+    for sampleIdx in 0 ..< metrics.sampleCoveredBases.len:
+      let coveredBases = metrics.sampleCoveredBases[sampleIdx].float
+      let coveredRatio = coveredBases / metrics.length.float
+      metrics.sampleCoveredRatio.add(coveredRatio)
+
 proc writeTableToFile(filename: string, samples: seq[string], values: seq[seq[string]]) =
   # Write a table to file with header
   var file: File
@@ -212,8 +242,8 @@ proc outputToStdout(samples: seq[string], multiqc: bool, doRPKM: bool, totalMapp
         countStrings[i] = $metrics.sampleCounts[i]
       echo refName, "\t", countStrings.join("\t")
 
-proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool, doTPM: bool, doMean: bool, totalMappedReads: seq[float]) =
-  # Multi-file output: always write counts, optionally write RPKM, TPM, and mean
+proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool, doTPM: bool, doMean: bool, doCoveredBases: bool, doCoveredRatio: bool, totalMappedReads: seq[float]) =
+  # Multi-file output: always write counts, optionally write RPKM, TPM, mean, covered bases, and covered ratio
 
   # Always write counts
   var countsValues = newSeq[seq[string]](metricsTable.len)
@@ -265,6 +295,31 @@ proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool, doTPM: 
 
     writeTableToFile(basename & "_mean.tsv", samples, meanValues)
 
+  # Optionally write covered bases (raw count)
+  if doCoveredBases:
+    var coveredBasesValues = newSeq[seq[string]](metricsTable.len)
+    idx = 0
+    for refName, metrics in metricsTable.pairs:
+      coveredBasesValues[idx] = newSeq[string](metrics.sampleCoveredBases.len)
+      for i in 0 ..< metrics.sampleCoveredBases.len:
+        coveredBasesValues[idx][i] = $metrics.sampleCoveredBases[i]
+      idx += 1
+
+    writeTableToFile(basename & "_covered_bases.tsv", samples, coveredBasesValues)
+
+  # Optionally write covered ratio (breadth as fraction)
+  if doCoveredRatio:
+    calculateCoveredRatio()
+    var coveredRatioValues = newSeq[seq[string]](metricsTable.len)
+    idx = 0
+    for refName, metrics in metricsTable.pairs:
+      coveredRatioValues[idx] = newSeq[string](metrics.sampleCoveredRatio.len)
+      for i in 0 ..< metrics.sampleCoveredRatio.len:
+        coveredRatioValues[idx][i] = formatFloat(metrics.sampleCoveredRatio[i], ffDecimal, 6)
+      idx += 1
+
+    writeTableToFile(basename & "_covered_fraction.tsv", samples, coveredRatioValues)
+
 proc main(argv: var seq[string]): int =
   let env_fasta = getEnv("REF_PATH")
   let doc = format("""
@@ -290,7 +345,9 @@ Output options:
   --rpkm                       Calculate RPKM (reads per kilobase per million mapped reads)
   --tpm                        Calculate TPM (transcripts per million)
   --mean                       Calculate mean coverage depth (approximate method, no extra memory)
-  --all-metrics                Enable all available metrics (RPKM, TPM, and mean)
+  --covered-bases              Calculate number of bases with coverage > 0 [requires extra memory]
+  --covered-ratio              Calculate coverage breadth (fraction of reference covered) [requires extra memory]
+  --all-metrics                Enable all available metrics
 
 Other options:
   --tag STR                    First column name [default: ViralSequence]
@@ -314,6 +371,8 @@ Other options:
     doRPKM = false
     doTPM = false
     doMean = false
+    doCoveredBases = false
+    doCoveredRatio = false
 
   if args["-n"]:
     stderr.writeLine("WARNING: -n flag is deprecated, use --rpkm instead")
@@ -328,10 +387,18 @@ Other options:
   if args["--mean"]:
     doMean = true
 
+  if args["--covered-bases"]:
+    doCoveredBases = true
+
+  if args["--covered-ratio"]:
+    doCoveredRatio = true
+
   if args["--all-metrics"]:
     doRPKM = true
     doTPM = true
     doMean = true
+    doCoveredBases = true
+    doCoveredRatio = true
 
   debug = args["--debug"]
 
@@ -355,6 +422,9 @@ Other options:
   if debug:
     stderr.writeLine("[debug] Processing ", numBamFiles, " BAM file(s)")
 
+  # Determine if we need to track breadth (requires per-base coverage tracking)
+  let trackBreadth = doCoveredBases or doCoveredRatio
+
   var sampleIndex = 0
   for bamFile in @(args["<BAM-or-CRAM>"]):
     var sampleName = extractFilename(bamFile)
@@ -373,8 +443,8 @@ Other options:
       stderr.write_line("ERROR: requires BAM/CRAM index")
       quit(1)
 
-    # Count alignments for this sample
-    count_alignments_per_ref(bam, uint8(mapq), eflag, sampleIndex)
+    # Count alignments for this sample (trackBreadth enables per-base coverage tracking)
+    count_alignments_per_ref(bam, uint8(mapq), eflag, sampleIndex, trackBreadth)
 
     sampleIndex += 1
 
@@ -397,7 +467,7 @@ Other options:
     outputToStdout(samples, args["--multiqc"], doRPKM, totalMappedReads)
   else:
     # Multi-file output
-    outputToFiles(outputBasename, samples, doRPKM, doTPM, doMean, totalMappedReads)
+    outputToFiles(outputBasename, samples, doRPKM, doTPM, doMean, doCoveredBases, doCoveredRatio, totalMappedReads)
 
   return 0
 

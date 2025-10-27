@@ -1,0 +1,2 @@
+ViralSequence	gen
+chromosome	10000000
