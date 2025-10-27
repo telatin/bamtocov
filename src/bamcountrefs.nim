@@ -1,5 +1,5 @@
 # Standard library
-import std/[os, strutils, tables, sequtils]
+import std/[os, strutils, tables, sequtils, cpuinfo, algorithm]
 
 # External dependencies
 import docopt, hts
@@ -34,6 +34,37 @@ type
     sampleMean: seq[float]
     sampleCoveredRatio: seq[float]
 
+  # Concurrency-safe types for parallel processing
+  RefAggWithName = object
+    ## Per-reference aggregated metrics with name (thread-local)
+    name: string
+    length: int
+    order: int
+    count: int
+    totalDepth: int64
+    coveredBases: int
+
+  SampleResult = object
+    ## Worker return value containing all metrics for one sample
+    ## Uses sequences instead of Tables for thread-safety
+    perRef: seq[RefAggWithName]  # All reference metrics
+    mappedTotal: float           # Total mapped reads for RPKM
+
+  WorkerOpts = object
+    ## Immutable options passed to each worker thread
+    mapq: uint8
+    eflag: uint16
+    trackBreadth: bool
+    threads: int
+    fasta: string
+
+  WorkerTask = object
+    ## Task description for a worker thread
+    bamPath: string
+    sampleIndex: int
+    opts: WorkerOpts
+    result: ptr SampleResult  # Pointer to pre-allocated result slot
+
 var
   # Main data structure: ordered table to preserve BAM order
   metricsTable = initOrderedTable[string, ReferenceMetrics]()
@@ -46,85 +77,6 @@ setControlCHook(handler)
 
 var
   debug = false
-
-proc get_alignments_per_million(bam:Bam): float =
-  # Calculate total mapped reads and normalize to "per million"
-  for i in bam.hdr.targets:
-    result += float(stats(bam.idx,i.tid).mapped)
-  result /= READS_PER_MILLION
-
-proc count_alignments_per_ref(bam:Bam, mapq:uint8, eflag:uint16, sampleIndex: int, trackBreadth: bool) =
-  # Performance optimization: check if we can use BAM index statistics
-  # Index stats give us mapped read counts (reads without flag 4 = unmapped)
-  # We can only use them when no additional filtering is required:
-  #   - mapq == 0: no mapping quality filter
-  #   - eflag == 4: only exclude unmapped reads (already excluded by index)
-  # For default eflag=DEFAULT_EXCLUDE_FLAGS (excludes secondary, qc-fail, duplicate), we must iterate
-  # Note: trackBreadth forces iteration since we need per-base coverage info
-  let canUseIndexStats = (mapq == 0) and (eflag == 4) and (not trackBreadth)
-
-  if canUseIndexStats and debug:
-    stderr.writeLine("[debug] Using fast index statistics (no additional filtering needed)")
-  elif debug:
-    stderr.writeLine("[debug] Iterating through alignments (mapq=", mapq, ", eflag=", eflag, ")")
-
-  for chromosome in bam.hdr.targets:
-    let refName = chromosome.name
-    let refLength = int(chromosome.length)
-    let refOrder = chromosome.tid
-    var rawCounts = 0
-    var totalDepth: int64 = 0
-    var coveredBases = 0
-
-    # Per-base coverage tracking for breadth calculation
-    var coveredPositions: seq[bool]
-    if trackBreadth:
-      coveredPositions = newSeq[bool](refLength)
-
-    if canUseIndexStats:
-      # Fast path: use pre-computed index statistics
-      # This is 10-100x faster for large BAM files
-      rawCounts = int(stats(bam.idx, chromosome.tid).mapped)
-      # Cannot calculate depth or breadth with index stats alone
-    else:
-      # Standard path: iterate and apply filters
-      for aln in bam.query(refName):
-        if aln.mapping_quality < mapq: continue
-        if (aln.flag and eflag) != 0: continue
-        rawCounts += 1
-
-        # Approximate mean coverage: sum alignment lengths
-        # This slightly overestimates when reads overlap, but requires no extra memory
-        totalDepth += int64(aln.stop - aln.start)
-
-        # Track covered positions for breadth calculation
-        if trackBreadth:
-          for pos in aln.start ..< aln.stop:
-            if pos < refLength and not coveredPositions[pos]:
-              coveredPositions[pos] = true
-              coveredBases += 1
-
-    # Initialize or update metrics table entry
-    if refName notin metricsTable:
-      # First time seeing this reference - initialize structure
-      var metrics = ReferenceMetrics(
-        refName: refName,
-        order: refOrder,
-        length: refLength,
-        sampleCounts: @[],
-        sampleTotalDepth: @[],
-        sampleCoveredBases: @[],
-        sampleRPKM: @[],
-        sampleTPM: @[],
-        sampleMean: @[],
-        sampleCoveredRatio: @[]
-      )
-      metricsTable[refName] = metrics
-
-    # Add count, depth, and covered bases for this sample
-    metricsTable[refName].sampleCounts.add(rawCounts)
-    metricsTable[refName].sampleTotalDepth.add(totalDepth)
-    metricsTable[refName].sampleCoveredBases.add(coveredBases)
 
 proc calculateRPKM(totalMappedReads: seq[float]) =
   # Calculate RPKM for all references and all samples
@@ -320,6 +272,90 @@ proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool, doTPM: 
 
     writeTableToFile(basename & "_covered_fraction.tsv", samples, coveredRatioValues)
 
+proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
+  ## Worker thread procedure: process a single BAM file and write results
+  ## This runs in a separate thread, so it must not touch global state
+  var bam: Bam
+  var fastaCs: cstring = nil
+  if task.opts.fasta.len > 0:
+    fastaCs = cstring(task.opts.fasta)
+  if not open(bam, cstring(task.bamPath), threads=task.opts.threads, index=true, fai=fastaCs):
+    stderr.writeLine("ERROR: Unable to open BAM file in worker: ", task.bamPath)
+    return
+
+  if bam.idx == nil:
+    stderr.writeLine("ERROR: BAM file requires index: ", task.bamPath)
+    return
+
+  # Calculate total mapped reads for RPKM denominator
+  var totalMapped = 0'u64
+  for t in bam.hdr.targets:
+    totalMapped += stats(bam.idx, t.tid).mapped
+  task.result[].mappedTotal = float(totalMapped)
+
+  # Initialize per-reference sequence
+  task.result[].perRef = newSeq[RefAggWithName](bam.hdr.targets.len)
+
+  # Determine if we can use fast index statistics
+  let canUseIndexStats = (task.opts.mapq == 0'u8) and (task.opts.eflag == 4'u16) and (not task.opts.trackBreadth)
+
+  # Process each reference sequence
+  for t in bam.hdr.targets:
+    var agg: RefAggWithName
+    agg.name = t.name
+    agg.length = int(t.length)
+    agg.order = t.tid
+
+    if canUseIndexStats:
+      # Fast path: use pre-computed index statistics
+      agg.count = int(stats(bam.idx, t.tid).mapped)
+      # Note: depth and breadth cannot be calculated from index stats alone
+    else:
+      # Standard path: iterate and apply filters
+      var covered: seq[bool]
+      if task.opts.trackBreadth:
+        covered = newSeq[bool](agg.length)
+
+      for aln in bam.query(t.name):
+        if aln.mapping_quality < task.opts.mapq: continue
+        if (aln.flag and task.opts.eflag) != 0: continue
+        inc(agg.count)
+
+        # Approximate mean coverage: sum alignment lengths
+        agg.totalDepth += int64(aln.stop - aln.start)
+
+        # Track covered positions for breadth calculation
+        if task.opts.trackBreadth:
+          for pos in aln.start ..< aln.stop:
+            if pos < agg.length and not covered[pos]:
+              covered[pos] = true
+              inc(agg.coveredBases)
+
+    task.result[].perRef[t.tid] = agg
+
+proc applySample(res: SampleResult, sampleIdx: int, totalMappedReads: var seq[float]) =
+  ## Merge a worker's results into the global metricsTable
+  ## This runs in the main thread only - no concurrency issues
+  totalMappedReads[sampleIdx] = res.mappedTotal
+
+  # Create a lookup table for fast access
+  var refLookup = initTable[string, RefAggWithName]()
+  for agg in res.perRef:
+    refLookup[agg.name] = agg
+
+  # Process each reference in the global table order
+  for name in metricsTable.keys:
+    if refLookup.hasKey(name):
+      let agg = refLookup[name]
+      metricsTable[name].sampleCounts.add(agg.count)
+      metricsTable[name].sampleTotalDepth.add(agg.totalDepth)
+      metricsTable[name].sampleCoveredBases.add(agg.coveredBases)
+    else:
+      # Reference not present in this sample - fill with zeros
+      metricsTable[name].sampleCounts.add(0)
+      metricsTable[name].sampleTotalDepth.add(0)
+      metricsTable[name].sampleCoveredBases.add(0)
+
 proc main(argv: var seq[string]): int =
   let env_fasta = getEnv("REF_PATH")
   let doc = format("""
@@ -334,6 +370,7 @@ Arguments:
 BAM/CRAM processing options:
 
   -T, --threads <threads>      BAM decompression threads [default: 0]
+  -W, --workers <workers>      Number of parallel file processors [default: auto]
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: $env_fasta].
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: $default_flags]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
@@ -365,6 +402,16 @@ Other options:
   let
     outputBasename = if $args["--output"] != "nil": $args["--output"] else: ""
     useStdout = outputBasename == ""
+
+  # Parse --workers option (default: auto = min(numFiles, cpuCount))
+  let numBamFiles = len(@(args["<BAM-or-CRAM>"]))
+  var numWorkers: int
+  if $args["--workers"] == "nil" or $args["--workers"] == "auto":
+    numWorkers = min(numBamFiles, countProcessors())
+  else:
+    numWorkers = parse_int($args["--workers"])
+    if numWorkers < 1:
+      numWorkers = 1
 
   # Handle deprecated -n flag and metric options
   var
@@ -402,63 +449,108 @@ Other options:
 
   debug = args["--debug"]
 
-  var fasta: cstring
+  var fastaPath = ""
   if $args["--fasta"] != "nil":
-    fasta = cstring($args["--fasta"])
+    fastaPath = $args["--fasta"]
 
   var
     eflag = uint16(parse_int($args["--flag"]))
     threads = parse_int($args["--threads"])
-    bam:Bam
 
   var
     samples = @[columnName]
 
-  # Pre-calculate the number of BAM files for memory pre-allocation optimization
-  # This allows us to allocate sequences with the correct capacity upfront,
-  # avoiding expensive reallocations as we process each sample
-  let numBamFiles = len(@(args["<BAM-or-CRAM>"]))
-
   if debug:
-    stderr.writeLine("[debug] Processing ", numBamFiles, " BAM file(s)")
+    stderr.writeLine("[debug] Processing ", numBamFiles, " BAM file(s) with ", numWorkers, " worker(s)")
 
   # Determine if we need to track breadth (requires per-base coverage tracking)
   let trackBreadth = doCoveredBases or doCoveredRatio
 
-  var sampleIndex = 0
-  for bamFile in @(args["<BAM-or-CRAM>"]):
+  # Prepare worker options
+  let workerOpts = WorkerOpts(
+    mapq: uint8(mapq),
+    eflag: eflag,
+    trackBreadth: trackBreadth,
+    threads: threads,
+    fasta: fastaPath
+  )
+
+  # Pre-allocate results array with proper initialization
+  var results = newSeq[SampleResult](numBamFiles)
+  for i in 0 ..< numBamFiles:
+    results[i] = SampleResult(
+      perRef: @[],
+      mappedTotal: 0.0
+    )
+
+  # Create worker threads
+  var bamFiles = @(args["<BAM-or-CRAM>"])
+  var workerThreads = newSeq[Thread[WorkerTask]](numBamFiles)
+  var tasks = newSeq[WorkerTask](numBamFiles)
+
+  if debug:
+    stderr.writeLine("[debug] Starting worker threads...")
+
+  # Initialize tasks and start threads
+  for i, bamFile in bamFiles:
     var sampleName = extractFilename(bamFile)
-    # Cache the base name to avoid duplicate string split operations
     let sampleBaseName = sampleName.split('.')[0]
     samples.add(sampleBaseName)
-    try:
-      open(bam, cstring(bamFile), threads=threads, index=true, fai=fasta)
-      if debug:
-        stderr.writeLine("Opening BAM/CRAM file: ", bamFile)
-    except:
-      stderr.writeLine("Unable to open BAM file: ", bamFile )
 
+    tasks[i] = WorkerTask(
+      bamPath: bamFile,
+      sampleIndex: i,
+      opts: workerOpts,
+      result: addr results[i]
+    )
+    createThread(workerThreads[i], processOneFile, tasks[i])
 
-    if bam.idx == nil:
-      stderr.write_line("ERROR: requires BAM/CRAM index")
-      quit(1)
+  # Wait for all threads to complete
+  if debug:
+    stderr.writeLine("[debug] Waiting for workers to complete...")
+  for i in 0 ..< numBamFiles:
+    joinThread(workerThreads[i])
 
-    # Count alignments for this sample (trackBreadth enables per-base coverage tracking)
-    count_alignments_per_ref(bam, uint8(mapq), eflag, sampleIndex, trackBreadth)
+  # Use first result to establish master reference order
+  if debug:
+    stderr.writeLine("[debug] Establishing reference order from first sample...")
+    stderr.writeLine("[debug] First result has ", results[0].perRef.len, " references")
 
-    sampleIndex += 1
+  if results[0].perRef.len == 0:
+    stderr.writeLine("ERROR: First worker returned no references")
+    quit(1)
 
-  # Calculate total mapped reads per sample for RPKM calculation
+  let firstRes = results[0]
+
+  # Sort references by BAM order (tid) and initialize global metricsTable
+  var sortedRefs = firstRes.perRef
+  algorithm.sort(sortedRefs, proc(a, b: RefAggWithName): int = cmp(a.order, b.order))
+
+  if debug:
+    stderr.writeLine("[debug] Initializing global metrics table with ", sortedRefs.len, " references")
+  metricsTable = initOrderedTable[string, ReferenceMetrics]()
+  for agg in sortedRefs:
+    metricsTable[agg.name] = ReferenceMetrics(
+      refName: agg.name,
+      order: agg.order,
+      length: agg.length,
+      sampleCounts: newSeqOfCap[int](numBamFiles),
+      sampleTotalDepth: newSeqOfCap[int64](numBamFiles),
+      sampleCoveredBases: newSeqOfCap[int](numBamFiles),
+      sampleRPKM: @[],
+      sampleTPM: @[],
+      sampleMean: @[],
+      sampleCoveredRatio: @[]
+    )
+
+  # Allocate total mapped reads array
   var totalMappedReads = newSeq[float](numBamFiles)
-  var bamIndex = 0
-  for bamFile in @(args["<BAM-or-CRAM>"]):
-    try:
-      open(bam, cstring(bamFile), threads=threads, index=true, fai=fasta)
-      totalMappedReads[bamIndex] = bam.get_alignments_per_million() * READS_PER_MILLION.float
-      bamIndex += 1
-    except:
-      stderr.writeLine("Unable to reopen BAM file for totals: ", bamFile)
-      quit(1)
+
+  # Apply all sample results
+  if debug:
+    stderr.writeLine("[debug] Merging results from all workers...")
+  for i in 0 ..< numBamFiles:
+    applySample(results[i], i, totalMappedReads)
 
   # Output results
   if useStdout:
