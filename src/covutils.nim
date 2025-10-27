@@ -98,12 +98,12 @@ iterator intersections*[T](query: genomic_interval_t[T], target: target_t, idx: 
       #dbEcho("target seeking: change chrom to:", idx)
       idx = (chrom, 0)
     # advance target interval until we reach the query interval
-    while intervals[idx.interval] << query and idx.interval < max_idx:
+    while idx.interval < max_idx and intervals[idx.interval] << query:
       idx.interval += 1
       #dbEcho("target seeking: advance target index to:", idx.interval, "at target interval:", intervals[idx.interval])
     # yield all intersections
     var i = idx.interval
-    while not (query << intervals[i]) and i <= max_idx:
+    while i <= max_idx and not (query << intervals[i]):
       yield intersection_both(query, intervals[i])
       i += 1
 
@@ -120,7 +120,7 @@ iterator intersections2*[T](query: genomic_interval_t[T], target: target_t, idx:
       #dbEcho("target seeking: change chrom to:", idx)
       idx = (chrom, 0)
     # advance target interval until we reach the query interval
-    while intervals[idx.interval] << query and idx.interval < max_idx:
+    while idx.interval < max_idx and intervals[idx.interval] << query:
       idx.interval += 1
       echo "IS2.2 idx=", idx.interval
       #dbEcho("target seeking: advance target index to:", idx.interval, "at target interval:", intervals[idx.interval])
@@ -130,7 +130,7 @@ iterator intersections2*[T](query: genomic_interval_t[T], target: target_t, idx:
       discard intervals[i]
     except Exception as e:
       stderr.writeLine("INTERSECT2:", e.msg)
-    while not (query << intervals[i]) and i <= max_idx: 
+    while i <= max_idx and not (query << intervals[i]): 
       echo "IS2.3 idx=", idx.interval
       try:
         let r= intersection_both(query, intervals[i])
