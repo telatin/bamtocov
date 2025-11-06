@@ -11,8 +11,8 @@ when defined(macosx):
   --passL:"-L/opt/homebrew/Cellar/htslib/1.21/lib"
   --passL:"-lhts"
   --passL:"-rpath /opt/homebrew/Cellar/htslib/1.21/lib"
-  
-requires "hts >= 0.3.1", "docopt >= 0.6.8", "nim >= 1.6.6", "lapper >= 0.1.8"
+
+requires "hts >= 0.3.20", "docopt >= 0.6.8", "nim >= 1.6.6", "lapper >= 0.1.8"
 srcDir = "src"
 binDir = "bin"
 bin = @["covtotarget", "bamtocounts", "bamtocov", "bamcountrefs", "gff2bed", "bamtarget"]
