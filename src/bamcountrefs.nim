@@ -8,7 +8,7 @@ const NimblePkgVersion {.strdefine.} = "prerelease"
 
 # Named constants for clarity
 const
-  DEFAULT_EXCLUDE_FLAGS = 1796  # Unmapped(4) + Secondary(256) + QC-fail(512) + Duplicate(1024) = 1796
+  DEFAULT_EXCLUDE_FLAGS = 1796 # Unmapped(4) + Secondary(256) + QC-fail(512) + Duplicate(1024) = 1796
   READS_PER_MILLION = 1_000_000
   BASES_PER_KILOBASE = 1000
 
@@ -20,7 +20,7 @@ type
 
   ReferenceMetrics = object
     refName: string
-    order: int              # Preserve BAM header order
+    order: int # Preserve BAM header order
     length: int
     # Per-sample raw counts (one per BAM file)
     sampleCounts: seq[int]
@@ -47,8 +47,8 @@ type
   SampleResult = object
     ## Worker return value containing all metrics for one sample
     ## Uses sequences instead of Tables for thread-safety
-    perRef: seq[RefAggWithName]  # All reference metrics
-    mappedTotal: float           # Total mapped reads for RPKM
+    perRef: seq[RefAggWithName] # All reference metrics
+    mappedTotal: float # Total mapped reads for RPKM
 
   WorkerOpts = object
     ## Immutable options passed to each worker thread
@@ -63,15 +63,15 @@ type
     bamPath: string
     sampleIndex: int
     opts: WorkerOpts
-    result: ptr SampleResult  # Pointer to pre-allocated result slot
+    result: ptr SampleResult # Pointer to pre-allocated result slot
 
 var
   # Main data structure: ordered table to preserve BAM order
   metricsTable = initOrderedTable[string, ReferenceMetrics]()
- 
+
 proc handler() {.noconv.} =
   raise newException(EKeyboardInterrupt, "Keyboard Interrupt")
- 
+
 setControlCHook(handler)
 
 
@@ -87,7 +87,8 @@ proc calculateRPKM(totalMappedReads: seq[float]) =
 
     for sampleIdx in 0 ..< metrics.sampleCounts.len:
       let reads = metrics.sampleCounts[sampleIdx].float
-      let mappedReadsMillions = totalMappedReads[sampleIdx] / READS_PER_MILLION.float
+      let mappedReadsMillions = totalMappedReads[sampleIdx] /
+          READS_PER_MILLION.float
       let rpkm = reads / (refLengthKb * mappedReadsMillions)
       metrics.sampleRPKM.add(rpkm)
 
@@ -96,7 +97,8 @@ proc calculateTPM() =
   # Pass 1: Calculate RPK (reads per kilobase) for each reference
   # Pass 2: Normalize by sum of RPK and scale to million
 
-  let numSamples = if metricsTable.len > 0: metricsTable.values.toSeq[0].sampleCounts.len else: 0
+  let numSamples = if metricsTable.len > 0: metricsTable.values.toSeq[
+      0].sampleCounts.len else: 0
   if numSamples == 0:
     return
 
@@ -122,7 +124,8 @@ proc calculateTPM() =
       if sampleIdx == 0:
         metrics.sampleTPM = newSeqOfCap[float](numSamples)
 
-      let tpm = if totalRPK > 0: (rpkValues[refIdx] / totalRPK) * READS_PER_MILLION.float else: 0.0
+      let tpm = if totalRPK > 0: (rpkValues[refIdx] / totalRPK) *
+          READS_PER_MILLION.float else: 0.0
       metrics.sampleTPM.add(tpm)
       refIdx += 1
 
@@ -142,7 +145,8 @@ proc calculateCoveredRatio() =
   # Calculate coverage breadth (covered bases ratio) for all references and all samples
   # Ratio = covered_bases / reference_length
   for refName, metrics in metricsTable.mpairs:
-    metrics.sampleCoveredRatio = newSeqOfCap[float](metrics.sampleCoveredBases.len)
+    metrics.sampleCoveredRatio = newSeqOfCap[float](
+        metrics.sampleCoveredBases.len)
 
     for sampleIdx in 0 ..< metrics.sampleCoveredBases.len:
       let coveredBases = metrics.sampleCoveredBases[sampleIdx].float
@@ -169,7 +173,10 @@ proc writeTableToFile(filename: string, samples: seq[string], values: seq[seq[st
   if debug:
     stderr.writeLine("[debug] Wrote output to: ", filename)
 
-proc outputToStdout(samples: seq[string], multiqc: bool, doRPKM: bool, totalMappedReads: seq[float]) =
+proc outputToStdout(samples: seq[string], multiqc: bool,
+                    doRPKM: bool, doTPM: bool, doMean: bool,
+                    doCoveredBases: bool, doCoveredRatio: bool, doLength: bool,
+                    totalMappedReads: seq[float]) =
   # Legacy stdout output for backward compatibility
   if multiqc:
     echo "# plot_type: 'table'"
@@ -186,6 +193,33 @@ proc outputToStdout(samples: seq[string], multiqc: bool, doRPKM: bool, totalMapp
       for i in 0 ..< metrics.sampleRPKM.len:
         rpkmStrings[i] = formatFloat(metrics.sampleRPKM[i], ffDecimal, 3)
       echo refName, "\t", rpkmStrings.join("\t")
+  elif doTPM:
+    calculateTPM()
+    for refName, metrics in metricsTable.pairs:
+      var tpmStrings = newSeq[string](metrics.sampleTPM.len)
+      for i in 0 ..< metrics.sampleTPM.len:
+        tpmStrings[i] = formatFloat(metrics.sampleTPM[i], ffDecimal, 3)
+      echo refName, "\t", tpmStrings.join("\t")
+  elif doMean:
+    calculateMean()
+    for refName, metrics in metricsTable.pairs:
+      var meanStrings = newSeq[string](metrics.sampleMean.len)
+      for i in 0 ..< metrics.sampleMean.len:
+        meanStrings[i] = formatFloat(metrics.sampleMean[i], ffDecimal, 6)
+      echo refName, "\t", meanStrings.join("\t")
+  elif doCoveredRatio:
+    calculateCoveredRatio()
+    for refName, metrics in metricsTable.pairs:
+      var ratioStrings = newSeq[string](metrics.sampleCoveredRatio.len)
+      for i in 0 ..< metrics.sampleCoveredRatio.len:
+        ratioStrings[i] = formatFloat(metrics.sampleCoveredRatio[i], ffDecimal, 6)
+      echo refName, "\t", ratioStrings.join("\t")
+  elif doCoveredBases:
+    for refName, metrics in metricsTable.pairs:
+      var basesStrings = newSeq[string](metrics.sampleCoveredBases.len)
+      for i in 0 ..< metrics.sampleCoveredBases.len:
+        basesStrings[i] = $metrics.sampleCoveredBases[i]
+      echo refName, "\t", basesStrings.join("\t")
   else:
     # Default: output counts
     for refName, metrics in metricsTable.pairs:
@@ -194,8 +228,10 @@ proc outputToStdout(samples: seq[string], multiqc: bool, doRPKM: bool, totalMapp
         countStrings[i] = $metrics.sampleCounts[i]
       echo refName, "\t", countStrings.join("\t")
 
-proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool, doTPM: bool, doMean: bool, doCoveredBases: bool, doCoveredRatio: bool, totalMappedReads: seq[float]) =
-  # Multi-file output: always write counts, optionally write RPKM, TPM, mean, covered bases, and covered ratio
+proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool,
+    doTPM: bool, doMean: bool, doCoveredBases: bool, doCoveredRatio: bool,
+    doLength: bool, totalMappedReads: seq[float]) =
+  # Multi-file output: always write counts, optionally write RPKM, TPM, mean, covered bases, covered ratio, and length
 
   # Always write counts
   var countsValues = newSeq[seq[string]](metricsTable.len)
@@ -267,10 +303,24 @@ proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool, doTPM: 
     for refName, metrics in metricsTable.pairs:
       coveredRatioValues[idx] = newSeq[string](metrics.sampleCoveredRatio.len)
       for i in 0 ..< metrics.sampleCoveredRatio.len:
-        coveredRatioValues[idx][i] = formatFloat(metrics.sampleCoveredRatio[i], ffDecimal, 6)
+        coveredRatioValues[idx][i] = formatFloat(metrics.sampleCoveredRatio[i],
+            ffDecimal, 6)
       idx += 1
 
     writeTableToFile(basename & "_covered_fraction.tsv", samples, coveredRatioValues)
+
+  # Optionally write reference lengths
+  if doLength:
+    var lengthValues = newSeq[seq[string]](metricsTable.len)
+    idx = 0
+    for refName, metrics in metricsTable.pairs:
+      # Length is a property of the reference, so repeat it for each sample
+      lengthValues[idx] = newSeq[string](metrics.sampleCounts.len)
+      for i in 0 ..< metrics.sampleCounts.len:
+        lengthValues[idx][i] = $metrics.length
+      idx += 1
+
+    writeTableToFile(basename & "_length.tsv", samples, lengthValues)
 
 proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
   ## Worker thread procedure: process a single BAM file and write results
@@ -279,7 +329,8 @@ proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
   var fastaCs: cstring = nil
   if task.opts.fasta.len > 0:
     fastaCs = cstring(task.opts.fasta)
-  if not open(bam, cstring(task.bamPath), threads=task.opts.threads, index=true, fai=fastaCs):
+  if not open(bam, cstring(task.bamPath), threads = task.opts.threads,
+      index = true, fai = fastaCs):
     stderr.writeLine("ERROR: Unable to open BAM file in worker: ", task.bamPath)
     return
 
@@ -297,7 +348,8 @@ proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
   task.result[].perRef = newSeq[RefAggWithName](bam.hdr.targets.len)
 
   # Determine if we can use fast index statistics
-  let canUseIndexStats = (task.opts.mapq == 0'u8) and (task.opts.eflag == 4'u16) and (not task.opts.trackBreadth)
+  let canUseIndexStats = (task.opts.mapq == 0'u8) and (task.opts.eflag ==
+      4'u16) and (not task.opts.trackBreadth)
 
   # Process each reference sequence
   for t in bam.hdr.targets:
@@ -384,6 +436,7 @@ Output options:
   --mean                       Calculate mean coverage depth (approximate method, no extra memory)
   --covered-bases              Calculate number of bases with coverage > 0 [requires extra memory]
   --covered-ratio              Calculate coverage breadth (fraction of reference covered) [requires extra memory]
+  --length                     Output reference sequence lengths
   --all-metrics                Enable all available metrics
 
 Other options:
@@ -391,9 +444,10 @@ Other options:
   --multiqc                    Print output as MultiQC table (stdout only)
   --debug                      Enable diagnostics
   -h, --help                   Show help
-  """ % ["version", version, "env_fasta", env_fasta, "default_flags", $DEFAULT_EXCLUDE_FLAGS])
+  """ % ["version", version, "env_fasta", env_fasta, "default_flags",
+      $DEFAULT_EXCLUDE_FLAGS])
 
-  let args = docopt(doc, version=version, argv=argv)
+  let args = docopt(doc, version = version, argv = argv)
   let
     mapq = parse_int($args["--mapq"])
     columnName = $args["--tag"]
@@ -420,6 +474,7 @@ Other options:
     doMean = false
     doCoveredBases = false
     doCoveredRatio = false
+    doLength = false
 
   if args["-n"]:
     stderr.writeLine("WARNING: -n flag is deprecated, use --rpkm instead")
@@ -440,12 +495,16 @@ Other options:
   if args["--covered-ratio"]:
     doCoveredRatio = true
 
+  if args["--length"]:
+    doLength = true
+
   if args["--all-metrics"]:
     doRPKM = true
     doTPM = true
     doMean = true
     doCoveredBases = true
     doCoveredRatio = true
+    doLength = true
 
   debug = args["--debug"]
 
@@ -461,7 +520,8 @@ Other options:
     samples = @[columnName]
 
   if debug:
-    stderr.writeLine("[debug] Processing ", numBamFiles, " BAM file(s) with ", numWorkers, " worker(s)")
+    stderr.writeLine("[debug] Processing ", numBamFiles, " BAM file(s) with ",
+        numWorkers, " worker(s)")
 
   # Determine if we need to track breadth (requires per-base coverage tracking)
   let trackBreadth = doCoveredBases or doCoveredRatio
@@ -529,7 +589,8 @@ Other options:
   algorithm.sort(sortedRefs, proc(a, b: RefAggWithName): int = cmp(a.order, b.order))
 
   if debug:
-    stderr.writeLine("[debug] Initializing global metrics table with ", sortedRefs.len, " references")
+    stderr.writeLine("[debug] Initializing global metrics table with ",
+        sortedRefs.len, " references")
   metricsTable = initOrderedTable[string, ReferenceMetrics]()
   for agg in sortedRefs:
     metricsTable[agg.name] = ReferenceMetrics(
@@ -553,27 +614,30 @@ Other options:
     stderr.writeLine("[debug] Merging results from all workers...")
   for i in 0 ..< numBamFiles:
     if debug:
-      stderr.writeLine("[debug]    merging results for sample: \"", samples[i+1], "\"")
+      stderr.writeLine("[debug]    merging results for sample: \"", samples[
+          i+1], "\"")
     applySample(results[i], i, totalMappedReads)
 
   # Output results
   if useStdout:
     # Legacy stdout output (backward compatible)
     # Support both --rpkm and deprecated -n flag for stdout RPKM output
-    outputToStdout(samples, args["--multiqc"], doRPKM, totalMappedReads)
+    outputToStdout(samples, args["--multiqc"], doRPKM, doTPM, doMean,
+        doCoveredBases, doCoveredRatio, doLength, totalMappedReads)
   else:
     # Multi-file output
-    outputToFiles(outputBasename, samples, doRPKM, doTPM, doMean, doCoveredBases, doCoveredRatio, totalMappedReads)
+    outputToFiles(outputBasename, samples, doRPKM, doTPM, doMean,
+        doCoveredBases, doCoveredRatio, doLength, totalMappedReads)
 
   return 0
 
- 
+
 when isMainModule:
   var args = commandLineParams()
   try:
     discard main(args)
   except EKeyboardInterrupt:
-    stderr.writeLine( "Quitting.")
+    stderr.writeLine("Quitting.")
   except:
-    stderr.writeLine( getCurrentExceptionMsg() )
-    quit(1)   
+    stderr.writeLine(getCurrentExceptionMsg())
+    quit(1)
