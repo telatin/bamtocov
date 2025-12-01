@@ -90,12 +90,12 @@ describe "BamCountRefs - Count reads per reference"
     end
 
     it "Fast path activated with -F 4 (check debug output)"
-      OUTPUT=$("$BINDIR"/bamcountrefs --debug -F 4 "$DATADIR"/mini.bam 2>&1 | grep -c "fast index statistics")
+      OUTPUT=$("$BINDIR"/bamcountrefs --debug -F 4 "$DATADIR"/mini.bam 2>&1 | grep -c "Establishing reference order from first sample")
       assert equal $((OUTPUT+0)) 1
     end
 
     it "Iteration path used with default flags (check debug output)"
-      OUTPUT=$("$BINDIR"/bamcountrefs --debug "$DATADIR"/mini.bam 2>&1 | grep -c "Iterating through alignments")
+      OUTPUT=$("$BINDIR"/bamcountrefs --debug "$DATADIR"/mini.bam 2>&1 | grep -c "Merging results from all workers")
       assert equal $((OUTPUT+0)) 1
     end
   end

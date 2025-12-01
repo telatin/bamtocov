@@ -509,6 +509,8 @@ Other options:
   if debug:
     stderr.writeLine("[debug] Waiting for workers to complete...")
   for i in 0 ..< numBamFiles:
+    if debug:
+      stderr.writeLine("[debug]   Opening BAM/CRAM file ", i)
     joinThread(workerThreads[i])
 
   # Use first result to establish master reference order
@@ -550,6 +552,8 @@ Other options:
   if debug:
     stderr.writeLine("[debug] Merging results from all workers...")
   for i in 0 ..< numBamFiles:
+    if debug:
+      stderr.writeLine("[debug]    merging results for sample: \"", samples[i+1], "\"")
     applySample(results[i], i, totalMappedReads)
 
   # Output results
