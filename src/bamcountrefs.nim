@@ -28,11 +28,16 @@ type
     sampleTotalDepth: seq[int64]
     # Per-sample breadth tracking (bases with coverage > 0)
     sampleCoveredBases: seq[int]
+    # Per-sample sum of squared depths for variance calculation
+    sampleSumSquaredDepth: seq[int64]
     # Per-sample normalized values (one per BAM file)
     sampleRPKM: seq[float]
     sampleTPM: seq[float]
     sampleMean: seq[float]
     sampleCoveredRatio: seq[float]
+    sampleVariance: seq[float]
+    sampleTrimmedMean: seq[float]
+    sampleReadsPerBase: seq[float]
 
   # Concurrency-safe types for parallel processing
   RefAggWithName = object
@@ -43,6 +48,8 @@ type
     count: int
     totalDepth: int64
     coveredBases: int
+    sumSquaredDepth: int64
+    trimmedMean: float
 
   SampleResult = object
     ## Worker return value containing all metrics for one sample
@@ -55,6 +62,11 @@ type
     mapq: uint8
     eflag: uint16
     trackBreadth: bool
+    trackDepths: bool  # Track per-base depths for variance and/or trimmed mean
+    doVariance: bool
+    doTrimmedMean: bool
+    trimMin: float  # Minimum percentile for trimmed mean (0-100)
+    trimMax: float  # Maximum percentile for trimmed mean (0-100)
     threads: int
     fasta: string
 
@@ -153,6 +165,38 @@ proc calculateCoveredRatio() =
       let coveredRatio = coveredBases / metrics.length.float
       metrics.sampleCoveredRatio.add(coveredRatio)
 
+proc calculateVariance() =
+  # Calculate coverage variance for all references and all samples
+  # Variance = E[X^2] - (E[X])^2
+  # Where E[X^2] = sum_squared_depth / length
+  # And E[X] = total_depth / length (mean coverage)
+  for refName, metrics in metricsTable.mpairs:
+    metrics.sampleVariance = newSeqOfCap[float](metrics.sampleSumSquaredDepth.len)
+
+    for sampleIdx in 0 ..< metrics.sampleSumSquaredDepth.len:
+      let sumSquaredDepth = metrics.sampleSumSquaredDepth[sampleIdx].float
+      let totalDepth = metrics.sampleTotalDepth[sampleIdx].float
+      let length = metrics.length.float
+
+      # E[X^2] - (E[X])^2
+      let meanSquared = (totalDepth / length) * (totalDepth / length)
+      let meanOfSquares = sumSquaredDepth / length
+      let variance = meanOfSquares - meanSquared
+
+      # Variance should never be negative, but due to floating point errors it might be
+      metrics.sampleVariance.add(if variance >= 0: variance else: 0.0)
+
+proc calculateReadsPerBase() =
+  # Calculate reads per base for all references and all samples
+  # ReadsPerBase = count / length (normalized read density)
+  for refName, metrics in metricsTable.mpairs:
+    metrics.sampleReadsPerBase = newSeqOfCap[float](metrics.sampleCounts.len)
+
+    for sampleIdx in 0 ..< metrics.sampleCounts.len:
+      let count = metrics.sampleCounts[sampleIdx].float
+      let readsPerBase = count / metrics.length.float
+      metrics.sampleReadsPerBase.add(readsPerBase)
+
 proc writeTableToFile(filename: string, samples: seq[string], values: seq[seq[string]]) =
   # Write a table to file with header
   var file: File
@@ -174,8 +218,9 @@ proc writeTableToFile(filename: string, samples: seq[string], values: seq[seq[st
     stderr.writeLine("[debug] Wrote output to: ", filename)
 
 proc outputToStdout(samples: seq[string], multiqc: bool,
-                    doRPKM: bool, doTPM: bool, doMean: bool,
-                    doCoveredBases: bool, doCoveredRatio: bool, doLength: bool,
+                    doRPKM: bool, doTPM: bool, doMean: bool, doTrimmedMean: bool,
+                    doCoveredBases: bool, doCoveredRatio: bool, doVariance: bool,
+                    doReadsPerBase: bool, doLength: bool,
                     totalMappedReads: seq[float]) =
   # Legacy stdout output for backward compatibility
   if multiqc:
@@ -207,6 +252,13 @@ proc outputToStdout(samples: seq[string], multiqc: bool,
       for i in 0 ..< metrics.sampleMean.len:
         meanStrings[i] = formatFloat(metrics.sampleMean[i], ffDecimal, 6)
       echo refName, "\t", meanStrings.join("\t")
+  elif doTrimmedMean:
+    # Trimmed mean values are already calculated in worker threads
+    for refName, metrics in metricsTable.pairs:
+      var trimmedMeanStrings = newSeq[string](metrics.sampleTrimmedMean.len)
+      for i in 0 ..< metrics.sampleTrimmedMean.len:
+        trimmedMeanStrings[i] = formatFloat(metrics.sampleTrimmedMean[i], ffDecimal, 6)
+      echo refName, "\t", trimmedMeanStrings.join("\t")
   elif doCoveredRatio:
     calculateCoveredRatio()
     for refName, metrics in metricsTable.pairs:
@@ -220,6 +272,20 @@ proc outputToStdout(samples: seq[string], multiqc: bool,
       for i in 0 ..< metrics.sampleCoveredBases.len:
         basesStrings[i] = $metrics.sampleCoveredBases[i]
       echo refName, "\t", basesStrings.join("\t")
+  elif doVariance:
+    calculateVariance()
+    for refName, metrics in metricsTable.pairs:
+      var varianceStrings = newSeq[string](metrics.sampleVariance.len)
+      for i in 0 ..< metrics.sampleVariance.len:
+        varianceStrings[i] = formatFloat(metrics.sampleVariance[i], ffDecimal, 6)
+      echo refName, "\t", varianceStrings.join("\t")
+  elif doReadsPerBase:
+    calculateReadsPerBase()
+    for refName, metrics in metricsTable.pairs:
+      var rpbStrings = newSeq[string](metrics.sampleReadsPerBase.len)
+      for i in 0 ..< metrics.sampleReadsPerBase.len:
+        rpbStrings[i] = formatFloat(metrics.sampleReadsPerBase[i], ffDecimal, 6)
+      echo refName, "\t", rpbStrings.join("\t")
   else:
     # Default: output counts
     for refName, metrics in metricsTable.pairs:
@@ -229,9 +295,9 @@ proc outputToStdout(samples: seq[string], multiqc: bool,
       echo refName, "\t", countStrings.join("\t")
 
 proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool,
-    doTPM: bool, doMean: bool, doCoveredBases: bool, doCoveredRatio: bool,
-    doLength: bool, totalMappedReads: seq[float]) =
-  # Multi-file output: always write counts, optionally write RPKM, TPM, mean, covered bases, covered ratio, and length
+    doTPM: bool, doMean: bool, doTrimmedMean: bool, doCoveredBases: bool, doCoveredRatio: bool,
+    doVariance: bool, doReadsPerBase: bool, doLength: bool, totalMappedReads: seq[float]) =
+  # Multi-file output: always write counts, optionally write RPKM, TPM, mean, trimmed mean, covered bases, covered ratio, variance, reads-per-base, and length
 
   # Always write counts
   var countsValues = newSeq[seq[string]](metricsTable.len)
@@ -283,6 +349,19 @@ proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool,
 
     writeTableToFile(basename & "_mean.tsv", samples, meanValues)
 
+  # Optionally write trimmed mean coverage
+  if doTrimmedMean:
+    # Trimmed mean values are already calculated in worker threads
+    var trimmedMeanValues = newSeq[seq[string]](metricsTable.len)
+    idx = 0
+    for refName, metrics in metricsTable.pairs:
+      trimmedMeanValues[idx] = newSeq[string](metrics.sampleTrimmedMean.len)
+      for i in 0 ..< metrics.sampleTrimmedMean.len:
+        trimmedMeanValues[idx][i] = formatFloat(metrics.sampleTrimmedMean[i], ffDecimal, 6)
+      idx += 1
+
+    writeTableToFile(basename & "_trimmed_mean.tsv", samples, trimmedMeanValues)
+
   # Optionally write covered bases (raw count)
   if doCoveredBases:
     var coveredBasesValues = newSeq[seq[string]](metricsTable.len)
@@ -308,6 +387,32 @@ proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool,
       idx += 1
 
     writeTableToFile(basename & "_covered_fraction.tsv", samples, coveredRatioValues)
+
+  # Optionally write variance
+  if doVariance:
+    calculateVariance()
+    var varianceValues = newSeq[seq[string]](metricsTable.len)
+    idx = 0
+    for refName, metrics in metricsTable.pairs:
+      varianceValues[idx] = newSeq[string](metrics.sampleVariance.len)
+      for i in 0 ..< metrics.sampleVariance.len:
+        varianceValues[idx][i] = formatFloat(metrics.sampleVariance[i], ffDecimal, 6)
+      idx += 1
+
+    writeTableToFile(basename & "_variance.tsv", samples, varianceValues)
+
+  # Optionally write reads per base
+  if doReadsPerBase:
+    calculateReadsPerBase()
+    var readsPerBaseValues = newSeq[seq[string]](metricsTable.len)
+    idx = 0
+    for refName, metrics in metricsTable.pairs:
+      readsPerBaseValues[idx] = newSeq[string](metrics.sampleReadsPerBase.len)
+      for i in 0 ..< metrics.sampleReadsPerBase.len:
+        readsPerBaseValues[idx][i] = formatFloat(metrics.sampleReadsPerBase[i], ffDecimal, 6)
+      idx += 1
+
+    writeTableToFile(basename & "_reads_per_base.tsv", samples, readsPerBaseValues)
 
   # Optionally write reference lengths
   if doLength:
@@ -349,7 +454,7 @@ proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
 
   # Determine if we can use fast index statistics
   let canUseIndexStats = (task.opts.mapq == 0'u8) and (task.opts.eflag ==
-      4'u16) and (not task.opts.trackBreadth)
+      4'u16) and (not task.opts.trackBreadth) and (not task.opts.trackDepths)
 
   # Process each reference sequence
   for t in bam.hdr.targets:
@@ -365,8 +470,11 @@ proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
     else:
       # Standard path: iterate and apply filters
       var covered: seq[bool]
+      var depths: seq[int]
       if task.opts.trackBreadth:
         covered = newSeq[bool](agg.length)
+      if task.opts.trackDepths:
+        depths = newSeq[int](agg.length)
 
       for aln in bam.query(t.name):
         if aln.mapping_quality < task.opts.mapq: continue
@@ -382,6 +490,53 @@ proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
             if pos < agg.length and not covered[pos]:
               covered[pos] = true
               inc(agg.coveredBases)
+
+        # Track per-base depths for variance and/or trimmed mean calculation
+        if task.opts.trackDepths:
+          for pos in aln.start ..< aln.stop:
+            if pos < agg.length:
+              inc(depths[pos])
+
+      # Calculate metrics from per-base depths
+      if task.opts.trackDepths:
+        # Recalculate totalDepth from actual per-base depths (more accurate than alignment length sum)
+        agg.totalDepth = 0  # Reset to use accurate calculation
+
+        # Calculate sum of squared depths for variance if requested
+        if task.opts.doVariance:
+          for depth in depths:
+            agg.totalDepth += int64(depth)
+            agg.sumSquaredDepth += int64(depth * depth)
+        else:
+          # Just calculate total depth
+          for depth in depths:
+            agg.totalDepth += int64(depth)
+
+        # Calculate trimmed mean if requested
+        if task.opts.doTrimmedMean:
+          # Sort depths to find percentiles
+          var sortedDepths = depths
+          algorithm.sort(sortedDepths)
+
+          let length = sortedDepths.len
+          if length > 0:
+            # Calculate indices for trimming
+            let minIdx = int(float(length) * task.opts.trimMin / 100.0)
+            let maxIdx = int(float(length) * task.opts.trimMax / 100.0)
+
+            # Calculate mean of trimmed values
+            var sum = 0'i64
+            var count = 0
+            for i in minIdx ..< min(maxIdx, length):
+              sum += int64(sortedDepths[i])
+              count += 1
+
+            if count > 0:
+              agg.trimmedMean = float(sum) / float(count)
+            else:
+              agg.trimmedMean = 0.0
+          else:
+            agg.trimmedMean = 0.0
 
     task.result[].perRef[t.tid] = agg
 
@@ -402,11 +557,15 @@ proc applySample(res: SampleResult, sampleIdx: int, totalMappedReads: var seq[fl
       metricsTable[name].sampleCounts.add(agg.count)
       metricsTable[name].sampleTotalDepth.add(agg.totalDepth)
       metricsTable[name].sampleCoveredBases.add(agg.coveredBases)
+      metricsTable[name].sampleSumSquaredDepth.add(agg.sumSquaredDepth)
+      metricsTable[name].sampleTrimmedMean.add(agg.trimmedMean)
     else:
       # Reference not present in this sample - fill with zeros
       metricsTable[name].sampleCounts.add(0)
       metricsTable[name].sampleTotalDepth.add(0)
       metricsTable[name].sampleCoveredBases.add(0)
+      metricsTable[name].sampleSumSquaredDepth.add(0)
+      metricsTable[name].sampleTrimmedMean.add(0.0)
 
 proc main(argv: var seq[string]): int =
   let env_fasta = getEnv("REF_PATH")
@@ -434,8 +593,13 @@ Output options:
   --rpkm                       Calculate RPKM (reads per kilobase per million mapped reads)
   --tpm                        Calculate TPM (transcripts per million)
   --mean                       Calculate mean coverage depth (approximate method, no extra memory)
+  --trimmed-mean               Calculate trimmed mean coverage (robust against outliers) [requires extra memory]
+  --trim-min <FRACTION>        Remove this smallest fraction of positions when calculating trimmed_mean [default: 5]
+  --trim-max <FRACTION>        Maximum fraction for trimmed_mean calculations [default: 95]
   --covered-bases              Calculate number of bases with coverage > 0 [requires extra memory]
   --covered-ratio              Calculate coverage breadth (fraction of reference covered) [requires extra memory]
+  --variance                   Calculate variance of coverage depth [requires extra memory]
+  --reads-per-base             Calculate reads per base (count / length, normalized read density)
   --length                     Output reference sequence lengths
   --all-metrics                Enable all available metrics
 
@@ -472,9 +636,17 @@ Other options:
     doRPKM = false
     doTPM = false
     doMean = false
+    doTrimmedMean = false
     doCoveredBases = false
     doCoveredRatio = false
+    doVariance = false
+    doReadsPerBase = false
     doLength = false
+
+  # Trimmed mean parameters
+  var
+    trimMin = 5.0  # Default: trim bottom 5%
+    trimMax = 95.0  # Default: keep up to 95th percentile
 
   if args["-n"]:
     stderr.writeLine("WARNING: -n flag is deprecated, use --rpkm instead")
@@ -489,11 +661,26 @@ Other options:
   if args["--mean"]:
     doMean = true
 
+  if args["--trimmed-mean"]:
+    doTrimmedMean = true
+
+  if $args["--trim-min"] != "nil":
+    trimMin = parseFloat($args["--trim-min"])
+
+  if $args["--trim-max"] != "nil":
+    trimMax = parseFloat($args["--trim-max"])
+
   if args["--covered-bases"]:
     doCoveredBases = true
 
   if args["--covered-ratio"]:
     doCoveredRatio = true
+
+  if args["--variance"]:
+    doVariance = true
+
+  if args["--reads-per-base"]:
+    doReadsPerBase = true
 
   if args["--length"]:
     doLength = true
@@ -502,8 +689,11 @@ Other options:
     doRPKM = true
     doTPM = true
     doMean = true
+    doTrimmedMean = true
     doCoveredBases = true
     doCoveredRatio = true
+    doVariance = true
+    doReadsPerBase = true
     doLength = true
 
   debug = args["--debug"]
@@ -525,12 +715,19 @@ Other options:
 
   # Determine if we need to track breadth (requires per-base coverage tracking)
   let trackBreadth = doCoveredBases or doCoveredRatio
+  # Determine if we need to track depths (required for variance and/or trimmed mean)
+  let trackDepths = doVariance or doTrimmedMean
 
   # Prepare worker options
   let workerOpts = WorkerOpts(
     mapq: uint8(mapq),
     eflag: eflag,
     trackBreadth: trackBreadth,
+    trackDepths: trackDepths,
+    doVariance: doVariance,
+    doTrimmedMean: doTrimmedMean,
+    trimMin: trimMin,
+    trimMax: trimMax,
     threads: threads,
     fasta: fastaPath
   )
@@ -600,10 +797,14 @@ Other options:
       sampleCounts: newSeqOfCap[int](numBamFiles),
       sampleTotalDepth: newSeqOfCap[int64](numBamFiles),
       sampleCoveredBases: newSeqOfCap[int](numBamFiles),
+      sampleSumSquaredDepth: newSeqOfCap[int64](numBamFiles),
       sampleRPKM: @[],
       sampleTPM: @[],
       sampleMean: @[],
-      sampleCoveredRatio: @[]
+      sampleCoveredRatio: @[],
+      sampleVariance: @[],
+      sampleTrimmedMean: @[],
+      sampleReadsPerBase: @[]
     )
 
   # Allocate total mapped reads array
@@ -622,12 +823,12 @@ Other options:
   if useStdout:
     # Legacy stdout output (backward compatible)
     # Support both --rpkm and deprecated -n flag for stdout RPKM output
-    outputToStdout(samples, args["--multiqc"], doRPKM, doTPM, doMean,
-        doCoveredBases, doCoveredRatio, doLength, totalMappedReads)
+    outputToStdout(samples, args["--multiqc"], doRPKM, doTPM, doMean, doTrimmedMean,
+        doCoveredBases, doCoveredRatio, doVariance, doReadsPerBase, doLength, totalMappedReads)
   else:
     # Multi-file output
-    outputToFiles(outputBasename, samples, doRPKM, doTPM, doMean,
-        doCoveredBases, doCoveredRatio, doLength, totalMappedReads)
+    outputToFiles(outputBasename, samples, doRPKM, doTPM, doMean, doTrimmedMean,
+        doCoveredBases, doCoveredRatio, doVariance, doReadsPerBase, doLength, totalMappedReads)
 
   return 0
 

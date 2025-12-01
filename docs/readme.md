@@ -6,9 +6,9 @@ nav_order: 1
 
 
 [![Build Bamtocov](https://github.com/telatin/bamtocov/actions/workflows/build.yml/badge.svg)](https://github.com/telatin/bamtocov/actions/workflows/build.yml)
-![Conda Downloads](https://img.shields.io/conda/vn/bioconda/bamtocov)
-![Conda Version](https://img.shields.io/conda/vn/bioconda/bamtocov)
-![Conda Platform](https://img.shields.io/conda/pn/bioconda/bamtocov)
+[![Conda Downloads](https://img.shields.io/conda/vn/bioconda/bamtocov)](https://bioconda.github.io/recipes/bamtocov/README.html)
+[![Conda Version](https://img.shields.io/conda/vn/bioconda/bamtocov)](https://bioconda.github.io/recipes/bamtocov/README.html)
+[![Conda Platform](https://img.shields.io/conda/pn/bioconda/bamtocov)](https://bioconda.github.io/recipes/bamtocov/README.html)
 
 
 ![CovToBam logo](bamtocov-banner.png)
