@@ -32,7 +32,9 @@ Output options:
   --rpkm                       Calculate RPKM (reads per kilobase per million mapped reads)
   --tpm                        Calculate TPM (transcripts per million)
   --mean                       Calculate mean coverage depth (approximate method, no extra memory)
-  --all-metrics                Enable all available metrics (RPKM, TPM, and mean)
+  --covered-bases              Calculate number of bases with coverage > 0 [requires extra memory]
+  --covered-ratio              Calculate coverage breadth (fraction of reference covered) [requires extra memory]
+  --all-metrics                Enable all available metrics
 
 Other options:
   --tag STR                    First column name [default: ViralSequence]
@@ -72,7 +74,7 @@ This creates:
 - `results/sample_counts.tsv` - Raw read counts
 - `results/sample_rpkm.tsv` - RPKM normalized values
 - `results/sample_tpm.tsv` - TPM normalized values
-- `results/sample_mean.tsv` - Mean coverage depth
+- `results/sample_mean.tsv` - Mean coverage depth (approximate)
 
 ### All Metrics at Once
 
@@ -81,3 +83,21 @@ Generate all available metrics with a single command:
 ```bash
 bin/bamcountrefs --output results/sample --all-metrics input/*.bam
 ```
+
+This creates all output files:
+- `results/sample_counts.tsv` - Raw read counts
+- `results/sample_rpkm.tsv` - RPKM normalized values
+- `results/sample_tpm.tsv` - TPM normalized values
+- `results/sample_mean.tsv` - Mean coverage depth (approximate)
+- `results/sample_covered_bases.tsv` - Number of bases with coverage > 0
+- `results/sample_covered_fraction.tsv` - Fraction of reference covered (breadth)
+
+### Coverage Breadth Metrics
+
+Calculate coverage breadth (what fraction of each reference is covered):
+
+```bash
+bin/bamcountrefs --output results/sample --covered-bases --covered-ratio input/*.bam
+```
+
+Note: Breadth metrics require tracking per-base coverage, which uses additional memory proportional to reference length.

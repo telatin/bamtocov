@@ -259,13 +259,63 @@ describe "BamCountRefs - Count reads per reference"
     rm -rf "$TMPDIR"
   end
 
+  describe "Coverage Breadth Calculations"
+    TMPDIR=$(mktemp -d)
+
+    it "Covered bases file is created with -o --covered-bases"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/breadth_test --covered-bases "$DATADIR"/mini.bam
+      assert file_present "$TMPDIR"/breadth_test_covered_bases.tsv
+    end
+
+    it "Covered fraction file is created with -o --covered-ratio"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/breadth_test --covered-ratio "$DATADIR"/mini.bam
+      assert file_present "$TMPDIR"/breadth_test_covered_fraction.tsv
+    end
+
+    it "Covered bases values are numeric (integer)"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/breadth_test --covered-bases "$DATADIR"/mini.bam
+      COVERED=$(grep "^seq1" "$TMPDIR"/breadth_test_covered_bases.tsv | cut -f 2)
+      assert glob "$COVERED" "[0-9]*"
+    end
+
+    it "Covered fraction values are numeric (float between 0 and 1)"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/breadth_test --covered-ratio "$DATADIR"/mini.bam
+      FRACTION=$(grep "^seq1" "$TMPDIR"/breadth_test_covered_fraction.tsv | cut -f 2)
+      assert glob "$FRACTION" "0.*"
+    end
+
+    it "Zero coverage references have covered bases of 0"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/breadth_test --covered-bases "$DATADIR"/mini.bam
+      COVERED=$(grep "^seq0" "$TMPDIR"/breadth_test_covered_bases.tsv | cut -f 2)
+      assert equal "$COVERED" "0"
+    end
+
+    it "Zero coverage references have covered fraction of 0.0"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/breadth_test --covered-ratio "$DATADIR"/mini.bam
+      FRACTION=$(grep "^seq0" "$TMPDIR"/breadth_test_covered_fraction.tsv | cut -f 2)
+      assert equal "$FRACTION" "0.000000"
+    end
+
+    it "Coverage breadth calculated per sample"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/breadth_multi --covered-bases "$DATADIR"/mini.bam "$DATADIR"/mini2.bam
+      LINE=$(grep "^seq1" "$TMPDIR"/breadth_multi_covered_bases.tsv)
+      COVERED1=$(echo "$LINE" | cut -f 2)
+      COVERED2=$(echo "$LINE" | cut -f 3)
+      # Both should have numeric values
+      assert glob "$COVERED1" "[0-9]*"
+      assert glob "$COVERED2" "[0-9]*"
+    end
+
+    rm -rf "$TMPDIR"
+  end
+
   describe "All-Metrics Flag"
     TMPDIR=$(mktemp -d)
 
     it "Creates all output files"
       "$BINDIR"/bamcountrefs -o "$TMPDIR"/all --all-metrics "$DATADIR"/mini.bam
       FILE_COUNT=$(ls "$TMPDIR"/all_*.tsv 2>/dev/null | wc -l)
-      assert equal $((FILE_COUNT+0)) 4
+      assert equal $((FILE_COUNT+0)) 6
     end
 
     it "All files have same number of data rows"
@@ -274,9 +324,13 @@ describe "BamCountRefs - Count reads per reference"
       RPKM_LINES=$(tail -n +2 "$TMPDIR"/all_rpkm.tsv | wc -l)
       TPM_LINES=$(tail -n +2 "$TMPDIR"/all_tpm.tsv | wc -l)
       MEAN_LINES=$(tail -n +2 "$TMPDIR"/all_mean.tsv | wc -l)
+      COVERED_BASES_LINES=$(tail -n +2 "$TMPDIR"/all_covered_bases.tsv | wc -l)
+      COVERED_FRACTION_LINES=$(tail -n +2 "$TMPDIR"/all_covered_fraction.tsv | wc -l)
       assert equal $COUNTS_LINES $RPKM_LINES
       assert equal $RPKM_LINES $TPM_LINES
       assert equal $TPM_LINES $MEAN_LINES
+      assert equal $MEAN_LINES $COVERED_BASES_LINES
+      assert equal $COVERED_BASES_LINES $COVERED_FRACTION_LINES
     end
 
     it "All files have same reference order"
@@ -285,9 +339,13 @@ describe "BamCountRefs - Count reads per reference"
       RPKM_REFS=$(tail -n +2 "$TMPDIR"/all_rpkm.tsv | cut -f 1)
       TPM_REFS=$(tail -n +2 "$TMPDIR"/all_tpm.tsv | cut -f 1)
       MEAN_REFS=$(tail -n +2 "$TMPDIR"/all_mean.tsv | cut -f 1)
+      COVERED_BASES_REFS=$(tail -n +2 "$TMPDIR"/all_covered_bases.tsv | cut -f 1)
+      COVERED_FRACTION_REFS=$(tail -n +2 "$TMPDIR"/all_covered_fraction.tsv | cut -f 1)
       assert equal "$COUNTS_REFS" "$RPKM_REFS"
       assert equal "$RPKM_REFS" "$TPM_REFS"
       assert equal "$TPM_REFS" "$MEAN_REFS"
+      assert equal "$MEAN_REFS" "$COVERED_BASES_REFS"
+      assert equal "$COVERED_BASES_REFS" "$COVERED_FRACTION_REFS"
     end
 
     rm -rf "$TMPDIR"

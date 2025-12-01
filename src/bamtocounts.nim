@@ -77,7 +77,7 @@ proc makeCountsTable(table: var OrderedTable[string, stranded_counts], bam:Bam, 
     total += 1
     if read.tid notin regions:
       continue
-    if read.mapping_quality == 0 or ( (read.flag and 1796) != 0):
+    if read.mapping_quality < mapq or ( (read.flag and eflag) != 0):
       continue
 
     for region in regions[read.tid]:
@@ -95,7 +95,7 @@ proc alignments_count(table: var OrderedTable[string, stranded_counts], bam:Bam,
     total += 1
     if read.tid notin regions:
       continue
-    if read.mapping_quality == 0 or ( (read.flag and eflag) != 0):
+    if read.mapping_quality < mapq or ( (read.flag and eflag) != 0):
       continue
     if paired and (read.flag.proper_pair == false or read.flag.read2 == true):
       continue
@@ -139,7 +139,7 @@ Options:
   -T, --threads <threads>      BAM decompression threads [default: 0]
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: $env_fasta]
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: 1796]
-  -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
+  -Q, --mapq <mapq>            Mapping quality threshold [default: 1]
   --paired                     Count read pairs rather than single reads
   --strict                     Read must be contained, not just overlap, with feature
   --stranded                   Print strand-specific counts

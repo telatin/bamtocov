@@ -1,3 +1,7 @@
+---
+nav_order: 1
+---
+
 # BamToCov
 
 ![CovToBam logo](bamtocov-banner.png)

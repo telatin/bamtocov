@@ -1,6 +1,6 @@
 ---
 title: History
-nav_order: 5
+nav_order: 6
 permalink: /history
 ---
 # History
@@ -8,6 +8,9 @@ permalink: /history
 This project extends [covtobed](https://github.com/telatin/covtobed),
 reimplementing the core algorithm in Nim.
 
+* 2.9.0
+  * **bamcountrefs** is now multithreadsing
+  * bug fixes
 * 2.8.0
   * **bamcountrefs** bugfix for multiple files; optimised
   * refactoring: unified imports, added tests, fixed Make test to use the environment's shell

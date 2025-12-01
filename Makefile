@@ -27,6 +27,7 @@ STATIC=$(BIN2)/bamtocov $(BIN2)/bamtocounts $(BIN2)/covtotarget $(BIN2)/bamcount
 
 $(BIN)/%: $(SOURCE)/%.nim $(SOURCE)/covutils.nim bamtocov.nimble
 	nim c  $(NIM_PATHS) -d:NimblePkgVersion=$(VERSION) -d:release \
+		--threads:on --mm:arc \
 		--passL:"$(HTSLIB_PATH)" \
 		--opt:speed  --out:$@ $<
 
