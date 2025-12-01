@@ -315,7 +315,7 @@ describe "BamCountRefs - Count reads per reference"
     it "Creates all output files"
       "$BINDIR"/bamcountrefs -o "$TMPDIR"/all --all-metrics "$DATADIR"/mini.bam
       FILE_COUNT=$(ls "$TMPDIR"/all_*.tsv 2>/dev/null | wc -l)
-      assert equal $((FILE_COUNT+0)) 6
+      assert equal $((FILE_COUNT+0)) 7
     end
 
     it "All files have same number of data rows"
