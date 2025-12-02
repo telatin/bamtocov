@@ -1,3 +1,42 @@
+#[
+
+# BamTarget
+
+A command-line tool for parsing genomic target regions from annotation files (BED, GFF, GTF) and optionally validating them against BAM file reference sequences.
+
+## Purpose
+
+BamTarget processes genomic interval files to extract target regions, which can then be matched against aligned sequencing data. It's useful for quality control and preparation of target regions before coverage analysis or variant calling.
+
+## Key Functionality
+
+- **Parse target files**: Reads genomic intervals from BED, GFF3, or GTF format
+- **Flexible GFF/GTF parsing**: Configurable feature types, identifiers, and attribute separators
+- **BAM integration**: When provided with a BAM file, validates and "cooks" target regions to match BAM reference sequences
+- **Format auto-detection**: Automatically detects file format from extension (.gff, .gtf) or uses BED as default
+
+## Inputs
+
+- **Target file** (required): Genomic regions in BED, GFF3, or GTF format
+- **BAM file** (optional): Aligned reads for target validation
+
+## Outputs
+
+Tab-separated list of genomic intervals with:
+- Chromosome/reference name
+- Start position
+- End position  
+- Region name/identifier
+
+When a BAM file is provided, outputs "cooked" targets that have been validated against the BAM's reference sequences.
+
+## Use Cases
+
+- Preparing target regions for coverage analysis
+- Extracting specific genomic features (e.g., CDS regions) from annotation files
+- Validating target compatibility with sequencing data
+
+]#
 # Standard library
 import std/[heapqueue, os, sets, strutils, tables]
 
@@ -5,7 +44,7 @@ import std/[heapqueue, os, sets, strutils, tables]
 import docopt, hts
 
 # Local modules
-import ./covutils 
+import ./covutils
 
 type
   coverage_t = object
@@ -53,9 +92,11 @@ proc `$`[T](i: genomic_interval_t[T]): string =
 
 
 type
-  input_option_t = tuple[min_mapping_quality: uint8, eflag: uint16, physical: bool, target: raw_target_t]
+  input_option_t = tuple[min_mapping_quality: uint8, eflag: uint16,
+      physical: bool, target: raw_target_t]
 
-proc alignment_stream(bam: Bam, opts: input_option_t, target: target_t): iterator (): genomic_interval_t[bool] =
+proc alignment_stream(bam: Bam, opts: input_option_t,
+    target: target_t): iterator (): genomic_interval_t[bool] =
   result = iterator(): genomic_interval_t[bool] {.closure.} =
     var
       o = opts
@@ -68,7 +109,7 @@ proc alignment_stream(bam: Bam, opts: input_option_t, target: target_t): iterato
       # alignment processing
       var stop: pos_t = 0
       if o.physical:
-        if r.isize > 0: 
+        if r.isize > 0:
           stop = r.start + r.isize
         else:
           continue # skip the mate with negative insert size
@@ -81,13 +122,13 @@ proc alignment_stream(bam: Bam, opts: input_option_t, target: target_t): iterato
         yield i
 
 
- 
-template doAssert(condition: bool, message: string) =  
+
+template doAssert(condition: bool, message: string) =
   if condition == false:
     stderr.writeLine("ERROR: ", message)
     quit(1)
 
- 
+
 proc main(argv: var seq[string]): int =
   let doc = format("""
   BamTarget $version
@@ -111,7 +152,7 @@ Other options:
   -h, --help                   Show help
   """ % ["version", version])
 
-  let args = docopt(doc, version=version, argv=argv)
+  let args = docopt(doc, version = version, argv = argv)
 
   #
 
@@ -120,15 +161,15 @@ Other options:
   if debug:
     dbEcho("args:", args)
 
-  let 
+  let
     gffField = $args["--gff-type"]
     gffSeparator = $args["--gff-separator"]
     gffIdentifier = $args["--gff-id"]
 
   var
-    format_gff = false 
+    format_gff = false
     format_gtf = false
-  
+
   # Set target format (GFF/BED) using extension or forced by the user
   if ($args["<Target>"]).toLower().contains(".gff"):
     dbEcho("Parsing target as GFF")
@@ -141,7 +182,7 @@ Other options:
   if debug and (format_gff or format_gtf):
     stderr.writeLine "GFF field: ", gffField, "\n",
                       "GFF separator: ", gffSeparator, "\n",
-                      "GFF identifier: ", gffIdentifier, "\n" 
+                      "GFF identifier: ", gffIdentifier, "\n"
 
   if $args["<Target>"] != "nil":
     if not fileExists($args["<Target>"]):
@@ -160,49 +201,49 @@ Other options:
     quit(1)
 
   var target: TableRef[system.string, seq[region_t]]
-  if format_gff: 
+  if format_gff:
     if debug:
       stderr.writeLine "Parsing target as GFF"
-      target = gff_to_table($args["<Target>"], gffField, gffSeparator, gffIdentifier) 
-  elif format_gtf: 
+      target = gff_to_table($args["<Target>"], gffField, gffSeparator, gffIdentifier)
+  elif format_gtf:
     if debug:
       stderr.writeLine "Parsing target as GTF"
-      
-    target = gtf_to_table($args["<Target>"], gffField, gffSeparator, gffIdentifier) 
-  else: 
+
+    target = gtf_to_table($args["<Target>"], gffField, gffSeparator, gffIdentifier)
+  else:
     if debug:
       stderr.writeLine "Parsing target as BED"
     target = bed_to_table($args["<Target>"])
-   
+
   if debug:
     stderr.writeLine "Target parsed: ", len(target), " reference sequences"
 
   for t in target.keys():
     if debug:
-      echo "# Chromosome:" , t
+      echo "# Chromosome:", t
     for region in target[t]:
       echo region.chrom, "\t", region.start, "\t", region.stop, "\t", region.name
-  
+
   if fileExists($args["<BAM>"]):
     if debug:
       stderr.writeLine "BAM file: ", $args["<BAM>"]
     var
       bam: Bam
-    open(bam, cstring($args["<BAM>"]), threads=1)
+    open(bam, cstring($args["<BAM>"]), threads = 1)
     let cooked = cookTarget(target, bam)
     for t in cooked.keys():
       if debug:
-        echo "# Chromosome:" , t
+        echo "# Chromosome:", t
       for region in cooked[t]:
-        echo "[",t,"]\t", region.start, "\t", region.stop, "\t", region.label
-  
+        echo "[", t, "]\t", region.start, "\t", region.stop, "\t", region.label
+
   return 0
 
 type EKeyboardInterrupt = object of CatchableError
- 
+
 proc handler() {.noconv.} =
   raise newException(EKeyboardInterrupt, "Keyboard Interrupt")
- 
+
 setControlCHook(handler)
 
 
@@ -211,7 +252,7 @@ when isMainModule:
   try:
     discard main(args)
   except EKeyboardInterrupt:
-    stderr.writeLine( "Quitting.")
+    stderr.writeLine("Quitting.")
   except:
-    stderr.writeLine( getCurrentExceptionMsg() )
-    quit(1)   
+    stderr.writeLine(getCurrentExceptionMsg())
+    quit(1)

@@ -31,7 +31,7 @@ describe "BamCountRefs - Count reads per reference"
 
     it "Produces tab-separated output with header"
       HEADER=$("$BINDIR"/bamcountrefs "$DATADIR"/mini.bam | head -n 1)
-      assert glob "$HEADER" "ViralSequence*mini"
+      assert glob "$HEADER" "Contig*mini"
     end
 
     it "Counts seq1 correctly (15 reads)"
@@ -393,6 +393,9 @@ describe "BamCountRefs - Count reads per reference"
 
   describe "Trimmed Mean Calculations"
     TMPDIR=$(mktemp -d)
+    it "Temp directory is created"
+      assert file_present "$TMPDIR"
+    end
 
     it "Trimmed mean file is created with -o --trimmed-mean"
       "$BINDIR"/bamcountrefs -o "$TMPDIR"/tm_test --trimmed-mean "$DATADIR"/mini.bam
@@ -575,7 +578,7 @@ describe "BamCountRefs - Count reads per reference"
 
     it "Counts PhiX shotgun correctly"
       COUNT=$("$BINDIR"/bamcountrefs "$DATADIR"/phi/shotgun.bam | grep "^NC_001422" | cut -f 2)
-      assert equal $((COUNT+0)) 928
+      assert equal $((COUNT+0)) 920
     end
 
     it "Both PhiX samples in multi-sample mode"
@@ -583,7 +586,7 @@ describe "BamCountRefs - Count reads per reference"
       COUNT1=$(echo "$LINE" | cut -f 2)
       COUNT2=$(echo "$LINE" | cut -f 3)
       assert equal $((COUNT1+0)) 1060
-      assert equal $((COUNT2+0)) 928
+      assert equal $((COUNT2+0)) 920
     end
   end
 
