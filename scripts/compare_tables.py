@@ -47,10 +47,14 @@ def read_table(path, id_col=0):
     return df
 
 
-def compare_tables(df1, df2, rtol=1e-3, atol=1e-3, verbose=False):
+def compare_tables(df1, df2, pct_diff=None, abs_diff=None, verbose=False):
     """
     Compare two dataframes with the same schema (index = IDs; columns = samples).
     Returns a dict with comparison results and differences beyond tolerance.
+
+    Tolerance modes:
+      - pct_diff: Percentage tolerance relative to the larger absolute value
+      - abs_diff: Absolute difference tolerance
     """
     # Check column sets (ignore order)
     cols1, cols2 = set(df1.columns), set(df2.columns)
@@ -82,23 +86,41 @@ def compare_tables(df1, df2, rtol=1e-3, atol=1e-3, verbose=False):
     a = df1.loc[common_ids, common_cols]
     b = df2.loc[common_ids, common_cols]
 
-    # Use numpy.isclose with tolerances
-    close_mask = np.isclose(a.values, b.values, rtol=rtol, atol=atol, equal_nan=True)
-    # Build DataFrame of differences where not close
+    # Calculate absolute differences
+    abs_diffs = np.abs(a.values - b.values)
+
+    # Determine which values are within tolerance
+    if pct_diff is not None:
+        # Percentage tolerance: calculate as % of the larger absolute value
+        max_vals = np.maximum(np.abs(a.values), np.abs(b.values))
+        tolerance = (pct_diff / 100.0) * max_vals
+        # Handle NaN: if both are NaN, consider them equal
+        both_nan = np.isnan(a.values) & np.isnan(b.values)
+        close_mask = (abs_diffs <= tolerance) | both_nan
+    elif abs_diff is not None:
+        # Absolute tolerance
+        both_nan = np.isnan(a.values) & np.isnan(b.values)
+        close_mask = (abs_diffs <= abs_diff) | both_nan
+    else:
+        # Default: exact match (or both NaN)
+        both_nan = np.isnan(a.values) & np.isnan(b.values)
+        close_mask = (abs_diffs == 0) | both_nan
+
+    # Build DataFrame of differences where not within tolerance
     not_close = ~close_mask
     if not_close.any():
-        diff = (a - b)
-        diff_masked = pd.DataFrame(diff.values, index=a.index, columns=a.columns)
-        # Keep only rows/cols where there is a mismatch
-        # (filter down to cells failing tolerance)
+        # Keep only cells where there is a mismatch
         where_mismatch = []
-        for i, rid in enumerate(diff_masked.index):
-            for j, col in enumerate(diff_masked.columns):
+        for i, rid in enumerate(a.index):
+            for j, col in enumerate(a.columns):
                 if not_close[i, j]:
-                    where_mismatch.append((rid, col, a.iloc[i, j], b.iloc[i, j], diff_masked.iloc[i, j]))
+                    val1 = a.iloc[i, j]
+                    val2 = b.iloc[i, j]
+                    abs_diff_val = abs_diffs[i, j]
+                    where_mismatch.append((rid, col, val1, val2, abs_diff_val))
 
         # Summarize into a DataFrame
-        mismatches_df = pd.DataFrame(where_mismatch, columns=["ID", "Column", "Value_file1", "Value_file2", "Diff(file1-file2)"])
+        mismatches_df = pd.DataFrame(where_mismatch, columns=["ID", "Column", "Value_file1", "Value_file2", "AbsDiff"])
         results["mismatch_count"] = len(mismatches_df)
         results["mismatches"] = mismatches_df
 
@@ -113,10 +135,14 @@ def main():
     p.add_argument("file2", help="Second table (CSV/TSV; .gz OK)")
     p.add_argument("--id-col", default=0,
                    help="ID column (name or 0-based index). Default: 0")
-    p.add_argument("--rtol", type=float, default=1e-3,
-                   help="Relative tolerance for numeric comparison (np.isclose). Default: 1e-3")
-    p.add_argument("--atol", type=float, default=1e-3,
-                   help="Absolute tolerance for numeric comparison (np.isclose). Default: 1e-3")
+
+    # Tolerance options (mutually exclusive)
+    tol_group = p.add_mutually_exclusive_group()
+    tol_group.add_argument("--pct-diff", type=float, metavar="PCT",
+                          help="Percentage tolerance (e.g., 10 for 10%% of the larger absolute value)")
+    tol_group.add_argument("--abs-diff", type=float, metavar="VALUE",
+                          help="Absolute difference tolerance (e.g., 0.1 to allow ±0.1)")
+
     p.add_argument("--verbose", action="store_true", help="Print extra details")
     p.add_argument("--show-max", type=int, default=50, help="Max mismatches to print. Default: 50")
 
@@ -131,7 +157,7 @@ def main():
     df1 = read_table(args.file1, id_col=id_col)
     df2 = read_table(args.file2, id_col=id_col)
 
-    res = compare_tables(df1, df2, rtol=args.rtol, atol=args.atol, verbose=args.verbose)
+    res = compare_tables(df1, df2, pct_diff=args.pct_diff, abs_diff=args.abs_diff, verbose=args.verbose)
 
     # Report schema checks
     if not res["columns_equal"] or not res["rows_equal"]:
@@ -150,10 +176,22 @@ def main():
 
     # Report cell-wise comparison
     if res["mismatch_count"] == 0:
-        print(f"OK: All {df1.shape[0]} rows and {df1.shape[1]} columns match within rtol={args.rtol}, atol={args.atol}.")
+        if args.pct_diff is not None:
+            tol_str = f"pct-diff={args.pct_diff}%"
+        elif args.abs_diff is not None:
+            tol_str = f"abs-diff={args.abs_diff}"
+        else:
+            tol_str = "exact match"
+        print(f"OK: All {df1.shape[0]} rows and {df1.shape[1]} columns match within {tol_str}.")
         sys.exit(0)
     else:
-        print(f"MISMATCH: {res['mismatch_count']} cell(s) differ beyond rtol={args.rtol}, atol={args.atol}.")
+        if args.pct_diff is not None:
+            tol_str = f"pct-diff={args.pct_diff}%"
+        elif args.abs_diff is not None:
+            tol_str = f"abs-diff={args.abs_diff}"
+        else:
+            tol_str = "exact match"
+        print(f"MISMATCH: {res['mismatch_count']} cell(s) differ beyond {tol_str}.")
         print(res["mismatches"].head(args.show_max).to_string(index=False))
         if res["mismatch_count"] > args.show_max:
             print(f"... {res['mismatch_count'] - args.show_max} more mismatches not shown.")
