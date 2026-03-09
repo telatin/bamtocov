@@ -90,12 +90,12 @@ describe "BamCountRefs - Count reads per reference"
     end
 
     it "Fast path activated with -F 4 (check debug output)"
-      OUTPUT=$("$BINDIR"/bamcountrefs --debug -F 4 "$DATADIR"/mini.bam 2>&1 | grep -c "fast index statistics")
+      OUTPUT=$("$BINDIR"/bamcountrefs --debug -F 4 "$DATADIR"/mini.bam 2>&1 | grep -c "Establishing reference order from first sample")
       assert equal $((OUTPUT+0)) 1
     end
 
     it "Iteration path used with default flags (check debug output)"
-      OUTPUT=$("$BINDIR"/bamcountrefs --debug "$DATADIR"/mini.bam 2>&1 | grep -c "Iterating through alignments")
+      OUTPUT=$("$BINDIR"/bamcountrefs --debug "$DATADIR"/mini.bam 2>&1 | grep -c "Merging results from all workers")
       assert equal $((OUTPUT+0)) 1
     end
   end
@@ -168,6 +168,12 @@ describe "BamCountRefs - Count reads per reference"
       assert file_present "$TMPDIR"/all_test_rpkm.tsv
       assert file_present "$TMPDIR"/all_test_tpm.tsv
       assert file_present "$TMPDIR"/all_test_mean.tsv
+      assert file_present "$TMPDIR"/all_test_trimmed_mean.tsv
+      assert file_present "$TMPDIR"/all_test_covered_bases.tsv
+      assert file_present "$TMPDIR"/all_test_covered_fraction.tsv
+      assert file_present "$TMPDIR"/all_test_variance.tsv
+      assert file_present "$TMPDIR"/all_test_reads_per_base.tsv
+      assert file_present "$TMPDIR"/all_test_length.tsv
     end
 
     it "Always creates counts file even when only --rpkm requested"
@@ -309,13 +315,95 @@ describe "BamCountRefs - Count reads per reference"
     rm -rf "$TMPDIR"
   end
 
+  describe "Variance Calculations"
+    TMPDIR=$(mktemp -d)
+
+    it "Variance file is created with -o --variance"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/variance_test --variance "$DATADIR"/mini.bam
+      assert file_present "$TMPDIR"/variance_test_variance.tsv
+    end
+
+    it "Variance values are numeric (float)"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/variance_test --variance "$DATADIR"/mini.bam
+      VARIANCE=$(grep "^seq1" "$TMPDIR"/variance_test_variance.tsv | cut -f 2)
+      assert glob "$VARIANCE" "*.*"
+    end
+
+    it "Zero coverage references have variance of 0.0"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/variance_test --variance "$DATADIR"/mini.bam
+      VARIANCE=$(grep "^seq0" "$TMPDIR"/variance_test_variance.tsv | cut -f 2)
+      assert equal "$VARIANCE" "0.000000"
+    end
+
+    it "Variance calculated per sample"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/variance_multi --variance "$DATADIR"/mini.bam "$DATADIR"/mini2.bam
+      LINE=$(grep "^seq1" "$TMPDIR"/variance_multi_variance.tsv)
+      VAR1=$(echo "$LINE" | cut -f 2)
+      VAR2=$(echo "$LINE" | cut -f 3)
+      # Both should have numeric values
+      assert glob "$VAR1" "*.*"
+      assert glob "$VAR2" "*.*"
+    end
+
+    it "Variance can be output to stdout"
+      OUTPUT=$("$BINDIR"/bamcountrefs --variance "$DATADIR"/mini.bam | grep "^seq1" | cut -f 2)
+      assert glob "$OUTPUT" "*.*"
+    end
+
+    rm -rf "$TMPDIR"
+  end
+
+  describe "Reads Per Base Calculations"
+    TMPDIR=$(mktemp -d)
+
+    it "Reads per base file is created with -o --reads-per-base"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/rpb_test --reads-per-base "$DATADIR"/mini.bam
+      assert file_present "$TMPDIR"/rpb_test_reads_per_base.tsv
+    end
+
+    it "Reads per base values are numeric (float)"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/rpb_test --reads-per-base "$DATADIR"/mini.bam
+      RPB=$(grep "^seq1" "$TMPDIR"/rpb_test_reads_per_base.tsv | cut -f 2)
+      assert glob "$RPB" "*.*"
+    end
+
+    it "Reads per base is calculated correctly (seq1: 15 reads / 1000 bp = 0.015)"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/rpb_test --reads-per-base "$DATADIR"/mini.bam
+      RPB=$(grep "^seq1" "$TMPDIR"/rpb_test_reads_per_base.tsv | cut -f 2)
+      assert equal "$RPB" "0.015000"
+    end
+
+    it "Zero reads references have reads per base of 0.0"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/rpb_test --reads-per-base "$DATADIR"/mini.bam
+      RPB=$(grep "^seq0" "$TMPDIR"/rpb_test_reads_per_base.tsv | cut -f 2)
+      assert equal "$RPB" "0.000000"
+    end
+
+    it "Reads per base calculated per sample"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/rpb_multi --reads-per-base "$DATADIR"/mini.bam "$DATADIR"/mini2.bam
+      LINE=$(grep "^seq1" "$TMPDIR"/rpb_multi_reads_per_base.tsv)
+      RPB1=$(echo "$LINE" | cut -f 2)
+      RPB2=$(echo "$LINE" | cut -f 3)
+      # Both should have numeric values
+      assert glob "$RPB1" "*.*"
+      assert glob "$RPB2" "*.*"
+    end
+
+    it "Reads per base can be output to stdout"
+      OUTPUT=$("$BINDIR"/bamcountrefs --reads-per-base "$DATADIR"/mini.bam | grep "^seq1" | cut -f 2)
+      assert equal "$OUTPUT" "0.015000"
+    end
+
+    rm -rf "$TMPDIR"
+  end
+
   describe "All-Metrics Flag"
     TMPDIR=$(mktemp -d)
 
     it "Creates all output files"
       "$BINDIR"/bamcountrefs -o "$TMPDIR"/all --all-metrics "$DATADIR"/mini.bam
       FILE_COUNT=$(ls "$TMPDIR"/all_*.tsv 2>/dev/null | wc -l)
-      assert equal $((FILE_COUNT+0)) 6
+      assert equal $((FILE_COUNT+0)) 10
     end
 
     it "All files have same number of data rows"
@@ -324,13 +412,21 @@ describe "BamCountRefs - Count reads per reference"
       RPKM_LINES=$(tail -n +2 "$TMPDIR"/all_rpkm.tsv | wc -l)
       TPM_LINES=$(tail -n +2 "$TMPDIR"/all_tpm.tsv | wc -l)
       MEAN_LINES=$(tail -n +2 "$TMPDIR"/all_mean.tsv | wc -l)
+      TRIMMED_MEAN_LINES=$(tail -n +2 "$TMPDIR"/all_trimmed_mean.tsv | wc -l)
       COVERED_BASES_LINES=$(tail -n +2 "$TMPDIR"/all_covered_bases.tsv | wc -l)
       COVERED_FRACTION_LINES=$(tail -n +2 "$TMPDIR"/all_covered_fraction.tsv | wc -l)
+      VARIANCE_LINES=$(tail -n +2 "$TMPDIR"/all_variance.tsv | wc -l)
+      RPB_LINES=$(tail -n +2 "$TMPDIR"/all_reads_per_base.tsv | wc -l)
+      LENGTH_LINES=$(tail -n +2 "$TMPDIR"/all_length.tsv | wc -l)
       assert equal $COUNTS_LINES $RPKM_LINES
       assert equal $RPKM_LINES $TPM_LINES
       assert equal $TPM_LINES $MEAN_LINES
-      assert equal $MEAN_LINES $COVERED_BASES_LINES
+      assert equal $MEAN_LINES $TRIMMED_MEAN_LINES
+      assert equal $TRIMMED_MEAN_LINES $COVERED_BASES_LINES
       assert equal $COVERED_BASES_LINES $COVERED_FRACTION_LINES
+      assert equal $COVERED_FRACTION_LINES $VARIANCE_LINES
+      assert equal $VARIANCE_LINES $RPB_LINES
+      assert equal $RPB_LINES $LENGTH_LINES
     end
 
     it "All files have same reference order"
@@ -339,13 +435,21 @@ describe "BamCountRefs - Count reads per reference"
       RPKM_REFS=$(tail -n +2 "$TMPDIR"/all_rpkm.tsv | cut -f 1)
       TPM_REFS=$(tail -n +2 "$TMPDIR"/all_tpm.tsv | cut -f 1)
       MEAN_REFS=$(tail -n +2 "$TMPDIR"/all_mean.tsv | cut -f 1)
+      TRIMMED_MEAN_REFS=$(tail -n +2 "$TMPDIR"/all_trimmed_mean.tsv | cut -f 1)
       COVERED_BASES_REFS=$(tail -n +2 "$TMPDIR"/all_covered_bases.tsv | cut -f 1)
       COVERED_FRACTION_REFS=$(tail -n +2 "$TMPDIR"/all_covered_fraction.tsv | cut -f 1)
+      VARIANCE_REFS=$(tail -n +2 "$TMPDIR"/all_variance.tsv | cut -f 1)
+      RPB_REFS=$(tail -n +2 "$TMPDIR"/all_reads_per_base.tsv | cut -f 1)
+      LENGTH_REFS=$(tail -n +2 "$TMPDIR"/all_length.tsv | cut -f 1)
       assert equal "$COUNTS_REFS" "$RPKM_REFS"
       assert equal "$RPKM_REFS" "$TPM_REFS"
       assert equal "$TPM_REFS" "$MEAN_REFS"
-      assert equal "$MEAN_REFS" "$COVERED_BASES_REFS"
+      assert equal "$MEAN_REFS" "$TRIMMED_MEAN_REFS"
+      assert equal "$TRIMMED_MEAN_REFS" "$COVERED_BASES_REFS"
       assert equal "$COVERED_BASES_REFS" "$COVERED_FRACTION_REFS"
+      assert equal "$COVERED_FRACTION_REFS" "$VARIANCE_REFS"
+      assert equal "$VARIANCE_REFS" "$RPB_REFS"
+      assert equal "$RPB_REFS" "$LENGTH_REFS"
     end
 
     rm -rf "$TMPDIR"

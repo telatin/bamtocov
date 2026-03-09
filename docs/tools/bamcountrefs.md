@@ -10,7 +10,7 @@ A program to build a count table from multiple BAM
 files (having the same reference sequence).
 
 ```text
-BamCountRefs 2.2.0
+BamCountRefs 2.9.0
 
   Usage: bamcountrefs [options]  <BAM-or-CRAM>...
 
@@ -21,26 +21,31 @@ Arguments:
 BAM/CRAM processing options:
 
   -T, --threads <threads>      BAM decompression threads [default: 0]
+  -W, --workers <workers>      Number of parallel file processors [default: auto]
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: ].
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: 1796]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
 
 Output options:
-  -o, --output <BASENAME>      Output file basename (generates multiple files: <BASENAME>_counts.tsv, etc.)
+  -o, --output <BASENAME>      Output file basename (generates multiple files:  <BASENAME>_counts.tsv, <BASENAME>_rpkm.tsv, etc. depending on the metrics selected)
+
                                If not specified, outputs counts to stdout in TSV format
   -n                           [DEPRECATED: use --rpkm] Output RPKM values
   --rpkm                       Calculate RPKM (reads per kilobase per million mapped reads)
   --tpm                        Calculate TPM (transcripts per million)
-  --mean                       Calculate mean coverage depth (approximate method, no extra memory)
-  --covered-bases              Calculate number of bases with coverage > 0 [requires extra memory]
-  --covered-ratio              Calculate coverage breadth (fraction of reference covered) [requires extra memory]
+  --mean                       Calculate mean coverage depth (approximate method)
+  --covered-bases              Calculate number of bases with coverage > 0 *
+  --covered-ratio              Calculate coverage breadth (fraction of reference covered) *
+  --length                     Output reference sequence lengths ()
   --all-metrics                Enable all available metrics
 
 Other options:
-  --tag STR                    First column name [default: ViralSequence]
+  --tag STR                    First column name [default: Contig]
   --multiqc                    Print output as MultiQC table (stdout only)
   --debug                      Enable diagnostics
   -h, --help                   Show help
+  
+[*] requires extra memory compared to base metrics
 ```
 
 ## Examples

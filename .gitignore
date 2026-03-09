@@ -30,3 +30,4 @@ static/
 hts_nim_static_builder
 bin/*
 *.bam.bai
+tests/gen.bam

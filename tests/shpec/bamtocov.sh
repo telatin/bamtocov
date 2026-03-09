@@ -79,6 +79,24 @@ describe "Coverage tools tested by Shpec"
       # end
     end
 
+    it "Fails when report path is not writable as a file"
+      TMPDIR=$(mktemp -d)
+      "$BINDIR"/bamtocov -o "$TMPDIR" --regions "$DATADIR"/regions.bed "$DATADIR"/mini.bam > /dev/null 2>&1
+      exitstatus=$?
+      rm -rf "$TMPDIR"
+      assert gt $exitstatus 0
+    end
+
+    it "Fails with invalid --op value"
+      TMPERR=$(mktemp)
+      "$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 250 --op median > /dev/null 2> "$TMPERR"
+      exitstatus=$?
+      OUTPUT=$(cat "$TMPERR")
+      rm -f "$TMPERR"
+      assert gt $exitstatus 0
+      assert equal "$OUTPUT" "ERROR: --op must be one of mean, min, max; got: median"
+    end
+
     it "Works with sorted file"
       "$BINDIR"/bamtocov "$DATADIR"/mini-sorted.bam 2> /dev/null > /dev/null
       exitstatus=$?

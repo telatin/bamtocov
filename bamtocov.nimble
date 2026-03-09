@@ -6,13 +6,13 @@ description   = "BAM to Coverage"
 license       = "MIT"
 
 # Dependencies
-when defined(macosx):
-  let htslib_prefix = gorge("brew --prefix htslib").strip()
-  --passL:"-L" & htslib_prefix & "/lib"
-  --passL:"-lhts"
-  --passL:"-rpath " & htslib_prefix & "/lib"
 
-requires "hts >= 0.3.20", "docopt >= 0.6.8", "nim >= 1.6.6", "lapper >= 0.1.8"
+#when defined(macosx):
+#  --passL:"-L/opt/homebrew/Cellar/htslib/1.21/lib"
+#  --passL:"-lhts"
+#  --passL:"-rpath /opt/homebrew/Cellar/htslib/1.21/lib"
+  
+requires "hts >= 0.3.20", "docopt >= 0.6.8", "nim >= 1.6.6", "lapper >= 0.1.8", "taskpools >= 0.0.3"
 
 srcDir = "src"
 binDir = "bin"

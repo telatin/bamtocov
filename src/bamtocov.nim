@@ -1,5 +1,7 @@
 # Standard library
 import std/[algorithm, heapqueue, os, sets, strutils, tables]
+when not defined(windows):
+  import posix
 
 # External dependencies
 import docopt, hts
@@ -588,8 +590,16 @@ proc bam2stats(bam_path: string, inopts: input_option_t, outopts: output_option_
     target_stats: target_stat_t = new_stats(outopts)
 
   if bam_path == "-":
-    stderr.writeLine("Reading from STDIN [Ctrl-C to break]")
-  open(bam, bam_path, threads=bam_threads)
+    stderr.writeLine("Reading from STDIN [press Ctrl-C to quit]")
+
+  if not open(bam, bam_path, threads=bam_threads):
+    stderr.writeLine("ERROR: Failed to open BAM/CRAM file: ", bam_path)
+    quit(1)
+
+  if bam.hdr.isNil:
+    stderr.writeLine("ERROR: Invalid or empty BAM/CRAM file")
+    quit(1)
+
   let target = cookTarget(inopts.target, bam)
   var output: output_t = newOutput(outopts, bam)
 
@@ -688,7 +698,9 @@ Other options:
     elif args["--gff"]:
       format_gff = true
 
-  assert( $args["--op"] in  @["mean", "min", "max"], "--op must be one of mean, min, max, got: " & $args["--op"])
+  if $args["--op"] notin @["mean", "min", "max"]:
+    stderr.writeLine("ERROR: --op must be one of mean, min, max; got: ", $args["--op"])
+    quit(1)
 
   let 
     gffField = $args["--gff-type"]
@@ -750,7 +762,7 @@ Other options:
   var bam_stats: seq[tuple [stats: target_stat_t, target: target_t]]
   for p in input_paths:
     dbEcho("running", p)
-    bam_stats.add(bam2stats(p, input_opts, output_opts, bam_threads=1))
+    bam_stats.add(bam2stats(p, input_opts, output_opts, bam_threads=threads))
      
   
   if args["--report"]: # print report table
@@ -802,20 +814,72 @@ Other options:
   dbEcho("exiting successfully!")
   return 0
 
-type EKeyboardInterrupt = object of CatchableError
- 
-proc handler() {.noconv.} =
-  raise newException(EKeyboardInterrupt, "Keyboard Interrupt")
- 
-setControlCHook(handler)
+proc isBrokenPipeError(e: ref IOError): bool =
+  let msg = e.msg.toLowerAscii()
+  msg.contains("broken pipe") or msg.contains("pipe has been ended")
 
+proc quitFromIoError(e: ref IOError) =
+  if isBrokenPipeError(e):
+    if debug:
+      stderr.writeLine("bamtocov-debug: Broken pipe")
+    quit(0)
+
+  stderr.writeLine(e.msg)
+  quit(1)
+
+proc main_helper(main_func: proc(args: var seq[string]): int) =
+  var args: seq[string] = commandLineParams()
+  when defined(windows):
+    try:
+      let exitStatus = main_func(args)
+      quit(exitStatus)
+    except IOError as e:
+      quitFromIoError(e)
+    except Exception:
+      stderr.writeLine(getCurrentExceptionMsg())
+      quit(2)
+  else:
+    # Handle SIGPIPE on Unix systems (broken pipe)
+    signal(SIG_PIPE, cast[typeof(SIG_IGN)](proc(signal: cint) =
+      if debug:
+        stderr.write("bamtocov-debug: handled sigpipe\n")
+      quit(0)
+    ))
+
+    # Handle SIGSEGV to provide better error message for invalid BAM input
+    signal(SIGSEGV, cast[typeof(SIG_IGN)](proc(signal: cint) =
+      stderr.writeLine("ERROR: Invalid or corrupted BAM/CRAM file format")
+      quit(1)
+    ))
+
+    # Handle Ctrl+C interruptions
+    type EKeyboardInterrupt = object of CatchableError
+    proc handler() {.noconv.} =
+      try:
+        stderr.writeLine("[Quitting on Ctrl-C]")
+        quit(1)
+      except Exception as e:
+        if debug:
+          stderr.writeLine("bamtocov-debug: aborted quit: ", e.msg)
+        quit(1)
+
+    setControlCHook(handler)
+
+    try:
+      let exitStatus = main_func(args)
+      if debug:
+        stderr.writeLine("bamtocov-debug: Exiting ", exitStatus)
+      quit(exitStatus)
+    except EKeyboardInterrupt:
+      # Ctrl-C interruption
+      if debug:
+        stderr.writeLine("bamtocov-debug: Keyboard Ctrl-C")
+      quit(1)
+    except IOError as e:
+      quitFromIoError(e)
+    except Exception:
+      stderr.writeLine(getCurrentExceptionMsg())
+      quit(2)
 
 when isMainModule:
-  var args = commandLineParams()
-  try:
-    discard main(args)
-  except EKeyboardInterrupt:
-    stderr.writeLine( "Quitting.")
-  except:
-    stderr.writeLine( getCurrentExceptionMsg() )
-    quit(1)   
+  main_helper(main)
