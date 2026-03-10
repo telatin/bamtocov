@@ -333,21 +333,30 @@ type
     chrom2str: TableRef[chrom_t, string]
     chrom2len: TableRef[chrom_t, pos_t]
 
-proc output_wig_span(span: genomic_interval_t[coverage_t], opts: output_option_t) =
-  let span_length = opts.span_length # FIXME the actual span can be less than span_length!
+proc newSpanValue(span_func: span_func_t): coverage_t =
+  case span_func:
+    of sf_max, sf_mean: newCov(0, 0)
+    of sf_min: newCov(high(int), high(int))
+
+proc wigSpanWidth(o: output_t, span: genomic_interval_t[coverage_t]): pos_t =
+  # The last fixedStep bin can extend past the contig end; clip it before
+  # computing mean coverage so the partial bin is normalized correctly.
+  min(span.stop, o.chrom2len[span.chrom]) - span.start
+
+proc output_wig_span(o: output_t, span: genomic_interval_t[coverage_t]) =
+  let span_length = float(o.wigSpanWidth(span))
   let value_str =
-    if opts.strand:
-      case opts.span_func:
+    if o.opts.strand:
+      case o.opts.span_func:
         of sf_max, sf_min: $span.label.forward & "\t" & $span.label.reverse
         of sf_mean: 
           let mean = span.label/float(span_length) 
           $mean.forward & "\t" & $mean.reverse
     else:
       let tot = span.label.forward + span.label.reverse
-      case opts.span_func:
+      case o.opts.span_func:
         of sf_max, sf_min: $tot
         of sf_mean: $(float(tot)/float(span_length))
-  #echo $span.start & "\t" & value_str
   echo value_str
 
 
@@ -360,7 +369,7 @@ proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
         let coverage_str =
           if o.opts.strand:
             if len(o.quantization_index2label) > 0:
-              "\t" & o.quantization_index2label[i.label.forward] & "\t" & o.quantization_index2label[i.label.reverse]
+              o.quantization_index2label[i.label.forward] & "\t" & o.quantization_index2label[i.label.reverse]
             else:
               $i.label.forward & "\t" & $i.label.reverse
           else:
@@ -379,14 +388,17 @@ proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
         let span_length = o.opts.span_length
         if o.current_span.chrom != i.chrom: # start new contig
           if o.current_span.chrom != -1 and o.current_span.start < o.chrom2len[o.current_span.chrom]: # output last possibly incomplete span from previous chrom
-            output_wig_span(o.current_span, o.opts)
+            o.output_wig_span(o.current_span)
           if i.chrom == -1:
             return
-            
+
           o.current_span.chrom = i.chrom
           o.current_span.start = 0
           o.current_span.stop = o.current_span.start + span_length
-          o.current_span.label.forward = 0
+          # Reset the full accumulated span state on every contig switch so
+          # stranded WIG output cannot inherit reverse coverage from the
+          # previous chromosome.
+          o.current_span.label = newSpanValue(o.opts.span_func)
           echo "fixedStep chrom=" & o.chrom2str[o.current_span.chrom] & " start=1 step=" & $span_length & " span=" & $span_length
         
         while o.current_span.start <= i.stop:
@@ -397,13 +409,11 @@ proc write_output(o: var output_t, i: genomic_interval_t[coverage_t]) =
               of sf_min: min(o.current_span.label, i.label)
               of sf_mean: o.current_span.label + i.label*int(len(inter))
           if inter.stop == o.current_span.stop: # span is concluded
-            output_wig_span(o.current_span, o.opts)
+            o.output_wig_span(o.current_span)
             # next span
             o.current_span.start += span_length
             o.current_span.stop = o.current_span.start + span_length
-            o.current_span.label = case o.opts.span_func
-              of sf_max, sf_mean: newCov(0, 0)
-              of sf_min: newCov(high(int), high(int))
+            o.current_span.label = newSpanValue(o.opts.span_func)
           else: # span extends beyond the interval, we are done
             break
 
@@ -430,7 +440,9 @@ proc push_interval(o: var output_t, i: coverage_interval_t) =
     o.write_output(q)
     o.queued = (i.chrom, i.start, i.stop, c)
 
-proc `=destroy`(o: var output_t) =
+proc flush_output(o: var output_t) =
+  # Flush explicitly at the end of bam2stats instead of relying on a
+  # destructor with side effects.
   case o.opts.output_format:
     of of_bed: o.write_output(o.queued)
     of of_wig_fixstep:
@@ -600,7 +612,12 @@ proc bam2stats(bam_path: string, inopts: input_option_t, outopts: output_option_
     stderr.writeLine("ERROR: Invalid or empty BAM/CRAM file")
     quit(1)
 
-  let target = cookTarget(inopts.target, bam)
+  var target: target_t
+  try:
+    target = cookTarget(inopts.target, bam)
+  except ValueError as e:
+    stderr.writeLine("ERROR: ", e.msg)
+    quit(1)
   var output: output_t = newOutput(outopts, bam)
 
 # TODO ispirato, serve a sveltire il parsing per i CRAM
@@ -616,6 +633,8 @@ proc bam2stats(bam_path: string, inopts: input_option_t, outopts: output_option_
     target_stats.push_interval(cov_inter)
     if not outopts.no_coverage:
       output.push_interval(cov_inter)
+  if not outopts.no_coverage:
+    output.flush_output()
   (target_stats, target)
 
 
@@ -706,6 +725,11 @@ Other options:
     gffField = $args["--gff-type"]
     gffSeparator = $args["--gff-separator"]
     gffIdentifier = $args["--gff-id"]
+    target_order =
+      if target_file != "nil":
+        target_names_in_order(target_file, format_gff, format_gtf, gffField, gffSeparator, gffIdentifier)
+      else:
+        @[]
 
   let
     input_paths =
@@ -775,9 +799,8 @@ Other options:
     
     if len(input_opts.target) > 0:
       # get interval names from target in the order they appear
-      for chrom, intervals in target:
-        for t in intervals:
-          index.incl(t.label)
+      for name in target_order:
+        index.incl(name)
     else:
       # if there is no target, use chromosomes
       for s in bam_stats:

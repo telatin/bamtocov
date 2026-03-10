@@ -60,6 +60,8 @@ proc cookTarget*(orig: raw_target_t, bam: Bam): target_t =
   var cooked = newTable[chrom_t, seq[interval_t[string]]]()
   for chrom_str, intervals in orig:
     doAssert(not (":" in chrom_str), "bad target")
+    if chrom_str notin chrom_map:
+      raise newException(ValueError, "Target contig not found in BAM/CRAM header: " & chrom_str)
     let chrom = chrom_map[chrom_str]
     cooked[chrom] = @[]
     var last_start = 0
@@ -396,3 +398,39 @@ proc gff_to_table*(bed: string, gffField, gffSeparator, gffIdentifier: string): 
 
   hts.free(kstr.s)
   return bed_regions
+
+proc target_names_in_order*(path: string, formatGff, formatGtf: bool, gffField, gffSeparator, gffIdentifier: string): seq[string] =
+  if path == "nil":
+    return @[]
+
+  var hf = hts.hts_open(cstring(path), "r")
+  var kstr: hts.kstring_t
+  kstr.l = 0
+  kstr.m = 0
+  kstr.s = nil
+
+  while hts_getline(hf, cint(10), addr kstr) > 0:
+    let line = $kstr.s
+    if formatGff or formatGtf:
+      if line.startsWith("##FASTA"):
+        break
+      if line.len == 0 or line[0] == '#':
+        continue
+    else:
+      if line.startsWith("track "):
+        continue
+      if line.len == 0 or line[0] == '#':
+        continue
+
+    let region =
+      if formatGff:
+        gff_line_to_region(line, gffField, gffSeparator, gffIdentifier)
+      elif formatGtf:
+        gtf_line_to_region(line, gffField, gffSeparator, gffIdentifier)
+      else:
+        bed_line_to_region(line)
+
+    if region != nil:
+      result.add(if region.name == "": region.chrom & ":" & $region.start & "-" & $region.stop else: region.name)
+
+  hts.free(kstr.s)

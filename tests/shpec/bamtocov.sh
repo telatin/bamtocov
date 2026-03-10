@@ -60,6 +60,14 @@ describe "Coverage tools tested by Shpec"
         rm $TMPFILE
       end
 
+      TMPFILE=$(mktemp)
+      "$BINDIR"/bamtocov -o "$TMPFILE" --regions "$DATADIR"/regions.bed "$DATADIR"/mini.bam > /dev/null 2> /dev/null
+      REPORT_ORDER=$(cut -f 1 "$TMPFILE" | tail -n +2 | paste -sd "," -)
+      rm -f "$TMPFILE"
+      it "Target BED: Report preserves target order"
+        assert equal "$REPORT_ORDER" "include_5,overlap_2,empty1_0,shared1_10,shared2_10,null_0"
+      end
+
     end
 
     it "Target GTF"
@@ -80,10 +88,10 @@ describe "Coverage tools tested by Shpec"
     end
 
     it "Fails when report path is not writable as a file"
-      TMPDIR=$(mktemp -d)
-      "$BINDIR"/bamtocov -o "$TMPDIR" --regions "$DATADIR"/regions.bed "$DATADIR"/mini.bam > /dev/null 2>&1
+      TMP_REPORT_DIR=$(mktemp -d)
+      "$BINDIR"/bamtocov -o "$TMP_REPORT_DIR" --regions "$DATADIR"/regions.bed "$DATADIR"/mini.bam > /dev/null 2>&1
       exitstatus=$?
-      rm -rf "$TMPDIR"
+      rm -rf "$TMP_REPORT_DIR"
       assert gt $exitstatus 0
     end
 
@@ -95,6 +103,23 @@ describe "Coverage tools tested by Shpec"
       rm -f "$TMPERR"
       assert gt $exitstatus 0
       assert equal "$OUTPUT" "ERROR: --op must be one of mean, min, max; got: median"
+    end
+
+    it "Fails with target contig missing from BAM header"
+      TMPERR=$(mktemp)
+      "$BINDIR"/bamtocov --regions "$DATADIR"/badchrom.bed "$DATADIR"/mini.bam > /dev/null 2> "$TMPERR"
+      exitstatus=$?
+      OUTPUT=$(cat "$TMPERR")
+      rm -f "$TMPERR"
+      assert equal $exitstatus 1
+      assert equal "$OUTPUT" "ERROR: Target contig not found in BAM/CRAM header: missing_chr"
+    end
+
+    it "Produces stranded quantized BED without empty columns"
+      FIRSTLINE=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --stranded --quantize 1,5 | head -n 1)
+      FIELDS=$(printf "%s\n" "$FIRSTLINE" | awk -F '\t' '{print NF}')
+      assert equal "$FIRSTLINE" "seq1	0	9	0-0	0-0"
+      assert equal $FIELDS 5
     end
 
     it "Works with sorted file"
@@ -124,6 +149,19 @@ describe "Coverage tools tested by Shpec"
     it "Produces wig output header"
       LINES=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 250 --op max | grep "fixed" | wc -l)
       assert equal $LINES 3
+    end
+
+    it "Does not leak stranded WIG state across contigs"
+      SEQ2_LAST=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 550 --op max --stranded | awk '/^fixedStep chrom=seq2 / {getline; getline; print; exit}')
+      SEQ0_FIRST=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 550 --op max --stranded | awk '/^fixedStep chrom=seq0 / {getline; print; exit}')
+      assert equal "$SEQ2_LAST" "$(printf '5\t5')"
+      assert equal "$SEQ0_FIRST" "$(printf '0\t0')"
+    end
+
+    it "Uses the actual width for the final WIG mean bin"
+      EXPECTED=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam | awk -F '\t' '$1=="seq2" {start=($2<550?550:$2); stop=($3>1000?1000:$3); if (stop>start) sum += (stop-start)*$4} END {printf "%.15f", sum/450}')
+      ACTUAL=$("$BINDIR"/bamtocov "$DATADIR"/mini.bam --wig 550 --op mean | awk '/^fixedStep chrom=seq2 / {getline; getline; printf "%.15f", $1; exit}')
+      assert equal "$ACTUAL" "$EXPECTED"
     end
   end
 

@@ -476,11 +476,7 @@ describe "BamCountRefs - Count reads per reference"
       RPKM_LINES=$(tail -n +2 "$TMPDIR"/all_rpkm.tsv | wc -l)
       TPM_LINES=$(tail -n +2 "$TMPDIR"/all_tpm.tsv | wc -l)
       MEAN_LINES=$(tail -n +2 "$TMPDIR"/all_mean.tsv | wc -l)
-<<<<<<< HEAD
       TRIMMED_MEAN_LINES=$(tail -n +2 "$TMPDIR"/all_trimmed_mean.tsv | wc -l)
-=======
-      TM_LINES=$(tail -n +2 "$TMPDIR"/all_trimmed_mean.tsv | wc -l)
->>>>>>> 49b3b8f43590e55d9f34f35b27c73fb8f1676d43
       COVERED_BASES_LINES=$(tail -n +2 "$TMPDIR"/all_covered_bases.tsv | wc -l)
       COVERED_FRACTION_LINES=$(tail -n +2 "$TMPDIR"/all_covered_fraction.tsv | wc -l)
       VARIANCE_LINES=$(tail -n +2 "$TMPDIR"/all_variance.tsv | wc -l)
@@ -489,13 +485,8 @@ describe "BamCountRefs - Count reads per reference"
       assert equal $COUNTS_LINES $RPKM_LINES
       assert equal $RPKM_LINES $TPM_LINES
       assert equal $TPM_LINES $MEAN_LINES
-<<<<<<< HEAD
       assert equal $MEAN_LINES $TRIMMED_MEAN_LINES
       assert equal $TRIMMED_MEAN_LINES $COVERED_BASES_LINES
-=======
-      assert equal $MEAN_LINES $TM_LINES
-      assert equal $TM_LINES $COVERED_BASES_LINES
->>>>>>> 49b3b8f43590e55d9f34f35b27c73fb8f1676d43
       assert equal $COVERED_BASES_LINES $COVERED_FRACTION_LINES
       assert equal $COVERED_FRACTION_LINES $VARIANCE_LINES
       assert equal $VARIANCE_LINES $RPB_LINES
@@ -508,11 +499,7 @@ describe "BamCountRefs - Count reads per reference"
       RPKM_REFS=$(tail -n +2 "$TMPDIR"/all_rpkm.tsv | cut -f 1)
       TPM_REFS=$(tail -n +2 "$TMPDIR"/all_tpm.tsv | cut -f 1)
       MEAN_REFS=$(tail -n +2 "$TMPDIR"/all_mean.tsv | cut -f 1)
-<<<<<<< HEAD
       TRIMMED_MEAN_REFS=$(tail -n +2 "$TMPDIR"/all_trimmed_mean.tsv | cut -f 1)
-=======
-      TM_REFS=$(tail -n +2 "$TMPDIR"/all_trimmed_mean.tsv | cut -f 1)
->>>>>>> 49b3b8f43590e55d9f34f35b27c73fb8f1676d43
       COVERED_BASES_REFS=$(tail -n +2 "$TMPDIR"/all_covered_bases.tsv | cut -f 1)
       COVERED_FRACTION_REFS=$(tail -n +2 "$TMPDIR"/all_covered_fraction.tsv | cut -f 1)
       VARIANCE_REFS=$(tail -n +2 "$TMPDIR"/all_variance.tsv | cut -f 1)
@@ -521,13 +508,8 @@ describe "BamCountRefs - Count reads per reference"
       assert equal "$COUNTS_REFS" "$RPKM_REFS"
       assert equal "$RPKM_REFS" "$TPM_REFS"
       assert equal "$TPM_REFS" "$MEAN_REFS"
-<<<<<<< HEAD
       assert equal "$MEAN_REFS" "$TRIMMED_MEAN_REFS"
       assert equal "$TRIMMED_MEAN_REFS" "$COVERED_BASES_REFS"
-=======
-      assert equal "$MEAN_REFS" "$TM_REFS"
-      assert equal "$TM_REFS" "$COVERED_BASES_REFS"
->>>>>>> 49b3b8f43590e55d9f34f35b27c73fb8f1676d43
       assert equal "$COVERED_BASES_REFS" "$COVERED_FRACTION_REFS"
       assert equal "$COVERED_FRACTION_REFS" "$VARIANCE_REFS"
       assert equal "$VARIANCE_REFS" "$RPB_REFS"
