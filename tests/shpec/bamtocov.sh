@@ -106,11 +106,13 @@ describe "Coverage tools tested by Shpec"
     end
 
     it "Fails with target contig missing from BAM header"
+      TMPTARGET=$(mktemp)
       TMPERR=$(mktemp)
-      "$BINDIR"/bamtocov --regions "$DATADIR"/badchrom.bed "$DATADIR"/mini.bam > /dev/null 2> "$TMPERR"
+      printf "missing_chr\t0\t10\n" > "$TMPTARGET"
+      "$BINDIR"/bamtocov --regions "$TMPTARGET" "$DATADIR"/mini.bam > /dev/null 2> "$TMPERR"
       exitstatus=$?
       OUTPUT=$(cat "$TMPERR")
-      rm -f "$TMPERR"
+      rm -f "$TMPTARGET" "$TMPERR"
       assert equal $exitstatus 1
       assert equal "$OUTPUT" "ERROR: Target contig not found in BAM/CRAM header: missing_chr"
     end
