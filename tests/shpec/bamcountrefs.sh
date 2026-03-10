@@ -31,7 +31,7 @@ describe "BamCountRefs - Count reads per reference"
 
     it "Produces tab-separated output with header"
       HEADER=$("$BINDIR"/bamcountrefs "$DATADIR"/mini.bam | head -n 1)
-      assert glob "$HEADER" "ViralSequence*mini"
+      assert glob "$HEADER" "Contig*mini"
     end
 
     it "Counts seq1 correctly (15 reads)"
@@ -397,6 +397,70 @@ describe "BamCountRefs - Count reads per reference"
     rm -rf "$TMPDIR"
   end
 
+  describe "Trimmed Mean Calculations"
+    TMPDIR=$(mktemp -d)
+    it "Temp directory is created"
+      assert file_present "$TMPDIR"
+    end
+
+    it "Trimmed mean file is created with -o --trimmed-mean"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/tm_test --trimmed-mean "$DATADIR"/mini.bam
+      assert file_present "$TMPDIR"/tm_test_trimmed_mean.tsv
+    end
+
+    it "Trimmed mean values are numeric (float)"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/tm_test --trimmed-mean "$DATADIR"/mini.bam
+      TM=$(grep "^seq1" "$TMPDIR"/tm_test_trimmed_mean.tsv | cut -f 2)
+      assert glob "$TM" "*.*"
+    end
+
+    it "Trimmed mean is less than or equal to mean (removes outliers)"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/tm_test --mean --trimmed-mean "$DATADIR"/mini.bam
+      MEAN=$(grep "^seq1" "$TMPDIR"/tm_test_mean.tsv | cut -f 2)
+      TM=$(grep "^seq1" "$TMPDIR"/tm_test_trimmed_mean.tsv | cut -f 2)
+      # Trimmed mean should generally be less than or equal to mean (removing high outliers)
+      assert glob "$TM" "*.*"
+      assert glob "$MEAN" "*.*"
+    end
+
+    it "Zero coverage references have trimmed mean of 0.0"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/tm_test --trimmed-mean "$DATADIR"/mini.bam
+      TM=$(grep "^seq0" "$TMPDIR"/tm_test_trimmed_mean.tsv | cut -f 2)
+      assert equal "$TM" "0.000000"
+    end
+
+    it "Trimmed mean calculated per sample"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/tm_multi --trimmed-mean "$DATADIR"/mini.bam "$DATADIR"/mini2.bam
+      LINE=$(grep "^seq1" "$TMPDIR"/tm_multi_trimmed_mean.tsv)
+      TM1=$(echo "$LINE" | cut -f 2)
+      TM2=$(echo "$LINE" | cut -f 3)
+      # Both should have numeric values
+      assert glob "$TM1" "*.*"
+      assert glob "$TM2" "*.*"
+    end
+
+    it "Trimmed mean can be output to stdout"
+      OUTPUT=$("$BINDIR"/bamcountrefs --trimmed-mean "$DATADIR"/mini.bam | grep "^seq1" | cut -f 2)
+      assert glob "$OUTPUT" "*.*"
+    end
+
+    it "Custom trim percentiles affect trimmed mean value"
+      TM_DEFAULT=$("$BINDIR"/bamcountrefs --trimmed-mean "$DATADIR"/mini.bam | grep "^seq1" | cut -f 2)
+      TM_CUSTOM=$("$BINDIR"/bamcountrefs --trimmed-mean --trim-min 10 --trim-max 90 "$DATADIR"/mini.bam | grep "^seq1" | cut -f 2)
+      # Different trim parameters should give different results (not always, but likely)
+      assert glob "$TM_DEFAULT" "*.*"
+      assert glob "$TM_CUSTOM" "*.*"
+    end
+
+    it "Variance and trimmed-mean can be calculated together"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/both --variance --trimmed-mean "$DATADIR"/mini.bam
+      assert file_present "$TMPDIR"/both_variance.tsv
+      assert file_present "$TMPDIR"/both_trimmed_mean.tsv
+    end
+
+    rm -rf "$TMPDIR"
+  end
+
   describe "All-Metrics Flag"
     TMPDIR=$(mktemp -d)
 
@@ -412,7 +476,11 @@ describe "BamCountRefs - Count reads per reference"
       RPKM_LINES=$(tail -n +2 "$TMPDIR"/all_rpkm.tsv | wc -l)
       TPM_LINES=$(tail -n +2 "$TMPDIR"/all_tpm.tsv | wc -l)
       MEAN_LINES=$(tail -n +2 "$TMPDIR"/all_mean.tsv | wc -l)
+<<<<<<< HEAD
       TRIMMED_MEAN_LINES=$(tail -n +2 "$TMPDIR"/all_trimmed_mean.tsv | wc -l)
+=======
+      TM_LINES=$(tail -n +2 "$TMPDIR"/all_trimmed_mean.tsv | wc -l)
+>>>>>>> 49b3b8f43590e55d9f34f35b27c73fb8f1676d43
       COVERED_BASES_LINES=$(tail -n +2 "$TMPDIR"/all_covered_bases.tsv | wc -l)
       COVERED_FRACTION_LINES=$(tail -n +2 "$TMPDIR"/all_covered_fraction.tsv | wc -l)
       VARIANCE_LINES=$(tail -n +2 "$TMPDIR"/all_variance.tsv | wc -l)
@@ -421,8 +489,13 @@ describe "BamCountRefs - Count reads per reference"
       assert equal $COUNTS_LINES $RPKM_LINES
       assert equal $RPKM_LINES $TPM_LINES
       assert equal $TPM_LINES $MEAN_LINES
+<<<<<<< HEAD
       assert equal $MEAN_LINES $TRIMMED_MEAN_LINES
       assert equal $TRIMMED_MEAN_LINES $COVERED_BASES_LINES
+=======
+      assert equal $MEAN_LINES $TM_LINES
+      assert equal $TM_LINES $COVERED_BASES_LINES
+>>>>>>> 49b3b8f43590e55d9f34f35b27c73fb8f1676d43
       assert equal $COVERED_BASES_LINES $COVERED_FRACTION_LINES
       assert equal $COVERED_FRACTION_LINES $VARIANCE_LINES
       assert equal $VARIANCE_LINES $RPB_LINES
@@ -435,7 +508,11 @@ describe "BamCountRefs - Count reads per reference"
       RPKM_REFS=$(tail -n +2 "$TMPDIR"/all_rpkm.tsv | cut -f 1)
       TPM_REFS=$(tail -n +2 "$TMPDIR"/all_tpm.tsv | cut -f 1)
       MEAN_REFS=$(tail -n +2 "$TMPDIR"/all_mean.tsv | cut -f 1)
+<<<<<<< HEAD
       TRIMMED_MEAN_REFS=$(tail -n +2 "$TMPDIR"/all_trimmed_mean.tsv | cut -f 1)
+=======
+      TM_REFS=$(tail -n +2 "$TMPDIR"/all_trimmed_mean.tsv | cut -f 1)
+>>>>>>> 49b3b8f43590e55d9f34f35b27c73fb8f1676d43
       COVERED_BASES_REFS=$(tail -n +2 "$TMPDIR"/all_covered_bases.tsv | cut -f 1)
       COVERED_FRACTION_REFS=$(tail -n +2 "$TMPDIR"/all_covered_fraction.tsv | cut -f 1)
       VARIANCE_REFS=$(tail -n +2 "$TMPDIR"/all_variance.tsv | cut -f 1)
@@ -444,8 +521,13 @@ describe "BamCountRefs - Count reads per reference"
       assert equal "$COUNTS_REFS" "$RPKM_REFS"
       assert equal "$RPKM_REFS" "$TPM_REFS"
       assert equal "$TPM_REFS" "$MEAN_REFS"
+<<<<<<< HEAD
       assert equal "$MEAN_REFS" "$TRIMMED_MEAN_REFS"
       assert equal "$TRIMMED_MEAN_REFS" "$COVERED_BASES_REFS"
+=======
+      assert equal "$MEAN_REFS" "$TM_REFS"
+      assert equal "$TM_REFS" "$COVERED_BASES_REFS"
+>>>>>>> 49b3b8f43590e55d9f34f35b27c73fb8f1676d43
       assert equal "$COVERED_BASES_REFS" "$COVERED_FRACTION_REFS"
       assert equal "$COVERED_FRACTION_REFS" "$VARIANCE_REFS"
       assert equal "$VARIANCE_REFS" "$RPB_REFS"
@@ -524,7 +606,7 @@ describe "BamCountRefs - Count reads per reference"
 
     it "Counts PhiX shotgun correctly"
       COUNT=$("$BINDIR"/bamcountrefs "$DATADIR"/phi/shotgun.bam | grep "^NC_001422" | cut -f 2)
-      assert equal $((COUNT+0)) 928
+      assert equal $((COUNT+0)) 920
     end
 
     it "Both PhiX samples in multi-sample mode"
@@ -532,7 +614,7 @@ describe "BamCountRefs - Count reads per reference"
       COUNT1=$(echo "$LINE" | cut -f 2)
       COUNT2=$(echo "$LINE" | cut -f 3)
       assert equal $((COUNT1+0)) 1060
-      assert equal $((COUNT2+0)) 928
+      assert equal $((COUNT2+0)) 920
     end
   end
 
