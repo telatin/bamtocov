@@ -97,7 +97,7 @@ proc alignment_stream(bam: Bam, opts: input_option_t, target: target_t): iterato
       # alignment processing
       var stop: pos_t = 0
       if o.physical:
-        if r.isize > 0: 
+        if r.isize > 0:
           stop = r.start + r.isize
         else:
           continue # skip the mate with negative insert size
@@ -154,24 +154,16 @@ proc `*`(c: coverage_t, by: int): coverage_t =
   newCov(c.forward*by, c.reverse*by)
 
 
-proc topStop(q: HeapQueue): int64 =
-  if not q[0].isNil:
-    return q[0].stop
-  return -1
-
-proc topReverse(q: HeapQueue): bool =
-  if not q[0].isNil:
-    return q[0].reverse
-  return false
-
-
-proc empty(q: HeapQueue): bool = len(q) == 0
-
-# Class that stores info about the end position of alignments, used in the alignment queue
 type 
-  covEnd = ref object
+  # Store alignment ends by value so the hot coverage loop does not allocate
+  # one heap object per read pushed into the priority queue.
+  covEnd = object
     stop: pos_t
     reverse: bool
+
+proc topStop(q: HeapQueue[covEnd]): pos_t {.inline.} = q[0].stop
+proc topReverse(q: HeapQueue[covEnd]): bool {.inline.} = q[0].reverse
+proc empty(q: HeapQueue[covEnd]): bool {.inline.} = len(q) == 0
 
 proc `<`(a, b: covEnd): bool = a.stop < b.stop
 
@@ -196,7 +188,7 @@ proc getReadEnd(start, stop, reflen: pos_t, extend: int): pos_t =
       return 0
     else:
       return stop - extend
-    
+
 proc coverage_iter(bam: Bam, opts: input_option_t, target: target_t): iterator(): coverage_interval_t =
   result = iterator(): coverage_interval_t {.closure.} =
     var
@@ -206,16 +198,15 @@ proc coverage_iter(bam: Bam, opts: input_option_t, target: target_t): iterator()
       more_alignments         : bool                     = not finished(next_alignment)
       target_idx              : target_index_t
 
-    
     for reference in bam.hdr.targets():
       let
         reflen: pos_t = pos_t(reference.length)
         refname = reference.name
         refid: chrom_t = reference.tid
-      
+
       dbEcho("new reference start:", refname, ",", reflen, "bp")
 
-      var 
+      var
         last_pos : pos_t = 0
         coverage_ends = initHeapQueue[covEnd]()
         cov           = newCov()
@@ -224,7 +215,6 @@ proc coverage_iter(bam: Bam, opts: input_option_t, target: target_t): iterator()
       while true:
         dbEcho("Aln:", if more_alignments: $aln else: "no more", "in", refname)
 
-        
         # calculate the position of the next coverage change
         if more_alignments_for_ref:
           if coverage_ends.empty():
@@ -238,12 +228,9 @@ proc coverage_iter(bam: Bam, opts: input_option_t, target: target_t): iterator()
             next_change = coverage_ends.topStop()
 
         if debug: stderr.writeLine("Last pos: " & $last_pos & ", next pos: " & $next_change)
-        # check that we are advancing, this should always be the case if the bam is sorted (except when there is an alignment right at the beginning of a chromosome, hence the alternative condition)
-        doAssert(last_pos < next_change or (last_pos == 0 and next_change == 0), 
-          "coverage went backwards from " & $last_pos & " to " & $next_change & ", at " & refname & ":" & $aln.start)  
-        # output coverage ...
+        doAssert(last_pos < next_change or (last_pos == 0 and next_change == 0),
+          "coverage went backwards from " & $last_pos & " to " & $next_change & ", at " & refname & ":" & $aln.start)
         doAssert(coverage_ends.len() == cov.tot(), "coverage not equal to queue size")
-        #let cov_inter: genomic_interval_t[coverage_t] = 
         if len(target) == 0:
           yield (refid, last_pos, next_change, (cov, refname))
         else:
@@ -259,9 +246,7 @@ proc coverage_iter(bam: Bam, opts: input_option_t, target: target_t): iterator()
           if more_alignments:
             stderr.writeLine( " +-> more aln @ chr=", aln.chrom, ",pos=", aln.start)
 
-        # increment coverage with aln starting here
         while more_alignments_for_ref and (next_change == aln.start):
-          # EXP: --extendRead INT
           let readEnd = getReadEnd(aln.start, aln.stop, reflen, opts.extendFrag)
 
           coverage_ends.push(covEnd(stop: readEnd, reverse: aln.label))
@@ -269,27 +254,24 @@ proc coverage_iter(bam: Bam, opts: input_option_t, target: target_t): iterator()
           if debug: stderr.writeLine("Added aln: " & $aln)
 
           aln = next_alignment()
-          more_alignments = not finished(next_alignment) # we need to check this after each next_alignment
+          more_alignments = not finished(next_alignment)
           more_alignments_for_ref = more_alignments and aln.chrom == refid
-          
-        # decrement coverage with alignments that end here
+
         while not coverage_ends.empty() and next_change == coverage_ends.topStop():
           cov.dec(coverage_ends.topReverse())
           discard coverage_ends.pop()
 
-        # End chromosome loop
         if last_pos == reflen:
           doAssert(cov.tot()==0, "coverage not null at the end of chromosome " & refname & ": cov.tot=" & $cov.tot() & " = For:" & $cov.forward & "+Rev:" & $cov.reverse )
           doAssert(coverage_ends.len() == 0, "coverage queue not null at the end of chromosome "  & refname & ": " & $coverage_ends.len())
           break
 
         last_pos = next_change
-        
-      # end while ----
+
       if not coverage_ends.len() == 0:
         stderr.writeLine("Coverage not zero when expected. Try samtools fixmate.")
         raise
-    doAssert(not more_alignments, "Is the BAM sorted?") # FIXME put more explicit check for sortednees
+    doAssert(not more_alignments, "Is the BAM sorted?")
 
 
 #output_coverage_types = enum

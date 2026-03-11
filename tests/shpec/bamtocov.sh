@@ -191,6 +191,25 @@ describe "Coverage tools tested by Shpec"
         assert glob "$REGION" "*_$COV"
       done < "$TMPFILE"
       rm "$TMPFILE"
-    end 
+    end
+
+    it "Counts multiple BAM files in parallel-friendly layout"
+      TMPFILE=$(mktemp)
+      "$BINDIR"/bamtocounts "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini.bam > "$TMPFILE"
+      LINES=$(wc -l < "$TMPFILE")
+      FIELDS=$(awk -F '\t' 'NR==1 {print NF}' "$TMPFILE")
+      SAME=$(awk -F '\t' 'NR>1 {if ($2 != $3) exit 1} END {print "ok"}' "$TMPFILE")
+      HEADER=$(head -n 1 "$TMPFILE")
+      rm "$TMPFILE"
+      assert equal $LINES 7
+      assert equal $FIELDS 3
+      assert equal "$HEADER" "#Feature	mini.bam	mini.bam"
+      assert equal "$SAME" "ok"
+    end
+
+    it "Prints per-sample header for multiple BAM files"
+      HEADER=$("$BINDIR"/bamtocounts "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini2.bam | head -n 1)
+      assert equal "$HEADER" "#Feature	mini.bam	mini2.bam"
+    end
   end
 end

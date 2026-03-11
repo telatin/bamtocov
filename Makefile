@@ -26,6 +26,8 @@ LIST=$(BIN)/bamtocov $(BIN)/bamtocounts $(BIN)/covtotarget $(BIN)/bamcountrefs $
 STATIC=$(BIN2)/bamtocov $(BIN2)/bamtocounts $(BIN2)/covtotarget $(BIN2)/bamcountrefs $(BIN2)/gff2bed $(BIN2)/bamtocounts_legacy $(BIN2)/bamtarget
 
 $(BIN)/%: $(SOURCE)/%.nim $(SOURCE)/covutils.nim bamtocov.nimble
+	# Standard release binaries are thread-enabled so tools like bamtocounts
+	# can use taskpools for per-BAM parallelism.
 	nim c  $(NIM_PATHS) -d:NimblePkgVersion=$(VERSION) -d:release \
 		--threads:on --mm:arc \
 		--passL:"$(HTSLIB_PATH)" \
@@ -65,8 +67,7 @@ testbash:
 	bash tests/all.sh
 
 
-build:
-	nimble build
+build: all
 
 
 clean:

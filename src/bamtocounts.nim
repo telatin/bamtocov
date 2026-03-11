@@ -3,6 +3,8 @@ import std/[os, strutils, tables]
 
 # External dependencies
 import docopt, hts
+when defined(threads):
+  import taskpools
 
 # Local modules
 import ./covutils
@@ -25,6 +27,12 @@ type
   stranded_counts_t = tuple[fwd, rev: int]
   feature_coords_t  = tuple[chrom, starts, stops, name: string, length: int]
   counts_t*         = TableRef[interval_t[string], int]
+  frozen_region_t   = object
+    chrom: string
+    start: int
+    stop: int
+    name: string
+  frozen_target_t   = seq[tuple[chrom: string, intervals: seq[frozen_region_t]]]
 
   FeatureMetrics = object
     ## Metrics for a single feature across all samples
@@ -44,6 +52,7 @@ type
     mapq: uint8
     eflag: uint16
     threads: int
+    jobs: int          # Number of BAM files to process concurrently
     fasta: string
     strict: bool        # Require full containment within feature
     paired: bool        # Count pairs instead of individual reads
@@ -54,16 +63,22 @@ type
     debug: bool
     verbose: bool
 
+  TargetOptions = object
+    parseAsGff: bool
+    gffIdentifier: string
+    gffSeparator: string
+    gffField: string
+
+  SampleResult = object
+    samplePath: string
+    counts: OrderedTable[string, stranded_counts_t]
+    perMillion: float
+    error: string
+
 proc handler() {.noconv.} =
   raise newException(EKeyboardInterrupt, "Keyboard Interrupt")
 
 setControlCHook(handler)
-
-# GFF parsing parameters (could be moved to a config object if needed)
-var
-  gffIdentifier = "ID"
-  gffSeparator  = ";"
-  gffField      = "CDS"
 
 # Helper procedures for stranded counts
 proc inc(c: var stranded_counts_t, reverse=false) =
@@ -132,6 +147,123 @@ proc rpkm(f: feature_coords_t, alignmentsPerMillion: float, c: stranded_counts_t
   if alignmentsPerMillion == 0:
     return 0.0
   float(counts(c)) / alignmentsPerMillion / kb
+
+proc sampleName(path: string): string =
+  extractFilename(path)
+
+proc loadTargetTable(targetPath: string, targetOpts: TargetOptions): TableRef[string, seq[region_t]] =
+  if targetOpts.parseAsGff:
+    result = gff_to_table(targetPath, targetOpts.gffField, targetOpts.gffSeparator, targetOpts.gffIdentifier)
+  else:
+    result = bed_to_table(targetPath)
+
+proc freezeTarget(targetTable: TableRef[string, seq[region_t]]): frozen_target_t =
+  ## Convert parser-owned ref regions into plain immutable values once in the
+  ## main thread so worker threads only need BAM-header-specific target cooking.
+  for chrom, intervals in targetTable:
+    var frozenIntervals = newSeq[frozen_region_t](intervals.len)
+    for i, interval in intervals:
+      frozenIntervals[i] = frozen_region_t(
+        chrom: interval.chrom,
+        start: interval.start,
+        stop: interval.stop,
+        name: interval.name
+      )
+    result.add((chrom: chrom, intervals: frozenIntervals))
+
+proc collectFeatureMetadata(targetPath: string, targetTable: TableRef[string, seq[region_t]], targetOpts: TargetOptions): tuple[order: seq[string], coords: Table[string, feature_coords_t]] =
+  var seen = initTable[string, bool]()
+  # Preserve input order so multi-sample output remains deterministic.
+  for name in target_names_in_order(
+      targetPath,
+      formatGff = targetOpts.parseAsGff,
+      formatGtf = false,
+      gffField = targetOpts.gffField,
+      gffSeparator = targetOpts.gffSeparator,
+      gffIdentifier = targetOpts.gffIdentifier):
+    if name notin seen:
+      result.order.add(name)
+      seen[name] = true
+
+  result.coords = initTable[string, feature_coords_t]()
+  for chrom, intervals in targetTable:
+    for interval in intervals:
+      let featureName = if interval.name.len > 0: interval.name else: interval.chrom & ":" & $interval.start & "-" & $interval.stop
+      let coords: feature_coords_t = (
+        chrom: chrom,
+        starts: $interval.start,
+        stops: $interval.stop,
+        name: featureName,
+        length: interval.stop - interval.start
+      )
+      if featureName notin result.coords:
+        result.coords[featureName] = coords
+      else:
+        result.coords[featureName].add(coords)
+
+proc cookFrozenTarget(orig: frozen_target_t, bam: Bam): target_t =
+  var chromMap = newTable[string, chrom_t]()
+  for t in bam.hdr.targets:
+    chromMap[t.name] = t.tid
+
+  var cooked = newTable[chrom_t, seq[interval_t[string]]]()
+  for entry in orig:
+    doAssert(not (":" in entry.chrom), "bad target")
+    if entry.chrom notin chromMap:
+      raise newException(ValueError, "Target contig not found in BAM/CRAM header: " & entry.chrom)
+
+    let chrom = chromMap[entry.chrom]
+    cooked[chrom] = @[]
+    var lastStart = 0
+    for interval in entry.intervals:
+      doAssert(interval.chrom == entry.chrom, "bad target")
+      doAssert(interval.start >= lastStart)
+      let name =
+        if interval.name.len == 0:
+          interval.chrom & ":" & $interval.start & "-" & $interval.stop
+        else:
+          interval.name
+      cooked[chrom].add((pos_t(interval.start), pos_t(interval.stop), name))
+      lastStart = interval.start
+
+  cooked
+
+proc processSample(bamPath: string, frozenTarget: frozen_target_t, opts: ProcessingOptions): SampleResult =
+  result.samplePath = bamPath
+
+  var
+    bam: Bam
+    fasta: cstring = nil
+
+  if opts.fasta.len > 0:
+    fasta = cstring(opts.fasta)
+
+  if not open(bam, cstring(bamPath), threads=opts.threads, fai=fasta):
+    result.error = "Unable to open BAM file: " & bamPath
+    return
+
+  if bam.hdr.isNil:
+    result.error = "Invalid or empty BAM/CRAM file: " & bamPath
+    return
+
+  let cookedTarget = try:
+      cookFrozenTarget(frozenTarget, bam)
+    except CatchableError as e:
+      result.error = e.msg
+      return
+
+  for _, intervals in cookedTarget:
+    for interval in intervals:
+      result.counts[interval.label] = (fwd: 0, rev: 0)
+
+  result.perMillion = result.counts.alignments_count(
+    bam,
+    opts.mapq,
+    opts.eflag,
+    cookedTarget,
+    opts.strict,
+    opts.paired
+  )
   
 proc main(argv: var seq[string]): int =
   let env_fasta = getEnv("REF_PATH")
@@ -148,6 +280,7 @@ Arguments:
 Options:
 
   -T, --threads <threads>      BAM decompression threads [default: 0]
+  -j, --jobs <jobs>            BAM files to process concurrently; 0 uses available CPUs [default: 0]
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: $env_fasta]
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: $default_flags]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 1]
@@ -178,6 +311,7 @@ Options:
     mapq: uint8(parse_int($args["--mapq"])),
     eflag: uint16(parse_int($args["--flag"])),
     threads: parse_int($args["--threads"]),
+    jobs: parse_int($args["--jobs"]),
     fasta: if $args["--fasta"] != "nil": $args["--fasta"] else: "",
     strict: bool(args["--strict"]),
     paired: bool(args["--paired"]),
@@ -192,56 +326,41 @@ Options:
   if opts.debug:
     stderr.writeLine("args:", args)
 
-  # GFF parsing options
-  var prokkaGff: bool = args["--gff"]
-  gffIdentifier = $args["--id"]
-  gffField = $args["--type"]
-
   var
     targetCoords = Table[string, feature_coords_t]()
-    bam: Bam
-    fasta: cstring = nil
-
-  if opts.fasta.len > 0:
-    fasta = cstring(opts.fasta)
-
-  if len(args["<BAM-or-CRAM>"]) > 1:
-    echo "Multiple BAM/CRAM files not supported in the current version."
-    quit(1)
+    featureOrder: seq[string] = @[]
+    sampleResults: seq[SampleResult] = @[]
+    bamPaths = @(args["<BAM-or-CRAM>"])
+    targetOpts = TargetOptions(
+      parseAsGff: bool(args["--gff"]),
+      gffIdentifier: $args["--id"],
+      gffSeparator: ";",
+      gffField: $args["--type"]
+    )
 
   if not fileExists($args["<Target>"]):
     echo "ERROR: Target file does not exist: ", $args["<Target>"]
     quit(1)
 
-  try:
-    open(bam, cstring($args["<BAM-or-CRAM>"]), threads=opts.threads, fai=fasta)
-    if opts.debug:
-      stderr.writeLine("Opening BAM/CRAM file: ", $args["<BAM-or-CRAM>"])
-  except:
-    stderr.writeLine("Unable to open BAM file: ", $args["<BAM-or-CRAM>"])
-    quit(1)
+  for bamPath in bamPaths:
+    if not fileExists(bamPath):
+      stderr.writeLine("ERROR: BAM/CRAM file does not exist: ", bamPath)
+      quit(1)
 
 
   if ($args["<Target>"]).contains("gff") or ($args["<Target>"]).contains(".gtf"):
     if opts.debug:
       stderr.writeLine("Setting GFF/GTF format for: ", $args["<Target>"])
-    prokkaGff = true
+    targetOpts.parseAsGff = true
 
-  var targetTable: TableRef[string, seq[region_t]]
-
-  if prokkaGff == true:
+  let targetTable =
     try:
-      targetTable = gff_to_table($args["<Target>"], gffField, gffSeparator, gffIdentifier)
-    except Exception as e:
-      stderr.writeLine("ERROR: Unable to parse GFF file: ", $args["<Target>"], ": ", e.msg)
+      loadTargetTable($args["<Target>"], targetOpts)
+    except CatchableError as e:
+      stderr.writeLine("ERROR: Unable to parse target file: ", $args["<Target>"], ": ", e.msg)
       quit(1)
-  else: 
-    try:
-      targetTable = bed_to_table($args["<Target>"])
-    except Exception as e:
-      stderr.writeLine("ERROR: Unable to parse BED file: ", $args["<Target>"], ": ", e.msg)
-      quit(1)  
 
+  let frozenTarget = freezeTarget(targetTable)
 
   if opts.debug:
     stderr.writeLine("[OK] Target table loaded")
@@ -257,66 +376,86 @@ Options:
   if opts.debug or opts.verbose:
     stderr.writeLine("[OK] Target loaded: ", len(targetTable), " reference sequences")
 
-  let cookedTarget = cookTarget(targetTable, bam)
-  var targetCounts = OrderedTable[string, stranded_counts_t]()
-  for index, chrName in bam.hdr.targets:
-    if opts.debug:
-      stderr.writeLine(" > BAM targets: ", chrName, " - index:", index)
-    if index in cookedTarget:
-      if opts.debug:
-        stderr.writeLine(" + Coocked targets: ", chrName, " - index:", index)
-      for interval in cookedTarget[index]:
-        let
-          c: feature_coords_t = (chrom: chrName.name, starts: $interval.start, stops: $interval.stop, name: interval.label, length: int(interval.stop - interval.start))
-        if opts.debug:
-          stderr.writeLine("    > Interval: ", interval.label, "-", interval.start, "-", interval.stop)
-        if interval.label notin targetCoords:
-          if opts.debug:
-            stderr.writeLine("      - Adding")
-          targetCoords[interval.label] = c
-          targetCounts[interval.label] = (fwd: 0, rev: 0)
-        else:
-          if opts.debug:
-            stderr.writeLine("      - Extending")
-          targetCoords[interval.label].add(c)
-    else:
-      if opts.debug:
-        stderr.writeLine("No coocked targets: ", chrName, "-", index)
-        
-        
-  if args["--header"]:
-    let coords = if opts.do_coords: "Chrom\tStart\tEnd\t"
+  (featureOrder, targetCoords) = collectFeatureMetadata($args["<Target>"], targetTable, targetOpts)
+
+  if args["--header"] or len(bamPaths) > 1:
+    # Multi-sample output is ambiguous without column labels, so always emit a
+    # header when more than one BAM/CRAM is requested.
+    let coords = if opts.do_coords: "\tChrom\tStart\tEnd"
                  else: ""
-    let header = if opts.stranded: "#Feature\t" & coords & "For\tRev"
-                else:   "#Feature\t" & coords & "Counts"
-    if opts.do_rpkm and opts.do_norm:
-      echo header & "\tRPKM\tCounts/Length"
-    elif opts.do_rpkm:
-      echo header & "\tRPKM"
-    elif opts.do_norm:
-      echo header & "\tCounts/Length"
+    var header = "#Feature" & coords
+    if len(bamPaths) == 1:
+      if opts.stranded:
+        header &= "\tFor\tRev"
+      else:
+        header &= "\tCounts"
+      if opts.do_rpkm:
+        header &= "\tRPKM"
+      if opts.do_norm:
+        header &= "\tCounts/Length"
     else:
-      echo header
+      for bamPath in bamPaths:
+        let sample = sampleName(bamPath)
+        if opts.stranded:
+          header &= "\t" & sample & "_For\t" & sample & "_Rev"
+        else:
+          header &= "\t" & sample
+        if opts.do_rpkm:
+          header &= "\t" & sample & "_RPKM"
+        if opts.do_norm:
+          header &= "\t" & sample & "_Counts/Length"
+    echo header
 
   if opts.debug:
-    stderr.writeLine("\\/ Target regions: ", len(targetCounts))
+    stderr.writeLine("\\/ Target regions: ", len(featureOrder))
 
-  ## GATHER THE COUNTS
-  let perMillion = targetCounts.alignments_count(bam, opts.mapq, opts.eflag, cookedTarget, opts.strict, opts.paired)
-  if opts.debug:
-    stderr.writeLine("/\\ Counts done: ", perMillion) 
-  
-   
-  for feature, rawcounts in targetCounts:
+  when defined(threads):
+    let requestedJobs =
+      if opts.jobs > 0: opts.jobs
+      else: min(len(bamPaths), countProcessors())
+    let poolSize = max(1, min(len(bamPaths), requestedJobs))
+    if poolSize == 1:
+      for bamPath in bamPaths:
+        sampleResults.add(processSample(bamPath, frozenTarget, opts))
+    else:
+      # BAMs are independent, so per-file workers are the least risky first
+      # layer of parallelism and avoid shared counting state. The target has
+      # already been frozen into immutable values, so workers only do BAM-
+      # specific header mapping instead of reparsing the same file.
+      var tp = Taskpool.new(poolSize)
+      defer: tp.shutdown()
+      var jobs = newSeq[FlowVar[SampleResult]]()
+      for bamPath in bamPaths:
+        if opts.debug:
+          stderr.writeLine("[threads] Spawning sample worker for ", bamPath)
+        jobs.add(tp.spawn processSample(bamPath, frozenTarget, opts))
+      for job in jobs:
+        sampleResults.add(sync(job))
+  else:
+    if len(bamPaths) > 1 and (opts.debug or opts.verbose):
+      stderr.writeLine("[threads] Build has no thread support, processing BAMs sequentially")
+    for bamPath in bamPaths:
+      sampleResults.add(processSample(bamPath, frozenTarget, opts))
+
+  for sample in sampleResults:
+    if sample.error.len > 0:
+      stderr.writeLine("ERROR: ", sample.error)
+      quit(1)
+
+  for feature in featureOrder:
     let
       coords = if opts.do_coords: targetCoords[feature].chrom & "\t" & targetCoords[feature].starts & "\t" & targetCoords[feature].stops & "\t"
                  else: ""
-      counts = countsToString(rawcounts, opts.stranded)
-      rpkm   = if opts.do_rpkm: "\t" & rpkm(targetCoords[feature], perMillion, rawcounts).formatBiggestFloat(ffDecimal, digitsPrecision)
-               else: ""
-      norm   = if opts.do_norm:  "\t" & ( counts(rawcounts) / targetCoords[feature].length ).formatBiggestFloat(ffDecimal, digitsPrecision)
-               else: ""
-    echo feature, "\t", coords, counts, rpkm, norm
+    var row = feature & "\t" & coords
+    for sample in sampleResults:
+      let rawcounts = sample.counts.getOrDefault(feature, (fwd: 0, rev: 0))
+      row &= countsToString(rawcounts, opts.stranded)
+      if opts.do_rpkm:
+        row &= "\t" & rpkm(targetCoords[feature], sample.perMillion, rawcounts).formatBiggestFloat(ffDecimal, digitsPrecision)
+      if opts.do_norm:
+        row &= "\t" & (counts(rawcounts) / targetCoords[feature].length).formatBiggestFloat(ffDecimal, digitsPrecision)
+      row &= "\t"
+    echo row[0 .. ^2]
 
 
  
