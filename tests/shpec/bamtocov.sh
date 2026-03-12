@@ -211,5 +211,58 @@ describe "Coverage tools tested by Shpec"
       HEADER=$("$BINDIR"/bamtocounts "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini2.bam | head -n 1)
       assert equal "$HEADER" "#Feature	mini.bam	mini2.bam"
     end
+
+    it "Matches default multi-BAM output with explicit single-job mode"
+      DEFAULT_OUT=$("$BINDIR"/bamtocounts "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini2.bam)
+      JOB1_OUT=$("$BINDIR"/bamtocounts -j 1 "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini2.bam)
+      assert equal "$JOB1_OUT" "$DEFAULT_OUT"
+    end
+
+    it "Matches default multi-BAM output with explicit multi-job mode"
+      DEFAULT_OUT=$("$BINDIR"/bamtocounts "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini2.bam)
+      JOB2_OUT=$("$BINDIR"/bamtocounts -j 2 "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini2.bam)
+      assert equal "$JOB2_OUT" "$DEFAULT_OUT"
+    end
+
+    it "Prints stranded counts for each sample in multiple BAM mode"
+      HEADER=$("$BINDIR"/bamtocounts --stranded "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini2.bam | head -n 1)
+      SHARED1=$("$BINDIR"/bamtocounts --stranded "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini2.bam | awk -F '\t' '$1=="shared1_10" {print $0}')
+      assert equal "$HEADER" "#Feature	mini.bam_For	mini.bam_Rev	mini2.bam_For	mini2.bam_Rev"
+      assert equal "$SHARED1" "shared1_10	5	5	5	5"
+    end
+
+    it "Prints coordinates before sample columns in multiple BAM mode"
+      HEADER=$("$BINDIR"/bamtocounts --coords "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini2.bam | head -n 1)
+      INCLUDE=$("$BINDIR"/bamtocounts --coords "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini2.bam | awk -F '\t' '$1=="include_5" {print $0}')
+      assert equal "$HEADER" "#Feature	Chrom	Start	End	mini.bam	mini2.bam"
+      assert equal "$INCLUDE" "include_5	seq1	5	112	5	5"
+    end
+
+    it "Prints per-sample normalized columns in multiple BAM mode"
+      HEADER=$("$BINDIR"/bamtocounts --rpkm --norm-len "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini2.bam | head -n 1)
+      INCLUDE=$("$BINDIR"/bamtocounts --rpkm --norm-len "$DATADIR"/regions.bed "$DATADIR"/mini.bam "$DATADIR"/mini2.bam | awk -F '\t' '$1=="include_5" {print $0}')
+      assert equal "$HEADER" "#Feature	mini.bam	mini.bam_RPKM	mini.bam_Counts/Length	mini2.bam	mini2.bam_RPKM	mini2.bam_Counts/Length"
+      assert equal "$INCLUDE" "include_5	5	1869158.879	0.047	5	1797268.152	0.047"
+    end
+
+    it "Counts exact interval matches and excludes touch-only half-open boundaries"
+      TMPBED=$(mktemp)
+      printf "refA\t98\t128\texact_hit\nrefA\t128\t158\ttouch_only\n" > "$TMPBED"
+      EXACT=$("$BINDIR"/bamtocounts "$TMPBED" "$DATADIR"/flags/test.bam | awk -F '\t' '$1=="exact_hit" {print $2}')
+      TOUCH=$("$BINDIR"/bamtocounts "$TMPBED" "$DATADIR"/flags/test.bam | awk -F '\t' '$1=="touch_only" {print $2}')
+      rm "$TMPBED"
+      assert equal "$EXACT" "4"
+      assert equal "$TOUCH" "0"
+    end
+
+    it "Uses filtered paired reads in the RPKM denominator"
+      TMPBED=$(mktemp)
+      printf "refA\t98\t128\tpaired_exact\n" > "$TMPBED"
+      COUNT=$("$BINDIR"/bamtocounts --paired "$TMPBED" "$DATADIR"/flags/test.bam | awk -F '\t' '$1=="paired_exact" {print $2}')
+      RPKM=$("$BINDIR"/bamtocounts --rpkm --paired "$TMPBED" "$DATADIR"/flags/test.bam | awk -F '\t' '$1=="paired_exact" {print $3}')
+      rm "$TMPBED"
+      assert equal "$COUNT" "2"
+      assert equal "$RPKM" "33333333.333"
+    end
   end
 end

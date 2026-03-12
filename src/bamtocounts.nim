@@ -96,20 +96,23 @@ proc countsToString(c: stranded_counts_t, stranded: bool): string =
   else:
     $(c.fwd + c.rev)
 
+proc overlapsRegion(readStart, readStop: pos_t, region: interval_t[string], strict = false): bool =
+  if strict:
+    readStart >= region.start and readStop <= region.stop
+  else:
+    readStart < region.stop and region.start < readStop
+
 proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t, strict = false): float =
   var total: float = 0
   for read in bam:
+    if read.mapping_quality < mapq or ( (read.flag and eflag) != 0):
+      continue
     total += 1
     if read.tid notin regions:
       continue
-    if read.mapping_quality < mapq or ( (read.flag and eflag) != 0):
-      continue
 
     for region in regions[read.tid]:
-      
-      if (read.start < region.start   and read.stop > region.stop) or (read.stop > region.start   and read.stop < region.stop) or (read.start > region.start  and read.start < region.stop):
-        if strict and ( read.start < region.start or read.stop > region.stop ):
-            continue
+      if overlapsRegion(pos_t(read.start), pos_t(read.stop), region, strict):
         table[region.label].inc(read.flag.reverse)
   return total / READS_PER_MILLION.float
 
@@ -117,20 +120,16 @@ proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam:Bam
 proc alignments_count(table: var OrderedTable[string, stranded_counts_t], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t, strict = false, paired = false): float =
   var total: float = 0
   for read in bam:
-    total += 1
-    if read.tid notin regions:
-      continue
     if read.mapping_quality < mapq or ( (read.flag and eflag) != 0):
       continue
     if paired and (read.flag.proper_pair == false or read.flag.read2 == true):
       continue
-
+    total += 1
+    if read.tid notin regions:
+      continue
 
     for region in regions[read.tid]:
-      
-      if (read.start < region.start   and read.stop > region.stop) or (read.stop > region.start   and read.stop < region.stop) or (read.start > region.start  and read.start < region.stop):
-        if strict and ( read.start < region.start or read.stop > region.stop ):
-            continue
+      if overlapsRegion(pos_t(read.start), pos_t(read.stop), region, strict):
         table[region.label].inc(read.flag.reverse)
   return total / READS_PER_MILLION.float
 
