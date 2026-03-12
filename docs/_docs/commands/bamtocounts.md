@@ -15,7 +15,7 @@ more than once.
 ## Help screen
 
 ```text
-BamToCounts 2.7.0
+BamToCounts 
 
   Usage: bamtocounts [options] <Target> <BAM-or-CRAM>...
 
@@ -27,9 +27,10 @@ Arguments:
 Options:
 
   -T, --threads <threads>      BAM decompression threads [default: 0]
+  -j, --jobs <jobs>            BAM files to process concurrently; 0 uses available CPUs [default: 0]
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: ]
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: 1796]
-  -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
+  -Q, --mapq <mapq>            Mapping quality threshold [default: 1]
   --paired                     Count read pairs rather than single reads
   --strict                     Read must be contained, not just overlap, with feature
   --stranded                   Print strand-specific counts
@@ -44,7 +45,7 @@ Options:
   -p, --precision INT          Digits for floating point precision [default: 3]
   --header                     Print header
   --verbose                    Print verbose output
-  --debug                      Enable diagnostics    
+  --debug                      Enable diagnostics
   -h, --help                   Show help
 ```
 

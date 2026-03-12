@@ -8,7 +8,6 @@ This page covers installation and basic usage of Bamtocov.
 
 ## Installation
 
-
 You can install _bamtocov_ from BioConda, if you have 
 [_conda_](https://docs.conda.io/en/latest/miniconda.html) installed:
 
@@ -30,7 +29,6 @@ bamtocov alignment.bam > coverage.bed
 ```
 
 will produce a coverage BED file from the alignment file.
-
 
 ## File formats
 

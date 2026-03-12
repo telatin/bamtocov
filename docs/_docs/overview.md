@@ -75,4 +75,4 @@ For each sample, 5 columns are printed:
 
 ## Further reading
 
-For a more detailed introduction to coverage analysis see: [Coverage Analysis from the Command Line](https://medium.com/ngs-sh/coverage-analysis-from-the-command-line-542ef3545e2c).
+For a concise introduction to sequence and physical coverage see: [What is sequence coverage?]({% link _docs/sequence-coverage.md %}).

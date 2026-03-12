@@ -10,7 +10,7 @@ generates a coverage file in BED format.
 ## Splash screen
 
 ```text
-BamToCov 2.2.0
+BamToCov 
 
   Usage: bamtocov [options] [<BAM>]...
 
@@ -33,6 +33,7 @@ Target files:
   -i, --gff-id <ID>            GFF identifier [default: ID]
   --gff-separator <sep>        GFF attributes separator [default: ;]
   --gff                        Force GFF input (otherwise assumed by extension .gff)
+  --gtf                        Force GTF input (otherwise assumed by extension .gtf)
 
 BAM reading options:
   -T, --threads <threads>      BAM decompression threads [default: 0]
@@ -40,6 +41,7 @@ BAM reading options:
   -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
 
 Other options:
+  --extendReads INT            [Experimental] artificially extend reads by INT bases [default: 0]
   --debug                      Enable diagnostics
   -h, --help                   Show help
 ```

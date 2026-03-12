@@ -16,7 +16,7 @@ feature to restrict the analysis to the target.
 ## Help screen
 
 ```text
-covToTarget $version
+covToTarget 
 
   Usage: covtotarget [options] <Target> [<covtobed-output>]
 
@@ -27,7 +27,7 @@ Arguments:
 
 Options:
 
-  -g, --gff                    Force GFF for input (otherwise autodetected by .gff extension)
+  -g, --gff                    Force GFF for input (otherwise autodetected by .gff/.gtf extension)
   -t, --type <feat>            GFF feature type to parse [default: CDS]
   -i, --id <ID>                GFF identifier [default: ID]
   -l, --norm-len               Normalize by gene length

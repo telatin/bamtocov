@@ -4,6 +4,8 @@
   url: "/get-started/"
 - title: Overview
   url: "/overview/"
+- title: What is sequence coverage?
+  url: "/sequence-coverage/"
 - title: Commands
   expanded: true
   items:

@@ -9,7 +9,7 @@ A program to build a count table from multiple BAM
 files (having the same reference sequence).
 
 ```text
-BamCountRefs 2.9.0
+BamCountRefs 
 
   Usage: bamcountrefs [options]  <BAM-or-CRAM>...
 
@@ -22,8 +22,9 @@ BAM/CRAM processing options:
   -T, --threads <threads>      BAM decompression threads [default: 0]
   -W, --workers <workers>      Number of parallel file processors [default: auto]
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: ].
-  -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: 1796]
+  -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: 3844]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 0]
+  -P, --proper-pairs           If paired flag is set, then also proper pair must be set
 
 Output options:
   -o, --output <BASENAME>      Output file basename (generates multiple files: <BASENAME>_counts.tsv, etc.)
@@ -40,25 +41,29 @@ Output options:
   --variance                   Calculate variance of coverage depth [requires extra memory]
   --reads-per-base             Calculate reads per base (count / length, normalized read density)
   --length                     Output reference sequence lengths
-  --all-metrics                Enable all available metrics
+  -a, --all-metrics            Enable all available metrics
 
 Other options:
-  --tag STR                    First column name [default: ViralSequence]
+  --tag STR                    First column name [default: Contig]
   --multiqc                    Print output as MultiQC table (stdout only)
   --debug                      Enable diagnostics
   -h, --help                   Show help
+```
 
 ## Memory Requirements
 
 Different metrics have different memory requirements:
 
 **Low memory** (no extra memory per reference):
+
 - counts, rpkm, tpm, mean, reads-per-base, length
 
 **High memory** (requires per-base tracking):
+
 - covered-bases, covered-ratio, variance, trimmed-mean
 
 For large reference sequences or many samples, high-memory metrics will require RAM proportional to reference length. The algorithm implements several optimizations:
+
 - Zero-coverage references are detected early and skip expensive computations
 - Depth arrays are shared between variance and trimmed-mean calculations
 - Processing is parallelized across multiple BAM files
