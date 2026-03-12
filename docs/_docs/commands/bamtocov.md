@@ -3,9 +3,7 @@ title: BamToCov
 parent: Tools
 nav_order: 1
 ---
-
-# BamToCov
-
+ 
 The main program of the suite that parses a sorted BAM file and
 generates a coverage file in BED format.
 

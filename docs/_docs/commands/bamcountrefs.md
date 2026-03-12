@@ -4,7 +4,6 @@ parent: Tools
 nav_order: 3
 ---
 
-# BamCountsRefs
 
 A program to build a count table from multiple BAM
 files (having the same reference sequence).

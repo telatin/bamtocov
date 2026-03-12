@@ -3,8 +3,7 @@ title: BamToCounts
 parent: Tools
 nav_order: 2
 ---
-
-# BamToCounts
+ 
 
 A program that counts the number of reads per target in
 a BAM file. The BAM file does not need to be sorted.
