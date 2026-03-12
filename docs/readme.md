@@ -1,3 +1,3 @@
-# seqfu2-docs
+# Bamtocov docs
 
-Documentation for SeqFu 2.0
+* [Bamtocov documentation website](https://telatin.github.io/bamtocov/)
