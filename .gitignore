@@ -23,6 +23,8 @@ _test
 shunit2/
 .vscode
 _data/
+!docs/_data/
+!docs/_data/**
 bin/covtotarget
 bin/gff2bed
 trash

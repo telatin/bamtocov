@@ -1,0 +1,39 @@
+- title: BamToCov 3.0
+  url: "/"
+- title: Get started
+  url: "/get-started/"
+- title: Overview
+  url: "/overview/"
+- title: Commands
+  expanded: true
+  items:
+    - title: BamToCov
+      url: "/commands/bamtocov/"
+    - title: BamToCounts
+      url: "/commands/bamtocounts/"
+    - title: BamCountRefs
+      url: "/commands/bamcountrefs/"
+    - title: CovToTarget
+      url: "/commands/covtotarget/"
+- title: Scripts
+  collapsed: true
+  items:
+    - title: average-coverage.py
+      url: "/scripts/average-coverage/"
+    - title: low-cov-multisample.py
+      url: "/scripts/low-cov-multisample/"
+    - title: make-target-from-bam.py
+      url: "/scripts/make-target-from-bam/"
+    - title: feat-counts.py
+      url: "/scripts/feat-counts/"
+- title: History
+  url: "/history/"
+- title: Citation
+  url: "/reference/"
+- title: Tutorials
+  collapsed: true
+  items:
+    - title: First steps
+      url: "/tutorial/first/"
+- title: Frequently Asked Questions
+  url: "/faq/"
