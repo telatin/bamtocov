@@ -1,0 +1,61 @@
+@use "variables" as *;
+
+.toc-sidebar {
+  position: sticky;
+  top: $navbar-height;
+  align-self: flex-start;
+  width: $toc-width;
+  max-height: calc(100vh - #{$navbar-height});
+  overflow-y: auto;
+  padding: $space-8 $space-4 $space-8 0;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+}
+
+.toc {
+  border-left: 1px solid var(--border-color);
+  padding-left: $space-4;
+}
+
+.toc-title {
+  font-size: $fs-xs;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: $space-3;
+}
+
+.toc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.toc-item {
+  margin-bottom: $space-1;
+}
+
+.toc-level-3 {
+  padding-left: $space-4;
+}
+
+.toc-link {
+  display: block;
+  font-size: $fs-xs;
+  color: var(--text-muted);
+  padding: $space-1 0;
+  text-decoration: none;
+  line-height: 1.4;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: var(--text-color);
+    text-decoration: none;
+  }
+
+  &.active {
+    color: var(--fusion-accent);
+    font-weight: 500;
+  }
+}

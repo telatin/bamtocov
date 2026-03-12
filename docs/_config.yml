@@ -1,27 +1,43 @@
-title: BamToCov
-repository: telatin/bamtocov
-lang: en
-description: "BamToCov - alignment coverage tools"
+title: "BamToCov 3.0"
+description: "coverage analysis and counts from BAM files"
+url: ""
+baseurl: "/bamtocov/"
+breadhome: "Bamtocov"
+github: "https://github.com/telatin/bamtocov"
 
-readme_index:
-  with_frontmatter: true
+author_url: "https://telatin.github.io"
+author_name: "Andrea Telatin"
 
-remote_theme: just-the-docs/just-the-docs
+collections:
+  docs:
+    output: true
+    permalink: /:path/
 
-plugins:
-  - jekyll-remote-theme
-  - jemoji
-  - jekyll-gist
+defaults:
+  - scope:
+      path: ""
+      type: "docs"
+    values:
+      layout: "doc"
 
-markdown: CommonMarkGhPages
-commonmark:
-  options: ['SMART']
-  extensions: ['table']
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    block:
+      line_numbers: false
 
-# Just the Docs theme configuration
-nav_fold: false
-nav_sort: case_insensitive
+plugins: []
 
-# Custom styles
-color_scheme: light
-aux_links_new_tab: false
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor
+  - _build.scss
+  - _sass
+  - .sass-cache
+  - _scripts
+  - build.sh
+  - README.md
+  - docs

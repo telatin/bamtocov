@@ -1,0 +1,138 @@
+@use "variables" as *;
+
+.doc-layout {
+  display: flex;
+  min-height: calc(100vh - #{$navbar-height});
+}
+
+.doc-main {
+  display: flex;
+  flex: 1;
+  margin-left: $sidebar-width;
+  min-width: 0;
+}
+
+.doc-content {
+  flex: 1;
+  max-width: $content-max-width;
+  padding: $space-8 $space-8 4rem;
+  margin: 0 auto;
+  min-width: 0;
+}
+
+.markdown-body {
+  h1 {
+    font-family: $font-heading;
+    font-size: $fs-3xl;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: $space-6;
+    color: var(--text-color);
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-family: $font-heading;
+    font-size: $fs-2xl;
+    font-weight: 600;
+    line-height: 1.35;
+    margin-top: $space-8;
+    margin-bottom: $space-4;
+    padding-bottom: $space-2;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
+  }
+
+  h3 {
+    font-family: $font-heading;
+    font-size: $fs-xl;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-top: $space-6;
+    margin-bottom: $space-3;
+    color: var(--text-color);
+  }
+
+  h4 {
+    font-family: $font-heading;
+    font-size: $fs-lg;
+    font-weight: 600;
+    margin-top: $space-6;
+    margin-bottom: $space-3;
+    color: var(--text-color);
+  }
+
+  p {
+    margin-bottom: $space-4;
+  }
+
+  ul, ol {
+    margin-bottom: $space-4;
+    padding-left: $space-6;
+  }
+
+  li {
+    margin-bottom: $space-2;
+
+    > ul, > ol {
+      margin-top: $space-2;
+      margin-bottom: 0;
+    }
+  }
+
+  blockquote {
+    margin: $space-4 0;
+    padding: $space-3 $space-5;
+    border-left: 3px solid var(--border-color);
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border-radius: 0 $radius-sm $radius-sm 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: $space-4 0;
+    font-size: $fs-sm;
+    overflow-x: auto;
+    display: block;
+
+    th, td {
+      padding: $space-3 $space-4;
+      text-align: left;
+      border: 1px solid var(--border-color);
+    }
+
+    th {
+      font-weight: 600;
+      background: var(--bg-secondary);
+    }
+
+    tr:nth-child(even) {
+      background: var(--bg-secondary);
+    }
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  // Inline code
+  code {
+    font-family: $font-mono;
+    font-size: 0.85em;
+    padding: 0.15em 0.4em;
+    background: var(--code-bg);
+    border-radius: $radius-sm;
+    color: var(--text-color);
+  }
+
+  // Prevent double styling on code blocks
+  pre code {
+    padding: 0;
+    background: none;
+    border-radius: 0;
+    font-size: $fs-sm;
+    color: #cdd6f4; // Light text for dark code block background
+  }
+}

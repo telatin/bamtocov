@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BamToCounts | BamToCov 3.0</title>
+  <meta name="description" content="coverage analysis and counts from BAM files">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/bamtocov/assets/css/main.css">
+  <link rel="icon" href="/bamtocov/assets/img/fusion-icon.svg" type="image/svg+xml">
+  <script>
+    // Apply saved theme before page renders to avoid flash
+    (function() {
+      var theme = localStorage.getItem('theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+</head>
+<body>
+  <header class="site-header">
+  <div class="header-inner">
+    <a href="/bamtocov/" class="header-logo">
+      <img src="/bamtocov/assets/img/logo-fusion.svg" alt="Fusion" class="logo-img">
+      <span class="logo-text">BamToCov 3.0 - coverage analysis and counts from BAM files</span>
+    </a>
+    <div class="header-actions">
+      <button class="dark-mode-toggle" id="dark-mode-toggle" aria-label="Toggle dark mode">
+        <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+  <div class="doc-layout">
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-close" id="sidebar-close" aria-label="Close sidebar">&times;</button>
+    <nav class="sidebar-nav" aria-label="Documentation navigation">
+  <ul class="sidebar-list">
+    
+      
+        
+        
+        <li class="sidebar-item">
+          <a href="/bamtocov/" class="sidebar-link">BamToCov 3.0</a>
+        </li>
+      
+    
+      
+        
+        
+        <li class="sidebar-item">
+          <a href="/bamtocov/get-started/" class="sidebar-link">Get started</a>
+        </li>
+      
+    
+      
+        
+        
+        <li class="sidebar-item">
+          <a href="/bamtocov/overview/" class="sidebar-link">Overview</a>
+        </li>
+      
+    
+      
+        
+        
+        
+        
+        
+        
+        <li class="sidebar-category expanded">
+          
+            <button class="sidebar-category-btn" aria-expanded="true">
+              <span>Commands</span>
+              <svg class="caret" width="16" height="16" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          
+          <ul class="sidebar-subitems">
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/commands/bamtocov/" class="sidebar-link">BamToCov</a>
+                </li>
+              
+            
+              
+                
+                
+                <li class="sidebar-item active">
+                  <a href="/bamtocov/commands/bamtocounts/" class="sidebar-link active">BamToCounts</a>
+                </li>
+              
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/commands/bamcountrefs/" class="sidebar-link">BamCountRefs</a>
+                </li>
+              
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/commands/covtotarget/" class="sidebar-link">CovToTarget</a>
+                </li>
+              
+            
+          </ul>
+        </li>
+      
+    
+      
+        
+        
+        
+        
+        
+        
+        <li class="sidebar-category">
+          
+            <button class="sidebar-category-btn" aria-expanded="false">
+              <span>Scripts</span>
+              <svg class="caret" width="16" height="16" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          
+          <ul class="sidebar-subitems">
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/scripts/average-coverage/" class="sidebar-link">average-coverage.py</a>
+                </li>
+              
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/scripts/low-cov-multisample/" class="sidebar-link">low-cov-multisample.py</a>
+                </li>
+              
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/scripts/make-target-from-bam/" class="sidebar-link">make-target-from-bam.py</a>
+                </li>
+              
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/scripts/feat-counts/" class="sidebar-link">feat-counts.py</a>
+                </li>
+              
+            
+          </ul>
+        </li>
+      
+    
+      
+        
+        
+        <li class="sidebar-item">
+          <a href="/bamtocov/history/" class="sidebar-link">History</a>
+        </li>
+      
+    
+      
+        
+        
+        <li class="sidebar-item">
+          <a href="/bamtocov/reference/" class="sidebar-link">Citation</a>
+        </li>
+      
+    
+      
+        
+        
+        
+        
+        
+        
+        <li class="sidebar-category">
+          
+            <button class="sidebar-category-btn" aria-expanded="false">
+              <span>Tutorials</span>
+              <svg class="caret" width="16" height="16" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          
+          <ul class="sidebar-subitems">
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/tutorial/first/" class="sidebar-link">First steps</a>
+                </li>
+              
+            
+          </ul>
+        </li>
+      
+    
+      
+        
+        
+        <li class="sidebar-item">
+          <a href="/bamtocov/faq/" class="sidebar-link">Frequently asked questions</a>
+        </li>
+      
+    
+  </ul>
+</nav>
+
+  </aside>
+  <main class="doc-main">
+    <div class="doc-content">
+      
+
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <ol class="breadcrumb-list">
+    <li class="breadcrumb-item">
+      <a href="/bamtocov/">Bamtocov</a>
+    </li>
+    
+    
+      
+    
+      
+        
+        
+          
+          <li class="breadcrumb-item">
+            <a href="/bamtocov/commands/">Commands</a>
+          </li>
+        
+      
+    
+      
+        
+        
+          <li class="breadcrumb-item current" aria-current="page">
+            BamToCounts
+          </li>
+        
+      
+    
+  </ol>
+</nav>
+
+
+      <article class="markdown-body">
+        <h1>BamToCounts</h1>
+        <h1 id="bamtocounts">BamToCounts</h1>
+
+<p>A program that counts the number of reads per target in
+a BAM file. The BAM file does not need to be sorted.</p>
+
+<p>Overlapping features will be reported each with all the
+counts, so a read mapped in a shared interval will be counted
+more than once.</p>
+
+<h2 id="help-screen">Help screen</h2>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>BamToCounts 2.7.0
+
+  Usage: bamtocounts [options] &lt;Target&gt; &lt;BAM-or-CRAM&gt;...
+
+Arguments:                                                                                                                                                 
+
+  &lt;Target&gt;       the BED (or GFF) file containing regions in which to count reads
+  &lt;BAM-or-CRAM&gt;  the alignment file for which to calculate depth
+
+Options:
+
+  -T, --threads &lt;threads&gt;      BAM decompression threads [default: 0]
+  -r, --fasta &lt;fasta&gt;          FASTA file for use with CRAM files [default: ]
+  -F, --flag &lt;FLAG&gt;            Exclude reads with any of the bits in FLAG set [default: 1796]
+  -Q, --mapq &lt;mapq&gt;            Mapping quality threshold [default: 0]
+  --paired                     Count read pairs rather than single reads
+  --strict                     Read must be contained, not just overlap, with feature
+  --stranded                   Print strand-specific counts
+  --coords                     Also print coordinates of each feature
+
+  -g, --gff                    Force GFF for input (otherwise autodetected by .gff extension)
+  -t, --type &lt;feat&gt;            GFF feature type to parse [default: CDS]
+  -i, --id &lt;ID&gt;                GFF identifier [default: ID]
+
+  -n, --rpkm                   Add a RPKM column
+  -l, --norm-len               Add a counts/length column (after RPKM when both used)
+  -p, --precision INT          Digits for floating point precision [default: 3]
+  --header                     Print header
+  --verbose                    Print verbose output
+  --debug                      Enable diagnostics    
+  -h, --help                   Show help
+</code></pre></div></div>
+
+<h2 id="example-output">Example output</h2>
+
+<p>Given a BED file with the annotation and a BAM file, the
+output produced by the program is a table with the following
+columns:</p>
+
+<ul>
+  <li>Feature identifier (always present)</li>
+</ul>
+
+<p>If <code class="language-plaintext highlighter-rouge">--coords</code> is enabled:</p>
+
+<ul>
+  <li>Chromosome(s)</li>
+  <li>Start(s)</li>
+  <li>Ends(s)</li>
+</ul>
+
+<p>If <code class="language-plaintext highlighter-rouge">--stranded</code> is enabled:</p>
+<ul>
+  <li>Counts Forward</li>
+  <li>Counts Reverse
+Otherwise</li>
+  <li>Counts</li>
+</ul>
+
+<p>If <code class="language-plaintext highlighter-rouge">--rpkm</code>:</p>
+<ul>
+  <li>RPKM (Reads Per Kilobase per Million)</li>
+</ul>
+
+<p>If <code class="language-plaintext highlighter-rouge">--norm</code>:</p>
+<ul>
+  <li>Normalized counts (per target length)</li>
+</ul>
+
+<h3 id="examples">Examples</h3>
+
+<p>Using only <code class="language-plaintext highlighter-rouge">--header</code>:</p>
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#Feature        counts
+feature_1       7
+feature_2       7
+second_half     0
+</code></pre></div></div>
+
+<p>Adding <code class="language-plaintext highlighter-rouge">--stranded</code>:</p>
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#Feature        for     rev
+feature_1       7       0
+feature_2       0       7
+second_half     0       0
+</code></pre></div></div>
+
+<p>Adding <code class="language-plaintext highlighter-rouge">--stranded</code> and <code class="language-plaintext highlighter-rouge">--coords</code>:</p>
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#Feature        Chrom   start   end     for     rev
+feature_1       seq1    100     200     7       0
+feature_2       seq1    300     400     0       7
+second_half     seq1    500     1000    0       0
+</code></pre></div></div>
+
+      </article>
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="pagination" aria-label="Page navigation">
+  
+    <a href="/bamtocov/commands/bamtocov/" class="pagination-link pagination-prev">
+      <span class="pagination-label">Previous</span>
+      <span class="pagination-title">BamToCov</span>
+    </a>
+  
+  
+    <a href="/bamtocov/commands/bamcountrefs/" class="pagination-link pagination-next">
+      <span class="pagination-label">Next</span>
+      <span class="pagination-title">BamCountRefs</span>
+    </a>
+  
+</nav>
+
+
+    </div>
+    <aside class="toc-sidebar">
+      
+
+
+
+
+<nav class="toc" aria-label="Table of contents">
+  <h4 class="toc-title">On this page</h4>
+  <ul class="toc-list">
+    
+      
+      
+      
+      
+      <li class="toc-item toc-level-2">
+        <a href="#help-screen" class="toc-link">Help screen</a>
+      </li>
+    
+      
+      
+      
+      
+      <li class="toc-item toc-level-2">
+        <a href="#example-output" class="toc-link">Example output</a>
+      </li>
+    
+      
+      
+      
+      
+      <li class="toc-item toc-level-3">
+        <a href="#examples" class="toc-link">Examples</a>
+      </li>
+    
+  </ul>
+</nav>
+
+
+    </aside>
+  </main>
+</div>
+<button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <line x1="3" y1="12" x2="21" y2="12"></line>
+    <line x1="3" y1="18" x2="21" y2="18"></line>
+  </svg>
+</button>
+
+  <footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-links">
+      <a href="https://github.com/telatin/bamtocov"   target="_blank" rel="noopener">GitHub Repository</a>
+      <a href="https://www.quadram.ac.uk/"  target="_blank" rel="noopener">Quadram Institute Bioscience</a>
+      <a href="https://telatin.github.io"  target="_blank" rel="noopener">Andrea Telatin</a>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copyright">&copy; 2026 Quadram Institute Bioscience. All rights reserved.</p>
+      <div class="footer-legal">
+        <a href="">Policy</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+  <script src="/bamtocov/assets/js/dark-mode.js"></script>
+  <script src="/bamtocov/assets/js/sidebar.js"></script>
+  <script src="/bamtocov/assets/js/toc.js"></script>
+</body>
+</html>

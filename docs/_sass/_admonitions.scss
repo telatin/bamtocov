@@ -1,0 +1,86 @@
+@use "sass:color";
+@use "variables" as *;
+
+.admonition {
+  margin: $space-4 0;
+  padding: 0;
+  border-radius: $radius-md;
+  border-left: 4px solid;
+  overflow: hidden;
+}
+
+.admonition-heading {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-3 $space-4;
+  font-weight: 600;
+  font-size: $fs-sm;
+}
+
+.admonition-icon {
+  font-size: $fs-md;
+}
+
+.admonition-content {
+  padding: 0 $space-4 $space-3;
+  font-size: $fs-sm;
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+
+  ul, ol {
+    margin-bottom: $space-2;
+  }
+}
+
+// Note (blue)
+.admonition-note {
+  border-color: $note-border;
+  background: $note-bg;
+
+  .admonition-heading {
+    color: color.adjust($note-border, $lightness: -10%);
+  }
+}
+
+// Info (blue, same as note)
+.admonition-info {
+  border-color: $info-border;
+  background: $info-bg;
+
+  .admonition-heading {
+    color: color.adjust($info-border, $lightness: -10%);
+  }
+}
+
+// Tip (green)
+.admonition-tip {
+  border-color: $tip-border;
+  background: $tip-bg;
+
+  .admonition-heading {
+    color: color.adjust($tip-border, $lightness: -10%);
+  }
+}
+
+// Caution (yellow/amber)
+.admonition-caution {
+  border-color: $caution-border;
+  background: $caution-bg;
+
+  .admonition-heading {
+    color: color.adjust($caution-border, $lightness: -15%);
+  }
+}
+
+// Warning (red)
+.admonition-warning {
+  border-color: $warning-border;
+  background: $warning-bg;
+
+  .admonition-heading {
+    color: color.adjust($warning-border, $lightness: -5%);
+  }
+}

@@ -1,0 +1,26 @@
+{% assign crumbs = page.url | split: '/' | compact %}
+{% if crumbs.size > 1 %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <ol class="breadcrumb-list">
+    <li class="breadcrumb-item">
+      <a href="{{ '/' | relative_url }}">{{ site.breadhome }}</a>
+    </li>
+    {% assign path_so_far = "" %}
+    {% for crumb in crumbs %}
+      {% unless crumb == "" %}
+        {% assign path_so_far = path_so_far | append: "/" | append: crumb %}
+        {% if forloop.last %}
+          <li class="breadcrumb-item current" aria-current="page">
+            {{ page.title }}
+          </li>
+        {% else %}
+          {% assign crumb_title = crumb | replace: "-", " " | capitalize %}
+          <li class="breadcrumb-item">
+            <a href="{{ path_so_far | append: '/' | relative_url }}">{{ crumb_title }}</a>
+          </li>
+        {% endif %}
+      {% endunless %}
+    {% endfor %}
+  </ol>
+</nav>
+{% endif %}

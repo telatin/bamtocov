@@ -1,0 +1,66 @@
+@use "variables" as *;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-color: #ffffff;
+  --bg-secondary: #{$brand-50};
+  --text-color: #{$brand-900};
+  --text-secondary: #{$brand-400};
+  --text-muted: #{$brand-300};
+  --border-color: #{$brand-100};
+  --link-color: #{$blu-600};
+  --link-hover: #{$blu};
+  --sidebar-bg: #{$brand-50};
+  --sidebar-active-bg: #{$fusion-100};
+  --sidebar-active-color: #{$fusion-800};
+  --code-bg: #{$brand-50};
+  --code-block-bg: #1e1e2e;
+  --header-bg: #ffffff;
+  --header-border: #{$brand-100};
+  --fusion-accent: #{$fusion};
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(#{$navbar-height} + 1rem);
+}
+
+body {
+  font-family: $font-body;
+  font-size: $fs-base;
+  line-height: 1.7;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--link-color);
+  text-decoration: none;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+  }
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: $space-8 0;
+}

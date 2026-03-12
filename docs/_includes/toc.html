@@ -1,0 +1,33 @@
+{% assign headers = content | split: '<h' %}
+{% assign toc_items = "" | split: "" %}
+{% for header in headers %}
+  {% if header contains 'id="' %}
+    {% assign level_char = header | slice: 0, 1 %}
+    {% if level_char == "2" or level_char == "3" %}
+      {% assign id_start = header | split: 'id="' %}
+      {% assign id_val = id_start[1] | split: '"' | first %}
+      {% assign text_start = header | split: '>' %}
+      {% assign text_parts = text_start[1] | split: '</h' %}
+      {% assign text_val = text_parts[0] | strip_html | strip %}
+      {% capture toc_item %}{{ level_char }}|{{ id_val }}|{{ text_val }}{% endcapture %}
+      {% assign toc_items = toc_items | push: toc_item %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+
+{% if toc_items.size > 0 %}
+<nav class="toc" aria-label="Table of contents">
+  <h4 class="toc-title">On this page</h4>
+  <ul class="toc-list">
+    {% for item in toc_items %}
+      {% assign parts = item | split: "|" %}
+      {% assign level = parts[0] %}
+      {% assign id = parts[1] %}
+      {% assign text = parts[2] %}
+      <li class="toc-item toc-level-{{ level }}">
+        <a href="#{{ id }}" class="toc-link">{{ text }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</nav>
+{% endif %}

@@ -1,0 +1,52 @@
+@use "sass:color";
+@use "variables" as *;
+
+[data-theme="dark"] {
+  --bg-color: #1a1a2e;
+  --bg-secondary: #16162a;
+  --text-color: #e2e2e8;
+  --text-secondary: #a0a0b0;
+  --text-muted: #6c6c80;
+  --border-color: #2a2a40;
+  --link-color: #{$blu-300};
+  --link-hover: #a0aef5;
+  --sidebar-bg: #16162a;
+  --sidebar-active-bg: rgba($fusion, 0.12);
+  --sidebar-active-color: #{$fusion};
+  --code-bg: #2a2a40;
+  --code-block-bg: #11111b;
+  --header-bg: #1a1a2e;
+  --header-border: #2a2a40;
+
+  // Admonition dark mode overrides
+  .admonition-note,
+  .admonition-info {
+    background: rgba($note-border, 0.1);
+    .admonition-heading { color: color.adjust($note-border, $lightness: 15%); }
+  }
+
+  .admonition-tip {
+    background: rgba($tip-border, 0.1);
+    .admonition-heading { color: color.adjust($tip-border, $lightness: 15%); }
+  }
+
+  .admonition-caution {
+    background: rgba($caution-border, 0.1);
+    .admonition-heading { color: color.adjust($caution-border, $lightness: 10%); }
+  }
+
+  .admonition-warning {
+    background: rgba($warning-border, 0.1);
+    .admonition-heading { color: color.adjust($warning-border, $lightness: 10%); }
+  }
+
+  // Table overrides
+  .markdown-body {
+    table th {
+      background: #2a2a40;
+    }
+    table tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+  }
+}

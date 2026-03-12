@@ -1,0 +1,82 @@
+// Fusion brand colors
+$fusion:     #f98816;
+$fusion-100: #a4c7ff; // bg
+$fusion-200: #FCD3D1;
+$fusion-600: #8f070c; // circle background
+$fusion-800: #01166b; // link
+
+// Blues (links, interactive)
+$blu: #4256E7;
+$blu-100: #E8EAFC;
+$blu-300: #8B99F0;
+$blu-600: #4256E7;
+
+// Brand: Seqfu purple
+$brand:     #0b0e2f;
+$brand-50:  #F5F4F7;
+$brand-100: #E8E6ED;
+$brand-200: #D1CDD9;
+$brand-300: #9F97AD;
+$brand-400: #6E6380;
+$brand-500: #3D3354;
+$brand-700: #231A38;
+$brand-800: #1C1430;
+$brand-900: #160F26;
+
+// Admonition colors
+$note-bg:      #E8F0FE;
+$note-border:  #4285F4;
+$tip-bg:       #E6F4EA;
+$tip-border:   #34A853;
+$caution-bg:   #FEF7E0;
+$caution-border: #F9AB00;
+$info-bg: #E8F0FE;
+$info-border: #4285F4;
+$warning-bg: #FCE8E6;
+$warning-border: #EA4335;
+
+// Typography
+$font-heading: 'Inter', 'Helvetica Neue', 'Helvetica', sans-serif;
+$font-body: 'Inter', 'Helvetica Neue', 'Helvetica', sans-serif;
+$font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+
+// Font sizes
+$fs-xs: 0.75rem;
+$fs-sm: 0.8125rem;
+$fs-base: 0.9375rem;
+$fs-md: 1rem;
+$fs-lg: 1.125rem;
+$fs-xl: 1.25rem;
+$fs-2xl: 1.5rem;
+$fs-3xl: 1.875rem;
+
+// Layout
+$sidebar-width: 300px;
+$toc-width: 240px;
+$navbar-height: 4rem;
+$content-max-width: 780px;
+
+// Breakpoints
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 996px;
+$breakpoint-xl: 1200px;
+
+// Spacing
+$space-1: 0.25rem;
+$space-2: 0.5rem;
+$space-3: 0.75rem;
+$space-4: 1rem;
+$space-5: 1.25rem;
+$space-6: 1.5rem;
+$space-8: 2rem;
+
+// Border radius
+$radius-sm: 4px;
+$radius-md: 6px;
+$radius-lg: 8px;
+
+// Transitions
+$transition-fast: 150ms ease;
+$transition-base: 200ms ease;
+$transition-slow: 300ms ease;

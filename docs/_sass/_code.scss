@@ -1,0 +1,47 @@
+@use "variables" as *;
+
+// Code blocks
+pre {
+  margin: $space-4 0;
+  padding: $space-4;
+  background: var(--code-block-bg);
+  border-radius: $radius-md;
+  overflow-x: auto;
+  line-height: 1.5;
+  font-size: $fs-sm;
+
+  code {
+    color: #cdd6f4;
+    font-family: $font-mono;
+  }
+}
+
+// Rouge syntax highlighting (Catppuccin-inspired dark theme)
+.highlight {
+  margin: $space-4 0;
+  border-radius: $radius-md;
+  overflow: hidden;
+
+  pre {
+    margin: 0;
+  }
+
+  .c, .c1, .cm, .cs { color: #6c7086; font-style: italic; } // comments
+  .k, .kd, .kn, .kp, .kr { color: #cba6f7; }                // keywords
+  .kt { color: #f9e2af; }                                      // keyword types
+  .s, .s1, .s2, .sb, .sc, .sh, .sx { color: #a6e3a1; }       // strings
+  .si { color: #94e2d5; }                                       // string interpolation
+  .nb { color: #89dceb; }                                       // built-in names
+  .nf, .fm { color: #89b4fa; }                                 // function names
+  .nc { color: #f9e2af; }                                       // class names
+  .no { color: #fab387; }                                       // constants
+  .nn { color: #89b4fa; }                                       // namespaces
+  .na { color: #89b4fa; }                                       // attributes
+  .nv, .vi, .vg, .vc { color: #cdd6f4; }                      // variables
+  .o, .ow { color: #89dceb; }                                  // operators
+  .p { color: #cdd6f4; }                                        // punctuation
+  .m, .mi, .mf, .mh, .mo { color: #fab387; }                  // numbers
+  .err { color: #f38ba8; }                                      // errors
+  .gh { color: #89b4fa; font-weight: bold; }                   // heading
+  .nt { color: #cba6f7; }                                       // HTML tags
+}

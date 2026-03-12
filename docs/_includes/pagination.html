@@ -1,0 +1,70 @@
+{% comment %}
+Build a flat list of all sidebar URLs to find prev/next
+{% endcomment %}
+{% assign flat_urls = "" | split: "" %}
+{% assign flat_titles = "" | split: "" %}
+
+{% for item in site.data.sidebar %}
+  {% if item.url %}
+    {% assign flat_urls = flat_urls | push: item.url %}
+    {% assign flat_titles = flat_titles | push: item.title %}
+  {% endif %}
+  {% if item.items %}
+    {% for child in item.items %}
+      {% if child.url %}
+        {% assign flat_urls = flat_urls | push: child.url %}
+        {% assign flat_titles = flat_titles | push: child.title %}
+      {% endif %}
+      {% if child.items %}
+        {% for grandchild in child.items %}
+          {% if grandchild.url %}
+            {% assign flat_urls = flat_urls | push: grandchild.url %}
+            {% assign flat_titles = flat_titles | push: grandchild.title %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+
+{% assign prev_url = nil %}
+{% assign prev_title = nil %}
+{% assign next_url = nil %}
+{% assign next_title = nil %}
+{% assign found = false %}
+
+{% for url in flat_urls %}
+  {% if found and next_url == nil %}
+    {% assign next_url = url %}
+    {% assign next_title = flat_titles[forloop.index0] %}
+  {% endif %}
+  {% if url == page.url %}
+    {% assign found = true %}
+    {% if forloop.index0 > 0 %}
+      {% assign prev_index = forloop.index0 | minus: 1 %}
+      {% assign prev_url = flat_urls[prev_index] %}
+      {% assign prev_title = flat_titles[prev_index] %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+
+{% if prev_url or next_url %}
+<nav class="pagination" aria-label="Page navigation">
+  {% if prev_url %}
+    <a href="{{ prev_url | relative_url }}" class="pagination-link pagination-prev">
+      <span class="pagination-label">Previous</span>
+      <span class="pagination-title">{{ prev_title }}</span>
+    </a>
+  {% else %}
+    <span></span>
+  {% endif %}
+  {% if next_url %}
+    <a href="{{ next_url | relative_url }}" class="pagination-link pagination-next">
+      <span class="pagination-label">Next</span>
+      <span class="pagination-title">{{ next_title }}</span>
+    </a>
+  {% else %}
+    <span></span>
+  {% endif %}
+</nav>
+{% endif %}

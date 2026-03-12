@@ -1,0 +1,82 @@
+<nav class="sidebar-nav" aria-label="Documentation navigation">
+  <ul class="sidebar-list">
+    {% for item in site.data.sidebar %}
+      {% if item.items %}
+        {% assign has_active_child = false %}
+        {% for child in item.items %}
+          {% if child.url and page.url == child.url %}{% assign has_active_child = true %}{% endif %}
+          {% if child.items %}
+            {% for gc in child.items %}
+              {% if gc.url and page.url == gc.url %}{% assign has_active_child = true %}{% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+        {% assign is_expanded = has_active_child %}
+        {% if item.expanded %}{% assign is_expanded = true %}{% endif %}
+        {% assign is_active = false %}
+        {% if item.url and page.url == item.url %}{% assign is_active = true %}{% endif %}
+        <li class="sidebar-category{% if is_expanded %} expanded{% endif %}">
+          {% if item.url %}
+            <a href="{{ item.url | relative_url }}" class="sidebar-category-link{% if is_active %} active{% endif %}">{{ item.title }}</a>
+            <button class="sidebar-toggle-btn" aria-label="Toggle {{ item.title }}">
+              <svg class="caret" width="16" height="16" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          {% else %}
+            <button class="sidebar-category-btn" aria-expanded="{{ is_expanded }}">
+              <span>{{ item.title }}</span>
+              <svg class="caret" width="16" height="16" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          {% endif %}
+          <ul class="sidebar-subitems">
+            {% for child in item.items %}
+              {% if child.items %}
+                {% assign child_has_active = false %}
+                {% for gc in child.items %}
+                  {% if gc.url and page.url == gc.url %}{% assign child_has_active = true %}{% endif %}
+                {% endfor %}
+                {% assign child_expanded = child_has_active %}
+                {% if child.expanded %}{% assign child_expanded = true %}{% endif %}
+                {% assign child_active = false %}
+                {% if child.url and page.url == child.url %}{% assign child_active = true %}{% endif %}
+                <li class="sidebar-category{% if child_expanded %} expanded{% endif %}">
+                  {% if child.url %}
+                    <a href="{{ child.url | relative_url }}" class="sidebar-category-link{% if child_active %} active{% endif %}">{{ child.title }}</a>
+                    <button class="sidebar-toggle-btn" aria-label="Toggle {{ child.title }}">
+                      <svg class="caret" width="16" height="16" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+                    </button>
+                  {% else %}
+                    <button class="sidebar-category-btn" aria-expanded="{{ child_expanded }}">
+                      <span>{{ child.title }}</span>
+                      <svg class="caret" width="16" height="16" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+                    </button>
+                  {% endif %}
+                  <ul class="sidebar-subitems">
+                    {% for gc in child.items %}
+                      {% assign gc_active = false %}
+                      {% if gc.url and page.url == gc.url %}{% assign gc_active = true %}{% endif %}
+                      <li class="sidebar-item{% if gc_active %} active{% endif %}">
+                        <a href="{{ gc.url | relative_url }}" class="sidebar-link{% if gc_active %} active{% endif %}">{{ gc.title }}</a>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </li>
+              {% else %}
+                {% assign child_active = false %}
+                {% if child.url and page.url == child.url %}{% assign child_active = true %}{% endif %}
+                <li class="sidebar-item{% if child_active %} active{% endif %}">
+                  <a href="{{ child.url | relative_url }}" class="sidebar-link{% if child_active %} active{% endif %}">{{ child.title }}</a>
+                </li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </li>
+      {% else %}
+        {% assign is_active = false %}
+        {% if item.url and page.url == item.url %}{% assign is_active = true %}{% endif %}
+        <li class="sidebar-item{% if is_active %} active{% endif %}">
+          <a href="{{ item.url | relative_url }}" class="sidebar-link{% if is_active %} active{% endif %}">{{ item.title }}</a>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+</nav>

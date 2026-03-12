@@ -1,0 +1,150 @@
+@use "variables" as *;
+
+// Breadcrumbs
+.breadcrumbs {
+  margin-bottom: $space-4;
+}
+
+.breadcrumb-list {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: $fs-xs;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+  &:not(:last-child)::after {
+    content: '/';
+    margin: 0 $space-2;
+    color: var(--text-muted);
+  }
+
+  a {
+    color: var(--text-muted);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--link-color);
+    }
+  }
+
+  &.current {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+}
+
+// Pagination
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  margin-top: $space-8;
+  padding-top: $space-6;
+  border-top: 1px solid var(--border-color);
+}
+
+.pagination-link {
+  display: flex;
+  flex-direction: column;
+  padding: $space-3 $space-4;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  text-decoration: none;
+  max-width: 48%;
+  transition: border-color $transition-fast;
+
+  &:hover {
+    border-color: var(--fusion-accent);
+    text-decoration: none;
+  }
+}
+
+.pagination-prev {
+  align-items: flex-start;
+}
+
+.pagination-next {
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+.pagination-label {
+  font-size: $fs-xs;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pagination-title {
+  font-size: $fs-sm;
+  font-weight: 500;
+  color: var(--link-color);
+}
+
+// Responsive
+@media (max-width: $breakpoint-lg) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform $transition-slow;
+
+    &.open {
+      transform: translateX(0);
+      box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  .sidebar-close {
+    display: block;
+  }
+
+  .sidebar-toggle {
+    display: flex;
+  }
+
+  .doc-main {
+    margin-left: 0;
+  }
+
+  .site-footer {
+    margin-left: 0;
+  }
+
+  .toc-sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: $breakpoint-md) {
+  .doc-content {
+    padding: $space-4;
+  }
+
+  .markdown-body {
+    h1 {
+      font-size: $fs-2xl;
+    }
+    h2 {
+      font-size: $fs-xl;
+    }
+  }
+
+  .footer-links {
+    flex-direction: column;
+    gap: $space-2;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (min-width: $breakpoint-xl + 1) {
+  .toc-sidebar {
+    width: 280px;
+  }
+}

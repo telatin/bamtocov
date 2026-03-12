@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BamCountRefs | BamToCov 3.0</title>
+  <meta name="description" content="coverage analysis and counts from BAM files">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/bamtocov/assets/css/main.css">
+  <link rel="icon" href="/bamtocov/assets/img/fusion-icon.svg" type="image/svg+xml">
+  <script>
+    // Apply saved theme before page renders to avoid flash
+    (function() {
+      var theme = localStorage.getItem('theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+</head>
+<body>
+  <header class="site-header">
+  <div class="header-inner">
+    <a href="/bamtocov/" class="header-logo">
+      <img src="/bamtocov/assets/img/logo-fusion.svg" alt="Fusion" class="logo-img">
+      <span class="logo-text">BamToCov 3.0 - coverage analysis and counts from BAM files</span>
+    </a>
+    <div class="header-actions">
+      <button class="dark-mode-toggle" id="dark-mode-toggle" aria-label="Toggle dark mode">
+        <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+  <div class="doc-layout">
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-close" id="sidebar-close" aria-label="Close sidebar">&times;</button>
+    <nav class="sidebar-nav" aria-label="Documentation navigation">
+  <ul class="sidebar-list">
+    
+      
+        
+        
+        <li class="sidebar-item">
+          <a href="/bamtocov/" class="sidebar-link">BamToCov 3.0</a>
+        </li>
+      
+    
+      
+        
+        
+        <li class="sidebar-item">
+          <a href="/bamtocov/get-started/" class="sidebar-link">Get started</a>
+        </li>
+      
+    
+      
+        
+        
+        <li class="sidebar-item">
+          <a href="/bamtocov/overview/" class="sidebar-link">Overview</a>
+        </li>
+      
+    
+      
+        
+        
+        
+        
+        
+        
+        <li class="sidebar-category expanded">
+          
+            <button class="sidebar-category-btn" aria-expanded="true">
+              <span>Commands</span>
+              <svg class="caret" width="16" height="16" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          
+          <ul class="sidebar-subitems">
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/commands/bamtocov/" class="sidebar-link">BamToCov</a>
+                </li>
+              
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/commands/bamtocounts/" class="sidebar-link">BamToCounts</a>
+                </li>
+              
+            
+              
+                
+                
+                <li class="sidebar-item active">
+                  <a href="/bamtocov/commands/bamcountrefs/" class="sidebar-link active">BamCountRefs</a>
+                </li>
+              
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/commands/covtotarget/" class="sidebar-link">CovToTarget</a>
+                </li>
+              
+            
+          </ul>
+        </li>
+      
+    
+      
+        
+        
+        
+        
+        
+        
+        <li class="sidebar-category">
+          
+            <button class="sidebar-category-btn" aria-expanded="false">
+              <span>Scripts</span>
+              <svg class="caret" width="16" height="16" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          
+          <ul class="sidebar-subitems">
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/scripts/average-coverage/" class="sidebar-link">average-coverage.py</a>
+                </li>
+              
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/scripts/low-cov-multisample/" class="sidebar-link">low-cov-multisample.py</a>
+                </li>
+              
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/scripts/make-target-from-bam/" class="sidebar-link">make-target-from-bam.py</a>
+                </li>
+              
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/scripts/feat-counts/" class="sidebar-link">feat-counts.py</a>
+                </li>
+              
+            
+          </ul>
+        </li>
+      
+    
+      
+        
+        
+        <li class="sidebar-item">
+          <a href="/bamtocov/history/" class="sidebar-link">History</a>
+        </li>
+      
+    
+      
+        
+        
+        <li class="sidebar-item">
+          <a href="/bamtocov/reference/" class="sidebar-link">Citation</a>
+        </li>
+      
+    
+      
+        
+        
+        
+        
+        
+        
+        <li class="sidebar-category">
+          
+            <button class="sidebar-category-btn" aria-expanded="false">
+              <span>Tutorials</span>
+              <svg class="caret" width="16" height="16" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          
+          <ul class="sidebar-subitems">
+            
+              
+                
+                
+                <li class="sidebar-item">
+                  <a href="/bamtocov/tutorial/first/" class="sidebar-link">First steps</a>
+                </li>
+              
+            
+          </ul>
+        </li>
+      
+    
+      
+        
+        
+        <li class="sidebar-item">
+          <a href="/bamtocov/faq/" class="sidebar-link">Frequently asked questions</a>
+        </li>
+      
+    
+  </ul>
+</nav>
+
+  </aside>
+  <main class="doc-main">
+    <div class="doc-content">
+      
+
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <ol class="breadcrumb-list">
+    <li class="breadcrumb-item">
+      <a href="/bamtocov/">Bamtocov</a>
+    </li>
+    
+    
+      
+    
+      
+        
+        
+          
+          <li class="breadcrumb-item">
+            <a href="/bamtocov/commands/">Commands</a>
+          </li>
+        
+      
+    
+      
+        
+        
+          <li class="breadcrumb-item current" aria-current="page">
+            BamCountRefs
+          </li>
+        
+      
+    
+  </ol>
+</nav>
+
+
+      <article class="markdown-body">
+        <h1>BamCountRefs</h1>
+        <h1 id="bamcountsrefs">BamCountsRefs</h1>
+
+<p>A program to build a count table from multiple BAM
+files (having the same reference sequence).</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>BamCountRefs 2.9.0
+
+  Usage: bamcountrefs [options]  &lt;BAM-or-CRAM&gt;...
+
+Arguments:
+
+  &lt;BAM-or-CRAM&gt;  the alignment file for which to calculate depth
+
+BAM/CRAM processing options:
+
+  -T, --threads &lt;threads&gt;      BAM decompression threads [default: 0]
+  -W, --workers &lt;workers&gt;      Number of parallel file processors [default: auto]
+  -r, --fasta &lt;fasta&gt;          FASTA file for use with CRAM files [default: ].
+  -F, --flag &lt;FLAG&gt;            Exclude reads with any of the bits in FLAG set [default: 1796]
+  -Q, --mapq &lt;mapq&gt;            Mapping quality threshold [default: 0]
+
+Output options:
+  -o, --output &lt;BASENAME&gt;      Output file basename (generates multiple files: &lt;BASENAME&gt;_counts.tsv, etc.)
+                               If not specified, outputs counts to stdout in TSV format
+  -n                           [DEPRECATED: use --rpkm] Output RPKM values
+  --rpkm                       Calculate RPKM (reads per kilobase per million mapped reads)
+  --tpm                        Calculate TPM (transcripts per million)
+  --mean                       Calculate mean coverage depth (approximate method, no extra memory)
+  --trimmed-mean               Calculate trimmed mean coverage (robust against outliers) [requires extra memory]
+  --trim-min &lt;FRACTION&gt;        Remove this smallest fraction of positions when calculating trimmed_mean [default: 5]
+  --trim-max &lt;FRACTION&gt;        Maximum fraction for trimmed_mean calculations [default: 95]
+  --covered-bases              Calculate number of bases with coverage &gt; 0 [requires extra memory]
+  --covered-ratio              Calculate coverage breadth (fraction of reference covered) [requires extra memory]
+  --variance                   Calculate variance of coverage depth [requires extra memory]
+  --reads-per-base             Calculate reads per base (count / length, normalized read density)
+  --length                     Output reference sequence lengths
+  --all-metrics                Enable all available metrics
+
+Other options:
+  --tag STR                    First column name [default: ViralSequence]
+  --multiqc                    Print output as MultiQC table (stdout only)
+  --debug                      Enable diagnostics
+  -h, --help                   Show help
+
+## Memory Requirements
+
+Different metrics have different memory requirements:
+
+**Low memory** (no extra memory per reference):
+- counts, rpkm, tpm, mean, reads-per-base, length
+
+**High memory** (requires per-base tracking):
+- covered-bases, covered-ratio, variance, trimmed-mean
+
+For large reference sequences or many samples, high-memory metrics will require RAM proportional to reference length. The algorithm implements several optimizations:
+- Zero-coverage references are detected early and skip expensive computations
+- Depth arrays are shared between variance and trimmed-mean calculations
+- Processing is parallelized across multiple BAM files
+
+## Examples
+
+### Basic Usage (stdout)
+
+Output counts to stdout:
+
+```bash
+bin/bamcountrefs --tag "Chrom" input/mini.bam input/mini2.bam
+</code></pre></div></div>
+
+<p>Output:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Chrom   mini    mini2
+seq0    0       1
+seq1    15      15
+seq2    10      10
+</code></pre></div></div>
+
+<h3 id="multi-file-output">Multi-file Output</h3>
+
+<p>Generate separate files for different metrics:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bin/bamcountrefs <span class="nt">--output</span> results/sample <span class="nt">--rpkm</span> <span class="nt">--tpm</span> <span class="nt">--mean</span> <span class="nt">--variance</span> input/mini.bam input/mini2.bam
+</code></pre></div></div>
+
+<p>This creates:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_counts.tsv</code> - Raw read counts</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_rpkm.tsv</code> - RPKM normalized values</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_tpm.tsv</code> - TPM normalized values</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_mean.tsv</code> - Mean coverage depth (approximate)</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_variance.tsv</code> - Variance of coverage depth</li>
+</ul>
+
+<h3 id="all-metrics-at-once">All Metrics at Once</h3>
+
+<p>Generate all available metrics with a single command:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bin/bamcountrefs <span class="nt">--output</span> results/sample <span class="nt">--all-metrics</span> input/<span class="k">*</span>.bam
+</code></pre></div></div>
+
+<p>This creates all output files:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_counts.tsv</code> - Raw read counts</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_rpkm.tsv</code> - RPKM normalized values</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_tpm.tsv</code> - TPM normalized values</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_mean.tsv</code> - Mean coverage depth (approximate)</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_variance.tsv</code> - Variance of coverage depth</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_trimmed_mean.tsv</code> - Trimmed mean coverage (robust statistic)</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_reads_per_base.tsv</code> - Reads per base (normalized read density)</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_covered_bases.tsv</code> - Number of bases with coverage &gt; 0</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_covered_fraction.tsv</code> - Fraction of reference covered (breadth)</li>
+  <li><code class="language-plaintext highlighter-rouge">results/sample_length.tsv</code> - Reference sequence lengths</li>
+</ul>
+
+<h3 id="coverage-breadth-metrics">Coverage Breadth Metrics</h3>
+
+<p>Calculate coverage breadth (what fraction of each reference is covered):</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bin/bamcountrefs <span class="nt">--output</span> results/sample <span class="nt">--covered-bases</span> <span class="nt">--covered-ratio</span> input/<span class="k">*</span>.bam
+</code></pre></div></div>
+
+<p>Note: Breadth metrics require tracking per-base coverage, which uses additional memory proportional to reference length.</p>
+
+<h3 id="trimmed-mean-coverage">Trimmed Mean Coverage</h3>
+
+<p>Calculate trimmed mean coverage for robust statistics that are less sensitive to outliers:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bin/bamcountrefs <span class="nt">--output</span> results/sample <span class="nt">--trimmed-mean</span> <span class="nt">--trim-min</span> 10 <span class="nt">--trim-max</span> 90 input/<span class="k">*</span>.bam
+</code></pre></div></div>
+
+<p>The trimmed mean removes extreme values before calculating the mean:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">--trim-min 10</code> removes the bottom 10% of coverage positions</li>
+  <li><code class="language-plaintext highlighter-rouge">--trim-max 90</code> removes the top 10% of coverage positions</li>
+  <li>Default values are 5 and 95 (removing 5% from each tail)</li>
+</ul>
+
+<p>This is particularly useful for:</p>
+<ul>
+  <li>Metagenomics data with variable coverage</li>
+  <li>Detecting regions with consistently high/low coverage</li>
+  <li>Robust coverage estimation in the presence of PCR duplicates or mapping artifacts</li>
+</ul>
+
+<h3 id="variance-and-statistical-metrics">Variance and Statistical Metrics</h3>
+
+<p>Calculate variance to understand coverage uniformity:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bin/bamcountrefs <span class="nt">--output</span> results/sample <span class="nt">--variance</span> <span class="nt">--mean</span> input/<span class="k">*</span>.bam
+</code></pre></div></div>
+
+<p>The variance metric indicates how evenly reads are distributed:</p>
+<ul>
+  <li>Low variance: uniform coverage across the reference</li>
+  <li>High variance: uneven coverage with peaks and valleys</li>
+</ul>
+
+<p>The reads-per-base metric provides a length-normalized read density:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bin/bamcountrefs <span class="nt">--output</span> results/sample <span class="nt">--reads-per-base</span> input/<span class="k">*</span>.bam
+</code></pre></div></div>
+
+<p>This is equivalent to <code class="language-plaintext highlighter-rouge">count / length</code> and useful for comparing references of different lengths.</p>
+
+      </article>
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="pagination" aria-label="Page navigation">
+  
+    <a href="/bamtocov/commands/bamtocounts/" class="pagination-link pagination-prev">
+      <span class="pagination-label">Previous</span>
+      <span class="pagination-title">BamToCounts</span>
+    </a>
+  
+  
+    <a href="/bamtocov/commands/covtotarget/" class="pagination-link pagination-next">
+      <span class="pagination-label">Next</span>
+      <span class="pagination-title">CovToTarget</span>
+    </a>
+  
+</nav>
+
+
+    </div>
+    <aside class="toc-sidebar">
+      
+
+
+
+
+<nav class="toc" aria-label="Table of contents">
+  <h4 class="toc-title">On this page</h4>
+  <ul class="toc-list">
+    
+      
+      
+      
+      
+      <li class="toc-item toc-level-3">
+        <a href="#multi-file-output" class="toc-link">Multi-file Output</a>
+      </li>
+    
+      
+      
+      
+      
+      <li class="toc-item toc-level-3">
+        <a href="#all-metrics-at-once" class="toc-link">All Metrics at Once</a>
+      </li>
+    
+      
+      
+      
+      
+      <li class="toc-item toc-level-3">
+        <a href="#coverage-breadth-metrics" class="toc-link">Coverage Breadth Metrics</a>
+      </li>
+    
+      
+      
+      
+      
+      <li class="toc-item toc-level-3">
+        <a href="#trimmed-mean-coverage" class="toc-link">Trimmed Mean Coverage</a>
+      </li>
+    
+      
+      
+      
+      
+      <li class="toc-item toc-level-3">
+        <a href="#variance-and-statistical-metrics" class="toc-link">Variance and Statistical Metrics</a>
+      </li>
+    
+  </ul>
+</nav>
+
+
+    </aside>
+  </main>
+</div>
+<button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <line x1="3" y1="12" x2="21" y2="12"></line>
+    <line x1="3" y1="18" x2="21" y2="18"></line>
+  </svg>
+</button>
+
+  <footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-links">
+      <a href="https://github.com/telatin/bamtocov"   target="_blank" rel="noopener">GitHub Repository</a>
+      <a href="https://www.quadram.ac.uk/"  target="_blank" rel="noopener">Quadram Institute Bioscience</a>
+      <a href="https://telatin.github.io"  target="_blank" rel="noopener">Andrea Telatin</a>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copyright">&copy; 2026 Quadram Institute Bioscience. All rights reserved.</p>
+      <div class="footer-legal">
+        <a href="">Policy</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+  <script src="/bamtocov/assets/js/dark-mode.js"></script>
+  <script src="/bamtocov/assets/js/sidebar.js"></script>
+  <script src="/bamtocov/assets/js/toc.js"></script>
+</body>
+</html>
