@@ -229,7 +229,7 @@
         
         
         <li class="sidebar-item">
-          <a href="/bamtocov/faq/" class="sidebar-link">Frequently asked questions</a>
+          <a href="/bamtocov/faq/" class="sidebar-link">Frequently Asked Questions</a>
         </li>
       
     
@@ -257,20 +257,20 @@
 <p><img src="/bamtocov/assets/img/bamtocov-banner.png" alt="bamtocov logo" /></p>
 
 <p>BamToCov is inspired by the <a href="https://en.wikipedia.org/wiki/Unix_philosophy">UNIX Phylosophy</a> and the tools are designed for efficient computation
-of a very specific task. Integration of multiple samples and specific tasks can be achieved <a href="https://telatin.github.io/bamtocov/scripts/">with scripts</a>
+of a very specific task. Integration of multiple samples and specific tasks can be achieved <a href="/bamtocov/scripts/">with scripts</a>
 and we provide a set to demonstrate the process.</p>
 
-<p><strong><a href="/bamtocov/commands/bamtocov/">bamtocov</a></strong> will produce a <em>coverage BED</em> from a single BAM file, or a count matrix from a set of alignments and a target (in BED, GTF or GFF format).
+<p><strong><a href="{ _docs/commands/bamtocov.md  | relative_url}">bamtocov</a></strong> will produce a <em>coverage BED</em> from a single BAM file, or a count matrix from a set of alignments and a target (in BED, GTF or GFF format).
 Used without a target, it is a drop-in replacement for <a href="https://github.com/telatin/covtobed">covtobed</a>, but discarding invalid alignments by default.
 When providing the target, it can produce coverage statistics for each region in the target, also with multiple BAM files.</p>
 
-<p><strong><a href="/bamtocov/commands/bamtocounts/">bamtocounts</a></strong> will count the number of reads covering each target region,
+<p><strong><a href="{ _docs/commands/bamtocounts.md  | relative_url}">bamtocounts</a></strong> will count the number of reads covering each target region,
 rather than the nucleotidic coverage</p>
 
-<p><strong><a href="/bamtocov/commands/bamcountrefs/">bamcountrefs</a></strong> is a shortcut to count the number of reads per chromosome,
+<p><strong><a href="{ _docs/commands/bamcountrefs.md  | relative_url}">bamcountrefs</a></strong> is a shortcut to count the number of reads per chromosome,
 with filters on the read flags, length and quality</p>
 
-<p><strong><a href="/bamtocov/commands/covtotarget/">covtotarget</a></strong> (<em>legacy</em>) is an utility to create a count table from the <em>output</em> of
+<p><strong><a href="{ _docs/commands/covtotarget.md  | relative_url}">covtotarget</a></strong> (<em>legacy</em>) is an utility to create a count table from the <em>output</em> of
 the original <a href="https://github.com/telatin/covtobed">covtobed</a> program.</p>
 
 

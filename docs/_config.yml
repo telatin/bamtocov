@@ -1,8 +1,8 @@
 title: "BamToCov 3.0"
 description: "coverage analysis and counts from BAM files"
-url: ""
-baseurl: "/bamtocov/"
-breadhome: "Bamtocov"
+url: "https://telatin.github.io"
+baseurl: "/bamtocov"
+breadhome: "BamToCov"
 github: "https://github.com/telatin/bamtocov"
 
 author_url: "https://telatin.github.io"

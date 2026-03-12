@@ -5,7 +5,7 @@ title: Overview
 In bioinformatics, a common task is to align several (usually short) DNA sequences 
 against a reference sequence (e. g. a complete genome of the organism).
 
-![coverage in a genome browser]({% link assets/img/igv.png %})
+![coverage in a genome browser]({{ '/assets/img/igv.png' | relative_url }})
 
 <sub>The screenshot of  shows the alignment of several short DNA sequences (*reads*)
 against a reference genome. The program graphically displays the *coverage track*</sub>
