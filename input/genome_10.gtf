@@ -1,0 +1,13 @@
+##gtf-version 2.2
+##genome-build TestProk v1
+# Synthetic prokaryotic GTF — 10 features for featureCounts testing
+chr1	sim	gene	1000	1500	.	+	.	gene_id "gene01"; transcript_id "gene01";
+chr1	sim	gene	2000	2800	.	+	.	gene_id "gene02"; transcript_id "gene02";
+chr1	sim	gene	3500	4200	.	-	.	gene_id "gene03"; transcript_id "gene03";
+chr1	sim	gene	5000	5600	.	+	.	gene_id "gene04"; transcript_id "gene04";
+chr1	sim	gene	6100	7000	.	-	.	gene_id "gene05"; transcript_id "gene05";
+chr1	sim	gene	8000	8900	.	+	.	gene_id "gene06"; transcript_id "gene06";
+chr1	sim	gene	9500	10300	.	-	.	gene_id "gene07"; transcript_id "gene07";
+chr1	sim	gene	11000	11800	.	+	.	gene_id "gene08"; transcript_id "gene08";
+chr1	sim	gene	12500	13100	.	-	.	gene_id "gene09"; transcript_id "gene09";
+chr1	sim	gene	14000	15000	.	+	.	gene_id "gene10"; transcript_id "gene10";
