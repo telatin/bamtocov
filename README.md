@@ -5,7 +5,7 @@
 [![Platforms](https://anaconda.org/bioconda/bamtocov/badges/platforms.svg)](https://bioconda.github.io/recipes/bamtocov/README.html)
 [![Paper](https://img.shields.io/badge/paper-bioinformatics-yellow)](https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btac125/6535233)
 
-[![bamtocov logo](docs/bamtocov-banner.png)](https://telatin.github.io/bamtocov/)
+[![bamtocov logo](docs/assets/img/bamtocov-banner.png)](https://telatin.github.io/bamtocov/)
 
 Tools to extract coverage informations from BAM (and CRAM) files, based on the
 [covtobed](https://github.com/telatin/covtobed) algorithm that supports 
