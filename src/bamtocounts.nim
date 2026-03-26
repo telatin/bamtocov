@@ -56,8 +56,10 @@ type
     fasta: string
     strict: bool        # Require full containment within feature
     paired: bool        # Count pairs instead of individual reads
+    properPairs: bool   # Require reads from paired experiments to be properly paired
     stranded: bool      # Track forward/reverse strand counts separately
     do_rpkm: bool       # Calculate RPKM
+    do_tpm: bool        # Calculate TPM (Transcripts Per Million)
     do_norm: bool       # Calculate counts/length
     do_coords: bool     # Output feature coordinates
     debug: bool
@@ -102,36 +104,56 @@ proc overlapsRegion(readStart, readStop: pos_t, region: interval_t[string], stri
   else:
     readStart < region.stop and region.start < readStop
 
-proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t, strict = false): float =
+proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Bam, mapq: uint8, eflag: uint16, regions: target_t, strict = false, paired = false, properPairs = false): float =
   var total: float = 0
-  for read in bam:
-    if read.mapping_quality < mapq or ( (read.flag and eflag) != 0):
-      continue
-    total += 1
-    if read.tid notin regions:
-      continue
-
-    for region in regions[read.tid]:
-      if overlapsRegion(pos_t(read.start), pos_t(read.stop), region, strict):
-        table[region.label].inc(read.flag.reverse)
+  let useIndex = bam.idx != nil
+  if useIndex:
+    for index, chrName in bam.hdr.targets:
+      if index notin regions:
+        continue
+      let indexMappedCount = stats(bam.idx, index).mapped
+      if indexMappedCount == 0:
+        continue
+      for read in bam.query(chrName.name):
+        total += 1
+        if read.mapping_quality < mapq or ((read.flag and eflag) != 0):
+          continue
+        if paired and read.flag.read2:
+          continue
+        if properPairs and (read.flag and 1) != 0 and (read.flag and 2) == 0:
+          continue
+        for region in regions[read.tid]:
+          if overlapsRegion(pos_t(read.start), pos_t(read.stop), region, strict):
+            table[region.label].inc(read.flag.reverse)
+  else:
+    for read in bam:
+      total += 1
+      if read.mapping_quality < mapq or ((read.flag and eflag) != 0):
+        continue
+      if paired and read.flag.read2:
+        continue
+      if properPairs and (read.flag and 1) != 0 and (read.flag and 2) == 0:
+        continue
+      if read.tid notin regions:
+        continue
+      for region in regions[read.tid]:
+        if overlapsRegion(pos_t(read.start), pos_t(read.stop), region, strict):
+          table[region.label].inc(read.flag.reverse)
   return total / READS_PER_MILLION.float
 
+proc alignments_count(table: var OrderedTable[string, stranded_counts_t], bam: Bam, mapq: uint8, eflag: uint16, regions: target_t, strict = false, paired = false, properPairs = false): float =
+  makeCountsTable(table, bam, mapq, eflag, regions, strict, paired, properPairs)
 
-proc alignments_count(table: var OrderedTable[string, stranded_counts_t], bam:Bam, mapq:uint8, eflag:uint16, regions: target_t, strict = false, paired = false): float =
-  var total: float = 0
-  for read in bam:
-    if read.mapping_quality < mapq or ( (read.flag and eflag) != 0):
-      continue
-    if paired and (read.flag.proper_pair == false or read.flag.read2 == true):
-      continue
-    total += 1
-    if read.tid notin regions:
-      continue
+proc rpk(f: feature_coords_t, c: stranded_counts_t): float =
+  let kb: float = f.length.float / BASES_PER_KILOBASE.float
+  if kb == 0:
+    return 0.0
+  float(counts(c)) / kb
 
-    for region in regions[read.tid]:
-      if overlapsRegion(pos_t(read.start), pos_t(read.stop), region, strict):
-        table[region.label].inc(read.flag.reverse)
-  return total / READS_PER_MILLION.float
+proc tpm(rpk: float, totalRpk: float): float =
+  if totalRpk == 0:
+    return 0.0
+  (rpk / totalRpk) * READS_PER_MILLION.float
 
 proc add(s: var feature_coords_t, z: feature_coords_t) =
   # feature_coords_t = tuple[chrom, starts, stops, name: string, length: int]
@@ -141,7 +163,7 @@ proc add(s: var feature_coords_t, z: feature_coords_t) =
   s.length += z.length
 
 proc rpkm(f: feature_coords_t, alignmentsPerMillion: float, c: stranded_counts_t): float =
-  # RPKM = (reads × 1,000,000 × 1,000) / (total_mapped_reads × feature_length)
+  # RPKM = (reads x 1,000,000 x 1,000) / (total_mapped_reads x feature_length)
   let kb: float = f.length.float / BASES_PER_KILOBASE.float
   if alignmentsPerMillion == 0:
     return 0.0
@@ -261,9 +283,10 @@ proc processSample(bamPath: string, frozenTarget: frozen_target_t, opts: Process
     opts.eflag,
     cookedTarget,
     opts.strict,
-    opts.paired
+    opts.paired,
+    opts.properPairs
   )
-  
+
 proc main(argv: var seq[string]): int =
   let env_fasta = getEnv("REF_PATH")
   let doc = format("""
@@ -271,7 +294,7 @@ proc main(argv: var seq[string]): int =
 
   Usage: bamtocounts [options] <Target> <BAM-or-CRAM>...
 
-Arguments:                                                                                                                                                 
+Arguments:
 
   <Target>       the BED (or GFF) file containing regions in which to count reads
   <BAM-or-CRAM>  the alignment file for which to calculate depth
@@ -284,6 +307,7 @@ Options:
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: $default_flags]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 1]
   --paired                     Count read pairs rather than single reads
+  --proper-pairs               Require reads from paired experiments to be properly paired
   --strict                     Read must be contained, not just overlap, with feature
   --stranded                   Print strand-specific counts
   --coords                     Also print coordinates of each feature
@@ -293,6 +317,7 @@ Options:
   -i, --id <ID>                GFF identifier [default: ID]
 
   -n, --rpkm                   Add a RPKM column
+  -m, --tpm                    Add a TPM (Transcripts Per Million) column
   -l, --norm-len               Add a counts/length column (after RPKM when both used)
   -p, --precision INT          Digits for floating point precision [default: 3]
   --header                     Print header
@@ -314,8 +339,10 @@ Options:
     fasta: if $args["--fasta"] != "nil": $args["--fasta"] else: "",
     strict: bool(args["--strict"]),
     paired: bool(args["--paired"]),
+    properPairs: bool(args["--proper-pairs"]),
     stranded: bool(args["--stranded"]),
     do_rpkm: bool(args["--rpkm"]),
+    do_tpm: bool(args["--tpm"]),
     do_norm: bool(args["--norm-len"]),
     do_coords: bool(args["--coords"]),
     debug: bool(args["--debug"]),
@@ -345,7 +372,6 @@ Options:
     if not fileExists(bamPath):
       stderr.writeLine("ERROR: BAM/CRAM file does not exist: ", bamPath)
       quit(1)
-
 
   if ($args["<Target>"]).contains("gff") or ($args["<Target>"]).contains(".gtf"):
     if opts.debug:
@@ -390,6 +416,8 @@ Options:
         header &= "\tCounts"
       if opts.do_rpkm:
         header &= "\tRPKM"
+      if opts.do_tpm:
+        header &= "\tTPM"
       if opts.do_norm:
         header &= "\tCounts/Length"
     else:
@@ -401,6 +429,8 @@ Options:
           header &= "\t" & sample
         if opts.do_rpkm:
           header &= "\t" & sample & "_RPKM"
+        if opts.do_tpm:
+          header &= "\t" & sample & "_TPM"
         if opts.do_norm:
           header &= "\t" & sample & "_Counts/Length"
     echo header
@@ -441,6 +471,26 @@ Options:
       stderr.writeLine("ERROR: ", sample.error)
       quit(1)
 
+  # Calculate TPM if requested (requires per-sample RPK sums)
+  var sampleTpm: seq[Table[string, float]] = @[]
+  if opts.do_tpm:
+    for sample in sampleResults:
+      var tpmTable = initTable[string, float]()
+      var totalRpk: float = 0.0
+      var seenFeatures = initTable[string, bool]()
+      for feature in featureOrder:
+        if feature notin seenFeatures:
+          seenFeatures[feature] = true
+          if sample.counts.hasKey(feature) and targetCoords.hasKey(feature):
+            let rpkValue = rpk(targetCoords[feature], sample.counts[feature])
+            tpmTable[feature] = rpkValue  # Store RPK temporarily
+            totalRpk += rpkValue
+      for feature in seenFeatures.keys:
+        if tpmTable.hasKey(feature):
+          tpmTable[feature] = tpm(tpmTable[feature], totalRpk)
+      sampleTpm.add(tpmTable)
+
+  var tpmIdx = 0
   for feature in featureOrder:
     let
       coords = if opts.do_coords: targetCoords[feature].chrom & "\t" & targetCoords[feature].starts & "\t" & targetCoords[feature].stops & "\t"
@@ -451,13 +501,18 @@ Options:
       row &= countsToString(rawcounts, opts.stranded)
       if opts.do_rpkm:
         row &= "\t" & rpkm(targetCoords[feature], sample.perMillion, rawcounts).formatBiggestFloat(ffDecimal, digitsPrecision)
+      if opts.do_tpm:
+        if sampleTpm[tpmIdx].hasKey(feature):
+          row &= "\t" & sampleTpm[tpmIdx][feature].formatBiggestFloat(ffDecimal, digitsPrecision)
+        else:
+          row &= "\t0.0"
       if opts.do_norm:
         row &= "\t" & (counts(rawcounts) / targetCoords[feature].length).formatBiggestFloat(ffDecimal, digitsPrecision)
       row &= "\t"
     echo row[0 .. ^2]
+    if opts.do_tpm: tpmIdx.inc()
 
 
- 
 when isMainModule:
   var args = commandLineParams()
   try:
@@ -466,4 +521,4 @@ when isMainModule:
     stderr.writeLine( "Quitting.")
   except:
     stderr.writeLine( getCurrentExceptionMsg() )
-    quit(1)   
+    quit(1)
