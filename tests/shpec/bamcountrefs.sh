@@ -12,6 +12,11 @@ describe "BamCountRefs - Count reads per reference"
     DATADIR="$( cd -- "$( dirname -- "$SELFDIR"/../../input/mini.bam )" &> /dev/null && pwd )"
   fi
 
+  # The tests use TMPDIR as a scratch variable and remove it after each block.
+  # If inherited as an exported environment variable, later mktemp calls would
+  # try to create temp directories under a deleted path.
+  unset TMPDIR
+
   describe "Binary and Version"
     it "Binary exists"
       assert file_present "$BINDIR"/bamcountrefs
@@ -461,13 +466,55 @@ describe "BamCountRefs - Count reads per reference"
     rm -rf "$TMPDIR"
   end
 
+  describe "DisCov Calculations"
+    TMPDIR=$(mktemp -d)
+
+    it "DisCov file is created with -o --discov"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/discov_test --discov "$DATADIR"/mini.bam
+      assert file_present "$TMPDIR"/discov_test_discov.tsv
+    end
+
+    it "DisCov values are numeric floats"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/discov_test --discov "$DATADIR"/mini.bam
+      DISCOV=$(grep "^seq1" "$TMPDIR"/discov_test_discov.tsv | cut -f 2)
+      assert glob "$DISCOV" "*.*"
+    end
+
+    it "Zero coverage references have DisCov of 0.0"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/discov_test --discov "$DATADIR"/mini.bam
+      DISCOV=$(grep "^seq0" "$TMPDIR"/discov_test_discov.tsv | cut -f 2)
+      assert equal "$DISCOV" "0.000000"
+    end
+
+    it "DisCov can be output to stdout"
+      OUTPUT=$("$BINDIR"/bamcountrefs --discov "$DATADIR"/mini.bam | grep "^seq1" | cut -f 2)
+      assert glob "$OUTPUT" "*.*"
+    end
+
+    it "DisCov is calculated per sample"
+      "$BINDIR"/bamcountrefs -o "$TMPDIR"/discov_multi --discov "$DATADIR"/mini.bam "$DATADIR"/mini2.bam
+      LINE=$(grep "^seq1" "$TMPDIR"/discov_multi_discov.tsv)
+      DISCOV1=$(echo "$LINE" | cut -f 2)
+      DISCOV2=$(echo "$LINE" | cut -f 3)
+      assert glob "$DISCOV1" "*.*"
+      assert glob "$DISCOV2" "*.*"
+    end
+
+    it "DisCov accepts geometric formula and custom window"
+      OUTPUT=$("$BINDIR"/bamcountrefs --discov --discov-formula geometric --discov-window 100 "$DATADIR"/mini.bam | grep "^seq1" | cut -f 2)
+      assert glob "$OUTPUT" "*.*"
+    end
+
+    rm -rf "$TMPDIR"
+  end
+
   describe "All-Metrics Flag"
     TMPDIR=$(mktemp -d)
 
     it "Creates all output files"
       "$BINDIR"/bamcountrefs -o "$TMPDIR"/all --all-metrics "$DATADIR"/mini.bam
       FILE_COUNT=$(ls "$TMPDIR"/all_*.tsv 2>/dev/null | wc -l)
-      assert equal $((FILE_COUNT+0)) 10
+      assert equal $((FILE_COUNT+0)) 11
     end
 
     it "All files have same number of data rows"
@@ -481,6 +528,7 @@ describe "BamCountRefs - Count reads per reference"
       COVERED_FRACTION_LINES=$(tail -n +2 "$TMPDIR"/all_covered_fraction.tsv | wc -l)
       VARIANCE_LINES=$(tail -n +2 "$TMPDIR"/all_variance.tsv | wc -l)
       RPB_LINES=$(tail -n +2 "$TMPDIR"/all_reads_per_base.tsv | wc -l)
+      DISCOV_LINES=$(tail -n +2 "$TMPDIR"/all_discov.tsv | wc -l)
       LENGTH_LINES=$(tail -n +2 "$TMPDIR"/all_length.tsv | wc -l)
       assert equal $COUNTS_LINES $RPKM_LINES
       assert equal $RPKM_LINES $TPM_LINES
@@ -490,7 +538,8 @@ describe "BamCountRefs - Count reads per reference"
       assert equal $COVERED_BASES_LINES $COVERED_FRACTION_LINES
       assert equal $COVERED_FRACTION_LINES $VARIANCE_LINES
       assert equal $VARIANCE_LINES $RPB_LINES
-      assert equal $RPB_LINES $LENGTH_LINES
+      assert equal $RPB_LINES $DISCOV_LINES
+      assert equal $DISCOV_LINES $LENGTH_LINES
     end
 
     it "All files have same reference order"
@@ -504,6 +553,7 @@ describe "BamCountRefs - Count reads per reference"
       COVERED_FRACTION_REFS=$(tail -n +2 "$TMPDIR"/all_covered_fraction.tsv | cut -f 1)
       VARIANCE_REFS=$(tail -n +2 "$TMPDIR"/all_variance.tsv | cut -f 1)
       RPB_REFS=$(tail -n +2 "$TMPDIR"/all_reads_per_base.tsv | cut -f 1)
+      DISCOV_REFS=$(tail -n +2 "$TMPDIR"/all_discov.tsv | cut -f 1)
       LENGTH_REFS=$(tail -n +2 "$TMPDIR"/all_length.tsv | cut -f 1)
       assert equal "$COUNTS_REFS" "$RPKM_REFS"
       assert equal "$RPKM_REFS" "$TPM_REFS"
@@ -513,7 +563,8 @@ describe "BamCountRefs - Count reads per reference"
       assert equal "$COVERED_BASES_REFS" "$COVERED_FRACTION_REFS"
       assert equal "$COVERED_FRACTION_REFS" "$VARIANCE_REFS"
       assert equal "$VARIANCE_REFS" "$RPB_REFS"
-      assert equal "$RPB_REFS" "$LENGTH_REFS"
+      assert equal "$RPB_REFS" "$DISCOV_REFS"
+      assert equal "$DISCOV_REFS" "$LENGTH_REFS"
     end
 
     rm -rf "$TMPDIR"
@@ -532,13 +583,15 @@ describe "BamCountRefs - Count reads per reference"
       assert grep "plot_type" <<< "$OUTPUT"
     end
 
-    it "Cannot use --multiqc with -o flag (stdout only)"
-      # MultiQC format only makes sense for stdout
-      # This test just ensures the tool doesn't crash
-      "$BINDIR"/bamcountrefs -o /tmp/test_multiqc --multiqc "$DATADIR"/mini.bam 2>&1
+    it "Writes MultiQC output to {basename}.mqc.txt when -o is used"
+      TMPDIR=$(mktemp -d /tmp/bamcountrefs-mqc.XXXXXX)
+      BASENAME="$TMPDIR"/test_multiqc
+      "$BINDIR"/bamcountrefs -o "$BASENAME" --multiqc "$DATADIR"/mini.bam >/dev/null 2>&1
       exitstatus=$?
-      # Should complete (may or may not produce MultiQC headers in file)
       assert equal $exitstatus 0
+      assert equal "$(test -f "$BASENAME".mqc.txt; echo $?)" 0
+      assert grep "$(cat "$BASENAME".mqc.txt)" "plot_type"
+      rm -rf "$TMPDIR"
     end
   end
 
