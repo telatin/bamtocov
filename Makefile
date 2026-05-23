@@ -1,7 +1,8 @@
 SHELL := /usr/bin/env bash
+.DEFAULT_GOAL := all
 
 # Create "make test"
-.PHONY: testshpec testshunit2 test clean build
+.PHONY: testnim testshpec testshunit2 test clean build
 
 
 # Auto-detect htslib path with proper rpath handling
@@ -21,7 +22,7 @@ BIN2=./static
 SOURCE=./src
 LIBPATH=$(shell dirname $(shell which samtools) | sed 's/bin/lib/')
 NIM_PATHS= --colors:on 
-VERSION := $(shell grep version bamtocov.nimble  | grep  -o "[0-9]\\+\.[0-9]\.[0-9]\\+")
+VERSION := $(shell grep version bamtocov.nimble  | grep  -o "[0-9]\\+\.[0-9]\\+\.[0-9]\\+")
 LIST=$(BIN)/bamtocov $(BIN)/bamtocounts $(BIN)/covtotarget $(BIN)/bamcountrefs $(BIN)/gff2bed $(BIN)/bamtocounts_legacy $(BIN)/bamtarget
 STATIC=$(BIN2)/bamtocov $(BIN2)/bamtocounts $(BIN2)/covtotarget $(BIN2)/bamcountrefs $(BIN2)/gff2bed $(BIN2)/bamtocounts_legacy $(BIN2)/bamtarget
 
@@ -32,6 +33,8 @@ $(BIN)/%: $(SOURCE)/%.nim $(SOURCE)/covutils.nim bamtocov.nimble
 		--threads:on --mm:arc \
 		--passL:"$(HTSLIB_PATH)" \
 		--opt:speed  --out:$@ $<
+
+$(BIN)/bamcountrefs: $(SOURCE)/discov.nim
 
 all: $(LIST)
 
@@ -49,9 +52,15 @@ $(BIN2)/%: $(SOURCE)/%.nim bamtocov.nimble ./hts_nim_static_builder
 	./hts_nim_static_builder  -n bamtocov.nimble -s $< -- -d:NimblePkgVersion=$(VERSION)
 	mv ./$(shell basename $@) $(BIN2)
 
-test: testshpec
+test: testnim testshpec
 
-testall: testbash testshpec testshunit2
+testall: testbash testnim testshpec testshunit2
+
+testnim:
+	@echo " --- Test Nim units --- "
+	mkdir -p nimcache/discov_test
+	nim c -r --colors:on --nimcache:nimcache/discov_test \
+		--out:nimcache/discov_test/discov_test tests/unit/discov_test.nim
 
 testshpec:
 	@echo " --- Test shpec --- "
