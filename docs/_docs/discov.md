@@ -73,7 +73,8 @@ By default, DisCov combines spread and evenness with the linear formula:
 DisCov = alpha * S + (1 - alpha) * E
 ```
 
-The `alpha` parameter controls the weight given to spread. With the default `alpha = 0.5`, spread and evenness are weighted equally:
+The `alpha` parameter controls the weight given to spread. 
+With the default `alpha = 0.5`, spread and evenness are weighted equally:
 
 ```text
 DisCov = 0.5 * S + 0.5 * E

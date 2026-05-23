@@ -21,11 +21,16 @@ bin/bamtocounts input/genome_10.gtf input/sim_out/*bam --type gene --id gene_id 
   --paired \
   > input/sim_out/btc_counts.txt
 
-FC=$(head -n 18 input/sim_out/fc_counts.txt | cut -f 1,7- | grep ^gene  | md5sum)
+FC=$(head -n 44 input/sim_out/fc_counts.txt | cut -f 1,7- | grep ^gene  | md5sum)
 BTC=$(cat input/sim_out/btc_counts.txt | grep gene | md5sum)
 
 if [[ "$FC" == "$BTC" ]]; then
   echo OK
 else
   echo FAIL
+  echo FC:
+  head -n 44 input/sim_out/fc_counts.txt | cut -f 1,7- | grep ^gene | head -n 3
+  echo ---
+  echo BTC:
+  cat input/sim_out/btc_counts.txt | grep gene | head -n 3
 fi

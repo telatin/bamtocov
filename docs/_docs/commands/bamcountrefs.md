@@ -40,12 +40,18 @@ Output options:
   --covered-ratio              Calculate coverage breadth (fraction of reference covered) [requires extra memory]
   --variance                   Calculate variance of coverage depth [requires extra memory]
   --reads-per-base             Calculate reads per base (count / length, normalized read density)
+  --discov                     Calculate Distribution of Coverage score [requires extra memory]
+  --discov-window <INT>        Window length for DisCov spread component [default: 1000]
+  --discov-fold-lower <FLOAT>  Lower fold range around median nonzero coverage [default: 0.5]
+  --discov-fold-upper <FLOAT>  Upper fold range around median nonzero coverage [default: 2.0]
+  --discov-alpha <FLOAT>       Weight on DisCov spread component [default: 0.5]
+  --discov-formula <FORMULA>   DisCov formula: linear or geometric [default: linear]
   --length                     Output reference sequence lengths
   -a, --all-metrics            Enable all available metrics
 
 Other options:
   --tag STR                    First column name [default: Contig]
-  --multiqc                    Print output as MultiQC table (stdout only)
+  --multiqc                    Print output as MultiQC table (stdout, or <BASENAME>.mqc.txt with -o)
   --debug                      Enable diagnostics
   -h, --help                   Show help
 ```
@@ -60,7 +66,7 @@ Different metrics have different memory requirements:
 
 **High memory** (requires per-base tracking):
 
-- covered-bases, covered-ratio, variance, trimmed-mean
+- covered-bases, covered-ratio, variance, trimmed-mean, discov
 
 For large reference sequences or many samples, high-memory metrics will require RAM proportional to reference length. The algorithm implements several optimizations:
 
@@ -118,6 +124,7 @@ This creates all output files:
 - `results/sample_variance.tsv` - Variance of coverage depth
 - `results/sample_trimmed_mean.tsv` - Trimmed mean coverage (robust statistic)
 - `results/sample_reads_per_base.tsv` - Reads per base (normalized read density)
+- `results/sample_discov.tsv` - Distribution of Coverage score
 - `results/sample_covered_bases.tsv` - Number of bases with coverage > 0
 - `results/sample_covered_fraction.tsv` - Fraction of reference covered (breadth)
 - `results/sample_length.tsv` - Reference sequence lengths
@@ -169,3 +176,13 @@ bin/bamcountrefs --output results/sample --reads-per-base input/*.bam
 ```
 
 This is equivalent to `count / length` and useful for comparing references of different lengths.
+
+### DisCov
+
+Calculate Distribution of Coverage scores to summarize both spatial coverage spread and evenness of nonzero depth:
+
+```bash
+bin/bamcountrefs --output results/sample --discov input/*.bam
+```
+
+DisCov uses non-overlapping windows for the spread component and the fraction of nonzero-covered bases within a fold range around the median nonzero coverage for the evenness component. The default score is the linear formula with `--discov-alpha 0.5`, `--discov-window 1000`, `--discov-fold-lower 0.5`, and `--discov-fold-upper 2.0`. See [DisCov]({% link _docs/discov.md %}) for the metric details.
