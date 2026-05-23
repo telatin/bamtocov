@@ -11,3 +11,14 @@ chr1	sim	gene	9500	10300	.	-	.	gene_id "gene07"; transcript_id "gene07";
 chr1	sim	gene	11000	11800	.	+	.	gene_id "gene08"; transcript_id "gene08";
 chr1	sim	gene	12500	13100	.	-	.	gene_id "gene09"; transcript_id "gene09";
 chr1	sim	gene	14000	15000	.	+	.	gene_id "gene10"; transcript_id "gene10";
+chr2	sim	gene	1000	1500	.	+	.	gene_id "gene201"; transcript_id "gene201";
+chr2	sim	gene	2000	2800	.	+	.	gene_id "gene202"; transcript_id "gene202";
+chr2	sim	gene	3500	4200	.	-	.	gene_id "gene203"; transcript_id "gene203";
+chr2	sim	gene	5000	5600	.	+	.	gene_id "gene204"; transcript_id "gene204";
+chr2	sim	gene	6100	7000	.	-	.	gene_id "gene205"; transcript_id "gene205";
+chr2	sim	gene	8000	8900	.	+	.	gene_id "gene206"; transcript_id "gene206";
+chr2	sim	gene	9500	10300	.	-	.	gene_id "gene207"; transcript_id "gene207";
+chr2	sim	gene	11000	11800	.	+	.	gene_id "gene208"; transcript_id "gene208";
+chr2	sim	gene	12500	13100	.	-	.	gene_id "gene209"; transcript_id "gene209";
+chr2	sim	gene	14000	15000	.	+	.	gene_id "gene210"; transcript_id "gene210";
+

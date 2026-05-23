@@ -4,6 +4,8 @@ import std/[os, strutils, tables, sequtils, cpuinfo, algorithm]
 # External dependencies
 import docopt, hts
 
+import ./discov
+
 const NimblePkgVersion {.strdefine.} = "prerelease"
 
 # Named constants for clarity
@@ -38,6 +40,7 @@ type
     sampleVariance: seq[float]
     sampleTrimmedMean: seq[float]
     sampleReadsPerBase: seq[float]
+    sampleDiscov: seq[float]
 
   # Concurrency-safe types for parallel processing
   RefAggWithName = object
@@ -50,6 +53,7 @@ type
     coveredBases: int
     sumSquaredDepth: int64
     trimmedMean: float
+    discov: float
 
   SampleResult = object
     ## Worker return value containing all metrics for one sample
@@ -66,8 +70,10 @@ type
     trackDepths: bool # Track per-base depths for variance and/or trimmed mean
     doVariance: bool
     doTrimmedMean: bool
+    doDiscov: bool
     trimMin: float    # Minimum percentile for trimmed mean (0-100)
     trimMax: float    # Maximum percentile for trimmed mean (0-100)
+    discovParams: DiscovParams
     threads: int
     fasta: string
 
@@ -219,12 +225,112 @@ proc writeTableToFile(filename: string, samples: seq[string], values: seq[seq[st
   if debug:
     stderr.writeLine("[debug] Wrote output to: ", filename)
 
+proc writeMultiQCTableToFile(filename: string, samples: seq[string],
+    values: seq[seq[string]]) =
+  # Write a MultiQC-formatted table to file
+  var file: File
+  if not open(file, filename, fmWrite):
+    stderr.writeLine("ERROR: Unable to write to file: ", filename)
+    quit(1)
+
+  file.writeLine("# plot_type: 'table'")
+  file.writeLine("# section_name: 'BamToCov counts'")
+  file.writeLine("# description: 'Feature table: counts of mapped reads against contigs'")
+  file.writeLine(samples.join("\t"))
+
+  var rowIdx = 0
+  for refName in metricsTable.keys:
+    file.writeLine(refName, "\t", values[rowIdx].join("\t"))
+    rowIdx += 1
+
+  file.close()
+  if debug:
+    stderr.writeLine("[debug] Wrote output to: ", filename)
+
+proc outputMultiQCToFile(filename: string, samples: seq[string],
+    doRPKM: bool, doTPM: bool, doMean: bool, doTrimmedMean: bool,
+    doCoveredBases: bool, doCoveredRatio: bool, doVariance: bool,
+    doReadsPerBase: bool, doDiscov: bool, doLength: bool,
+    totalMappedReads: seq[float]) =
+  discard doLength
+  var outputValues = newSeq[seq[string]](metricsTable.len)
+  var idx = 0
+
+  if doRPKM:
+    calculateRPKM(totalMappedReads)
+    for refName, metrics in metricsTable.pairs:
+      outputValues[idx] = newSeq[string](metrics.sampleRPKM.len)
+      for i in 0 ..< metrics.sampleRPKM.len:
+        outputValues[idx][i] = formatFloat(metrics.sampleRPKM[i], ffDecimal, 6)
+      idx += 1
+  elif doTPM:
+    calculateTPM()
+    for refName, metrics in metricsTable.pairs:
+      outputValues[idx] = newSeq[string](metrics.sampleTPM.len)
+      for i in 0 ..< metrics.sampleTPM.len:
+        outputValues[idx][i] = formatFloat(metrics.sampleTPM[i], ffDecimal, 6)
+      idx += 1
+  elif doMean:
+    calculateMean()
+    for refName, metrics in metricsTable.pairs:
+      outputValues[idx] = newSeq[string](metrics.sampleMean.len)
+      for i in 0 ..< metrics.sampleMean.len:
+        outputValues[idx][i] = formatFloat(metrics.sampleMean[i], ffDecimal, 6)
+      idx += 1
+  elif doTrimmedMean:
+    for refName, metrics in metricsTable.pairs:
+      outputValues[idx] = newSeq[string](metrics.sampleTrimmedMean.len)
+      for i in 0 ..< metrics.sampleTrimmedMean.len:
+        outputValues[idx][i] = formatFloat(metrics.sampleTrimmedMean[i], ffDecimal, 6)
+      idx += 1
+  elif doCoveredRatio:
+    calculateCoveredRatio()
+    for refName, metrics in metricsTable.pairs:
+      outputValues[idx] = newSeq[string](metrics.sampleCoveredRatio.len)
+      for i in 0 ..< metrics.sampleCoveredRatio.len:
+        outputValues[idx][i] = formatFloat(metrics.sampleCoveredRatio[i], ffDecimal, 6)
+      idx += 1
+  elif doCoveredBases:
+    for refName, metrics in metricsTable.pairs:
+      outputValues[idx] = newSeq[string](metrics.sampleCoveredBases.len)
+      for i in 0 ..< metrics.sampleCoveredBases.len:
+        outputValues[idx][i] = $metrics.sampleCoveredBases[i]
+      idx += 1
+  elif doVariance:
+    calculateVariance()
+    for refName, metrics in metricsTable.pairs:
+      outputValues[idx] = newSeq[string](metrics.sampleVariance.len)
+      for i in 0 ..< metrics.sampleVariance.len:
+        outputValues[idx][i] = formatFloat(metrics.sampleVariance[i], ffDecimal, 6)
+      idx += 1
+  elif doReadsPerBase:
+    calculateReadsPerBase()
+    for refName, metrics in metricsTable.pairs:
+      outputValues[idx] = newSeq[string](metrics.sampleReadsPerBase.len)
+      for i in 0 ..< metrics.sampleReadsPerBase.len:
+        outputValues[idx][i] = formatFloat(metrics.sampleReadsPerBase[i], ffDecimal, 6)
+      idx += 1
+  elif doDiscov:
+    for refName, metrics in metricsTable.pairs:
+      outputValues[idx] = newSeq[string](metrics.sampleDiscov.len)
+      for i in 0 ..< metrics.sampleDiscov.len:
+        outputValues[idx][i] = formatFloat(metrics.sampleDiscov[i], ffDecimal, 6)
+      idx += 1
+  else:
+    for refName, metrics in metricsTable.pairs:
+      outputValues[idx] = newSeq[string](metrics.sampleCounts.len)
+      for i in 0 ..< metrics.sampleCounts.len:
+        outputValues[idx][i] = $metrics.sampleCounts[i]
+      idx += 1
+
+  writeMultiQCTableToFile(filename, samples, outputValues)
+
 proc outputToStdout(samples: seq[string], multiqc: bool,
                     doRPKM: bool, doTPM: bool, doMean: bool,
                         doTrimmedMean: bool,
                     doCoveredBases: bool, doCoveredRatio: bool,
                         doVariance: bool,
-                    doReadsPerBase: bool, doLength: bool,
+                    doReadsPerBase: bool, doDiscov: bool, doLength: bool,
                     totalMappedReads: seq[float]) =
   # Legacy stdout output for backward compatibility
   if multiqc:
@@ -291,6 +397,12 @@ proc outputToStdout(samples: seq[string], multiqc: bool,
       for i in 0 ..< metrics.sampleReadsPerBase.len:
         rpbStrings[i] = formatFloat(metrics.sampleReadsPerBase[i], ffDecimal, 6)
       echo refName, "\t", rpbStrings.join("\t")
+  elif doDiscov:
+    for refName, metrics in metricsTable.pairs:
+      var discovStrings = newSeq[string](metrics.sampleDiscov.len)
+      for i in 0 ..< metrics.sampleDiscov.len:
+        discovStrings[i] = formatFloat(metrics.sampleDiscov[i], ffDecimal, 6)
+      echo refName, "\t", discovStrings.join("\t")
   else:
     # Default: output counts
     for refName, metrics in metricsTable.pairs:
@@ -302,9 +414,10 @@ proc outputToStdout(samples: seq[string], multiqc: bool,
 proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool,
     doTPM: bool, doMean: bool, doTrimmedMean: bool, doCoveredBases: bool,
         doCoveredRatio: bool,
-    doVariance: bool, doReadsPerBase: bool, doLength: bool,
+    doVariance: bool, doReadsPerBase: bool, doDiscov: bool, doLength: bool,
+        multiqc: bool,
         totalMappedReads: seq[float]) =
-  # Multi-file output: always write counts, optionally write RPKM, TPM, mean, trimmed mean, covered bases, covered ratio, variance, reads-per-base, and length
+  # Multi-file output: always write counts, optionally write requested metrics.
 
   # Always write counts
   var countsValues = newSeq[seq[string]](metricsTable.len)
@@ -424,6 +537,19 @@ proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool,
 
     writeTableToFile(basename & "_reads_per_base.tsv", samples, readsPerBaseValues)
 
+  # Optionally write DisCov
+  if doDiscov:
+    var discovValues = newSeq[seq[string]](metricsTable.len)
+    idx = 0
+    for refName, metrics in metricsTable.pairs:
+      discovValues[idx] = newSeq[string](metrics.sampleDiscov.len)
+      for i in 0 ..< metrics.sampleDiscov.len:
+        discovValues[idx][i] = formatFloat(metrics.sampleDiscov[i],
+            ffDecimal, 6)
+      idx += 1
+
+    writeTableToFile(basename & "_discov.tsv", samples, discovValues)
+
   # Optionally write reference lengths
   if doLength:
     var lengthValues = newSeq[seq[string]](metricsTable.len)
@@ -436,6 +562,11 @@ proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool,
       idx += 1
 
     writeTableToFile(basename & "_length.tsv", samples, lengthValues)
+
+  if multiqc:
+    outputMultiQCToFile(basename & ".mqc.txt", samples, doRPKM, doTPM, doMean,
+        doTrimmedMean, doCoveredBases, doCoveredRatio, doVariance,
+        doReadsPerBase, doDiscov, doLength, totalMappedReads)
 
 proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
   ## Worker thread procedure: process a single BAM file and write results
@@ -484,6 +615,7 @@ proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
       agg.coveredBases = 0
       agg.sumSquaredDepth = 0
       agg.trimmedMean = 0.0
+      agg.discov = 0.0
       task.result[].perRef[t.tid] = agg
       continue # Skip to next reference
 
@@ -567,6 +699,9 @@ proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
           else:
             agg.trimmedMean = 0.0
 
+        if task.opts.doDiscov:
+          agg.discov = computeDiscov(depths, task.opts.discovParams).score
+
     task.result[].perRef[t.tid] = agg
 
 proc applySample(res: SampleResult, sampleIdx: int, totalMappedReads: var seq[float]) =
@@ -588,6 +723,7 @@ proc applySample(res: SampleResult, sampleIdx: int, totalMappedReads: var seq[fl
       metricsTable[name].sampleCoveredBases.add(agg.coveredBases)
       metricsTable[name].sampleSumSquaredDepth.add(agg.sumSquaredDepth)
       metricsTable[name].sampleTrimmedMean.add(agg.trimmedMean)
+      metricsTable[name].sampleDiscov.add(agg.discov)
     else:
       # Reference not present in this sample - fill with zeros
       metricsTable[name].sampleCounts.add(0)
@@ -595,6 +731,7 @@ proc applySample(res: SampleResult, sampleIdx: int, totalMappedReads: var seq[fl
       metricsTable[name].sampleCoveredBases.add(0)
       metricsTable[name].sampleSumSquaredDepth.add(0)
       metricsTable[name].sampleTrimmedMean.add(0.0)
+      metricsTable[name].sampleDiscov.add(0.0)
 
 proc main(argv: var seq[string]): int =
   let env_fasta = getEnv("REF_PATH")
@@ -630,12 +767,18 @@ Output options:
   --covered-ratio              Calculate coverage breadth (fraction of reference covered) [requires extra memory]
   --variance                   Calculate variance of coverage depth [requires extra memory]
   --reads-per-base             Calculate reads per base (count / length, normalized read density)
+  --discov                     Calculate Distribution of Coverage score [requires extra memory]
+  --discov-window <INT>        Window length for DisCov spread component [default: 1000]
+  --discov-fold-lower <FLOAT>  Lower fold range around median nonzero coverage [default: 0.5]
+  --discov-fold-upper <FLOAT>  Upper fold range around median nonzero coverage [default: 2.0]
+  --discov-alpha <FLOAT>       Weight on DisCov spread component [default: 0.5]
+  --discov-formula <FORMULA>   DisCov formula: linear or geometric [default: linear]
   --length                     Output reference sequence lengths
   -a, --all-metrics            Enable all available metrics
 
 Other options:
   --tag STR                    First column name [default: Contig]
-  --multiqc                    Print output as MultiQC table (stdout only)
+  --multiqc                    Print output as MultiQC table (stdout, or <BASENAME>.mqc.txt with -o)
   --debug                      Enable diagnostics
   -h, --help                   Show help
   """ % ["version", version, "env_fasta", env_fasta, "default_flags",
@@ -671,12 +814,14 @@ Other options:
     doCoveredRatio = false
     doVariance = false
     doReadsPerBase = false
+    doDiscov = false
     doLength = false
 
   # Trimmed mean parameters
   var
     trimMin = 5.0  # Default: trim bottom 5%
     trimMax = 95.0 # Default: keep up to 95th percentile
+    discovParams = DefaultDiscovParams
 
   if args["-n"]:
     stderr.writeLine("WARNING: -n flag is deprecated, use --rpkm instead")
@@ -712,6 +857,18 @@ Other options:
   if args["--reads-per-base"]:
     doReadsPerBase = true
 
+  if args["--discov"]:
+    doDiscov = true
+
+  discovParams = DiscovParams(
+    windowLength: parse_int($args["--discov-window"]),
+    foldLower: parseFloat($args["--discov-fold-lower"]),
+    foldUpper: parseFloat($args["--discov-fold-upper"]),
+    alpha: parseFloat($args["--discov-alpha"]),
+    formula: parseDiscovFormula($args["--discov-formula"])
+  )
+  validateDiscovParams(discovParams, 1)
+
   if args["--length"]:
     doLength = true
 
@@ -724,6 +881,7 @@ Other options:
     doCoveredRatio = true
     doVariance = true
     doReadsPerBase = true
+    doDiscov = true
     doLength = true
 
   debug = args["--debug"]
@@ -746,8 +904,8 @@ Other options:
 
   # Determine if we need to track breadth (requires per-base coverage tracking)
   let trackBreadth = doCoveredBases or doCoveredRatio
-  # Determine if we need to track depths (required for variance and/or trimmed mean)
-  let trackDepths = doVariance or doTrimmedMean
+  # Determine if we need to track depths (required for variance, trimmed mean, or DisCov)
+  let trackDepths = doVariance or doTrimmedMean or doDiscov
 
   # Prepare worker options
   let workerOpts = WorkerOpts(
@@ -758,8 +916,10 @@ Other options:
     trackDepths: trackDepths,
     doVariance: doVariance,
     doTrimmedMean: doTrimmedMean,
+    doDiscov: doDiscov,
     trimMin: trimMin,
     trimMax: trimMax,
+    discovParams: discovParams,
     threads: threads,
     fasta: fastaPath
   )
@@ -836,7 +996,8 @@ Other options:
       sampleCoveredRatio: @[],
       sampleVariance: @[],
       sampleTrimmedMean: @[],
-      sampleReadsPerBase: @[]
+      sampleReadsPerBase: @[],
+      sampleDiscov: @[]
     )
 
   # Allocate total mapped reads array
@@ -857,11 +1018,12 @@ Other options:
     # Support both --rpkm and deprecated -n flag for stdout RPKM output
     outputToStdout(samples, args["--multiqc"], doRPKM, doTPM, doMean,
         doTrimmedMean, doCoveredBases, doCoveredRatio, doVariance,
-            doReadsPerBase, doLength, totalMappedReads)
+            doReadsPerBase, doDiscov, doLength, totalMappedReads)
   else:
     # Multi-file output
     outputToFiles(outputBasename, samples, doRPKM, doTPM, doMean, doTrimmedMean,
-        doCoveredBases, doCoveredRatio, doVariance, doReadsPerBase, doLength, totalMappedReads)
+        doCoveredBases, doCoveredRatio, doVariance, doReadsPerBase, doDiscov,
+        doLength, args["--multiqc"], totalMappedReads)
 
   return 0
 
