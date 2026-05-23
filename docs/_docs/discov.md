@@ -4,7 +4,9 @@ description: "Distribution of Coverage metric for coverage spread and evenness"
 tags: [coverage, discov, bamcountrefs, breadth, evenness]
 ---
 
-DisCov, short for *Distribution of Coverage*, summarises whether coverage across a reference sequence looks broad and well distributed or narrow, patchy, and uneven. This new metric was introduced by [Anvi'o team](https://www.anvio.org) (an in particular Iva Veseli) in the [Anvio development](https://github.com/merenlab/anvio/pull/2563).
+DisCov, short for *Distribution of Coverage*, summarises whether coverage across a reference sequence looks broad and well distributed or narrow, patchy, and uneven. 
+This new metric was introduced by [Anvi'o team](https://www.anvio.org)
+(and in particular [Iva Veseli](https://anvio.org/people/ivagljiva/), see [this PR](https://github.com/merenlab/anvio/pull/2563)).
 
 ![Coverage unevenness example]({{ '/assets/img/discov-image.png' | relative_url }})
 
