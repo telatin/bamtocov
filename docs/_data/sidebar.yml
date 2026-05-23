@@ -6,7 +6,7 @@
   url: "/overview/"
 - title: What is sequence coverage?
   url: "/sequence-coverage/"
-- title: DisCov
+- title: DisCov metric
   url: "/discov/"
 - title: Commands
   expanded: true

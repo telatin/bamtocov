@@ -6,7 +6,7 @@ tags: [coverage, discov, bamcountrefs, breadth, evenness]
 
 DisCov, short for *Distribution of Coverage*, summarises whether coverage across a reference sequence looks broad and well distributed or narrow, patchy, and uneven. This new metric was introduced by [Anvi'o team](https://www.anvio.org) (an in particular Iva Veseli) in the [Anvio development](https://github.com/merenlab/anvio/pull/2563).
 
-![Coverage unevenness example]({{ '/assets/img/cov-sketch.png' | relative_url }})
+![Coverage unevenness example]({{ '/assets/img/discov-image.png' | relative_url }})
 
 Average coverage is useful, but it can hide important structure, as shown in the figure where 13 reads mapped against the same contig can offer different levels of confidence of the detection of the contig itself (*left*) or spurious mappings from other sources (*right*).
 
