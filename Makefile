@@ -2,8 +2,7 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := all
 
 # Create "make test"
-.PHONY: testnim testshpec testshunit2 test clean build
-
+.PHONY: testnim testshpec testshunit2 test clean build static-docker static
 
 # Auto-detect htslib path with proper rpath handling
 HTSLIB_PATH := $(shell \
@@ -21,8 +20,8 @@ BIN=./bin
 BIN2=./static
 SOURCE=./src
 LIBPATH=$(shell dirname $(shell which samtools) | sed 's/bin/lib/')
-NIM_PATHS= --colors:on 
-VERSION := $(shell grep version bamtocov.nimble  | grep  -o "[0-9]\\+\.[0-9]\\+\.[0-9]\\+")
+NIM_PATHS= --colors:on
+VERSION := $(shell grep version bamtocov.nimble  | grep  -o "[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+")
 LIST=$(BIN)/bamtocov $(BIN)/bamtocounts $(BIN)/covtotarget $(BIN)/bamcountrefs $(BIN)/gff2bed $(BIN)/bamtocounts_legacy $(BIN)/bamtarget
 STATIC=$(BIN2)/bamtocov $(BIN2)/bamtocounts $(BIN2)/covtotarget $(BIN2)/bamcountrefs $(BIN2)/gff2bed $(BIN2)/bamtocounts_legacy $(BIN2)/bamtarget
 
@@ -38,19 +37,29 @@ $(BIN)/bamcountrefs: $(SOURCE)/discov.nim
 
 all: $(LIST)
 
-./hts_nim_static_builder:
-	wget "https://github.com/brentp/hts-nim/releases/download/v0.2.8/hts_nim_static_builder"
-	chmod +x hts_nim_static_builder
+# Docker-based static build — produces fully static musl binaries in ./static/
+# Requires only Docker on the host (no local Nim or htslib needed).
+#
+#   make static-docker               # build with versions pinned in Dockerfile.static
+#   make static-docker NIM_VERSION=2.2.4 HTSLIB_VERSION=1.21
+#
+NIM_VERSION    ?= 2.2.4
+HTSLIB_VERSION ?= 1.21
+DOCKER_IMAGE   := bamtocov-static-builder
 
-static: $(STATIC)
-
-
-$(BIN2)/%: $(SOURCE)/%.nim bamtocov.nimble ./hts_nim_static_builder
+static-docker:
+	docker build -f Dockerfile.static \
+	  --build-arg NIM_VERSION=$(NIM_VERSION) \
+	  --build-arg HTSLIB_VERSION=$(HTSLIB_VERSION) \
+	  --build-arg VERSION=$(VERSION) \
+	  -t $(DOCKER_IMAGE) .
 	mkdir -p $(BIN2)
-	echo target: $@
-	echo base: $(shell basename $@)
-	./hts_nim_static_builder  -n bamtocov.nimble -s $< -- -d:NimblePkgVersion=$(VERSION)
-	mv ./$(shell basename $@) $(BIN2)
+	docker run --rm -v "$(CURDIR)/$(BIN2):/output" $(DOCKER_IMAGE)
+	@echo "Static binaries written to $(BIN2)/"
+	@ls -lh $(BIN2)/
+
+# Alias
+static: static-docker
 
 test: testnim testshpec
 
