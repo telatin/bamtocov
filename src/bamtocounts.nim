@@ -104,6 +104,26 @@ proc overlapsRegion(readStart, readStop: pos_t, region: interval_t[string], stri
   else:
     readStart < region.stop and region.start < readStop
 
+proc fragmentSpan(read: Record): tuple[start, stop: pos_t] =
+  ## Full fragment span (leftmost mate start -> rightmost mate end) derived from
+  ## the kept read plus the insert size (TLEN), so in --paired mode a fragment
+  ## is counted when EITHER mate overlaps a feature -- fixing the case where R1
+  ## falls outside the feature but R2 falls inside. Falls back to the read's own
+  ## span when the mate is unmapped, on another contig, or TLEN is unset.
+  ## Trade-off: this credits the insert gap between mates as overlapping, the
+  ## intended "the fragment touched this feature" behaviour for DNA-seq, but it
+  ## can over-count for spliced RNA-seq (the gap may be an intron).
+  let isize = read.isize
+  if read.mate_tid == read.tid and isize != 0:
+    if isize > 0:
+      # this read is the leftmost mate: start anchors the span, +TLEN is the far end
+      result = (pos_t(read.start), pos_t(read.start) + pos_t(isize))
+    else:
+      # this read is the rightmost mate: stop anchors the span, +TLEN (negative) is the near end
+      result = (pos_t(read.stop) + pos_t(isize), pos_t(read.stop))
+  else:
+    result = (pos_t(read.start), pos_t(read.stop))
+
 proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Bam, mapq: uint8, eflag: uint16, regions: target_t, strict = false, paired = false, properPairs = false): float =
   var total: float = 0
   let useIndex = bam.idx != nil
@@ -164,26 +184,6 @@ proc tpm(rpk: float, totalRpk: float): float =
   if totalRpk == 0:
     return 0.0
   (rpk / totalRpk) * READS_PER_MILLION.float
-
-proc fragmentSpan(read: Record): tuple[start, stop: pos_t] =
-  ## Full fragment span (leftmost mate start -> rightmost mate end) derived from
-  ## the kept read plus the insert size (TLEN), so in --paired mode a fragment
-  ## is counted when EITHER mate overlaps a feature -- fixing the case where R1
-  ## falls outside the feature but R2 falls inside. Falls back to the read's own
-  ## span when the mate is unmapped, on another contig, or TLEN is unset.
-  ## Trade-off: this credits the insert gap between mates as overlapping, the
-  ## intended "the fragment touched this feature" behaviour for DNA-seq, but it
-  ## can over-count for spliced RNA-seq (the gap may be an intron).
-  let isize = read.isize
-  if read.mate_tid == read.tid and isize != 0:
-    if isize > 0:
-      # this read is the leftmost mate: start anchors the span, +TLEN is the far end
-      result = (pos_t(read.start), pos_t(read.start) + pos_t(isize))
-    else:
-      # this read is the rightmost mate: stop anchors the span, +TLEN (negative) is the near end
-      result = (pos_t(read.stop) + pos_t(isize), pos_t(read.stop))
-  else:
-    result = (pos_t(read.start), pos_t(read.stop))
 
 proc add(s: var feature_coords_t, z: feature_coords_t) =
   # feature_coords_t = tuple[chrom, starts, stops, name: string, length: int]
