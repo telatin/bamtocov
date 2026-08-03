@@ -7,8 +7,26 @@ tags: [bamtocov, history, development]
 This project extends [covtobed](https://github.com/telatin/covtobed),
 reimplementing the core algorithm in Nim.
 
+* 2.10.0
+  - `bamcountrefs` now supports multithreading
+  - Added `--length` output option to `bamcountrefs`
+  - `bamtocov` now handles Ctrl-C/Ctrl-D gracefully in streams
+  - Optimized `bamcountrefs` and refactored `bamtocounts`
+  - Added **DisCov** (merenlab) integration to `bamcountrefs`
+  - Consolidated Nim configuration (`nim.cfg`)
+  - Fixed paired-end fragment counting in `bamtocounts`
+  - Bug fixes since 2.9 (grouped under 2.10.0)
+    - `bamtocounts`: fixed overlap predicate for exact matches and boundary cases
+    - `bamtocounts`: fixed RPKM denominator to account for MAPQ/flag/paired-read filtering
+    - `bamtocov`: fails gracefully when target contigs are missing from BAM/CRAM headers
+    - `bamtocov`: preserves target-file order in reports
+    - `bamtocov`: fixed extra empty column in stranded quantized BED output
+    - `bamtocov`: fixed WIG span state leakage across contigs in stranded mode
+    - `bamtocov`: replaced deprecated output destructor with explicit flush
+    - Replaced `--op` assert with CLI validation
+
 * 2.9.0
-  * **bamcountrefs** is now multithreadsing
+  * **bamcountrefs** is now multithreading
   * bug fixes
 * 2.8.0
   * **bamcountrefs** bugfix for multiple files; optimised
