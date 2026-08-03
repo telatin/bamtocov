@@ -1,0 +1,131 @@
+# Dockerfile.static
+#
+# Builds truly static Linux x86_64 binaries for all bamtocov tools using
+# Alpine Linux (musl libc) so the resulting binaries have zero shared-lib deps.
+#
+# Requirements: Docker (no other tools needed on the host)
+#
+# Build image and extract binaries to ./static/:
+#   make static-docker
+#
+# Or manually:
+#   docker build -f Dockerfile.static -t bamtocov-builder .
+#   mkdir -p static
+#   docker run --rm -v "$(pwd)/static:/output" bamtocov-builder
+
+ARG NIM_VERSION=2.2.4
+ARG HTSLIB_VERSION=1.21
+ARG XZ_VERSION=5.6.3
+
+# ---------------------------------------------------------------------------
+# Stage 1: compile htslib (+ liblzma from source) as static musl libraries
+#
+# Alpine's xz-dev does NOT ship liblzma.a, so we build xz/lzma from source
+# first, then use it when configuring htslib.
+# ---------------------------------------------------------------------------
+FROM alpine:3.21 AS htslib-build
+
+RUN apk add --no-cache \
+    wget bzip2 make gcc musl-dev \
+    autoconf automake libtool \
+    zlib-dev zlib-static \
+    bzip2-dev bzip2-static \
+    libdeflate-dev libdeflate-static
+
+# All libraries are compiled with -march=x86-64-v3 so AVX2 is used at runtime.
+# Requires a CPU with AVX2 support (Intel Haswell 2013+, AMD Ryzen 2017+).
+# Change to -march=x86-64 for a generic portable build.
+ENV CFLAGS="-O3 -march=x86-64-v3" CXXFLAGS="-O3 -march=x86-64-v3"
+
+# Build liblzma (xz-utils) statically — no Alpine package provides liblzma.a
+ARG XZ_VERSION
+WORKDIR /build
+RUN wget -q "https://github.com/tukaani-project/xz/releases/download/v${XZ_VERSION}/xz-${XZ_VERSION}.tar.gz" \
+    && tar xzf "xz-${XZ_VERSION}.tar.gz" \
+    && cd "xz-${XZ_VERSION}" \
+    && ./configure \
+        --prefix=/usr/local \
+        --enable-static \
+        --disable-shared \
+        --disable-xz --disable-xzdec --disable-lzmadec --disable-lzmainfo \
+        --disable-lzma-links --disable-scripts --disable-doc \
+    && make -j"$(nproc)" \
+    && make install
+
+# Build htslib statically (links against the liblzma.a we just built)
+ARG HTSLIB_VERSION
+RUN wget -q \
+    "https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSION}/htslib-${HTSLIB_VERSION}.tar.bz2" \
+    && tar xjf "htslib-${HTSLIB_VERSION}.tar.bz2" \
+    && cd "htslib-${HTSLIB_VERSION}" \
+    && ./configure \
+        --prefix=/usr/local \
+        --enable-static \
+        --disable-shared \
+        --disable-libcurl \
+        --with-libdeflate \
+    && make -j"$(nproc)" \
+    && make install
+
+# ---------------------------------------------------------------------------
+# Stage 2: install Nim and build all bamtocov tools
+# ---------------------------------------------------------------------------
+FROM alpine:3.21 AS builder
+
+# gcompat: compatibility shim that lets the glibc-linked Nim binary from
+# nim-lang.org run on Alpine/musl.  The C code it generates is still compiled
+# by Alpine's musl-gcc, so the final bamtocov binaries are pure musl-static.
+RUN apk add --no-cache \
+    wget tar xz bash make gcc musl-dev git \
+    zlib-dev zlib-static \
+    bzip2-dev bzip2-static \
+    libdeflate-dev libdeflate-static \
+    gcompat ca-certificates
+
+# Pull in static libs + headers built in stage 1
+COPY --from=htslib-build /usr/local/include/htslib  /usr/local/include/htslib
+COPY --from=htslib-build /usr/local/lib/libhts.a    /usr/local/lib/libhts.a
+COPY --from=htslib-build /usr/local/lib/liblzma.a   /usr/local/lib/liblzma.a
+COPY --from=htslib-build /usr/local/include/lzma.h  /usr/local/include/lzma.h
+COPY --from=htslib-build /usr/local/include/lzma    /usr/local/include/lzma
+
+# Install Nim from nim-lang.org (pre-built glibc binary, runs via gcompat)
+ARG NIM_VERSION
+WORKDIR /opt
+RUN wget -q "https://nim-lang.org/download/nim-${NIM_VERSION}-linux_x64.tar.xz" \
+    && tar xJf "nim-${NIM_VERSION}-linux_x64.tar.xz" \
+    && rm    "nim-${NIM_VERSION}-linux_x64.tar.xz"
+ENV PATH="/opt/nim-${NIM_VERSION}/bin:${PATH}"
+RUN nim --version && nimble --version
+
+# Install Nim package dependencies declared in the .nimble file
+WORKDIR /project
+COPY bamtocov.nimble ./
+RUN nimble install -y --depsOnly
+
+# Copy sources and build
+COPY src/ src/
+COPY config.nims ./
+
+# VERSION and HTSLIB_VERSION must be re-declared here to be visible
+# (global ARGs are not inherited across FROM boundaries without re-declaration)
+ARG VERSION=""
+ARG HTSLIB_VERSION
+RUN export VER="${VERSION:-$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' bamtocov.nimble | head -1)}" && \
+    echo "==> bamtocov ${VER} — static build (Nim ${NIM_VERSION}, htslib ${HTSLIB_VERSION})" && \
+    mkdir -p /output && \
+    nimble build -y \
+        --threads:on \
+        --mm:orc \
+        -d:danger \
+        "-d:NimblePkgVersion=${VER}" \
+        --opt:speed \
+        -d:staticBuild && \
+    mkdir -p /binaries && \
+    cp bin/* /binaries/ && \
+    echo "==> Done:" && \
+    ls -lh /binaries/
+
+# At runtime, mount a host directory to /output and the binaries are copied there.
+# Example: docker run --rm -v "$(pwd)/static:/output" bamtocov-builder
+CMD ["sh", "-c", "cp -v /binaries/* /output/ && echo 'Done.' && ls -lh /output/"]

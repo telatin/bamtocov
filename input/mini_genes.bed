@@ -1,0 +1,6 @@
+seq1	0	9	Gene1
+seq1	109	200	Gene1
+seq1	300	1000	Gene2
+seq2	0	499	Gene3
+seq2	599	1000	Gene4
+seq0	0	1000	GeneX

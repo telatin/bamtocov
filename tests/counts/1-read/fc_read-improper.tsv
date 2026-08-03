@@ -1,0 +1,3 @@
+# Program:featureCounts v2.1.1; Command:"featureCounts" "-a" "gene1.gtf" "1-read/read-improper.bam" "-o" "1-read/fc_read-improper.tsv" "-t" "gene" "-F" "gene_id" "-p" 
+Geneid	Chr	Start	End	Strand	Length	1-read/read-improper.bam
+gene1	seq1	99	400	+	302	2

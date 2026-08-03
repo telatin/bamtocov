@@ -1,0 +1,2 @@
+##gff-version 3
+seq1	.	gene	100	400	.	+	.	ID=gene1;Name=gene1
