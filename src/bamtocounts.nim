@@ -115,29 +115,39 @@ proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Ba
       if indexMappedCount == 0:
         continue
       for read in bam.query(chrName.name):
-        total += 1
         if read.mapping_quality < mapq or ((read.flag and eflag) != 0):
           continue
         if paired and read.flag.read2:
           continue
         if properPairs and (read.flag and 1) != 0 and (read.flag and 2) == 0:
           continue
+        if not paired or (read.flag and 3) == 3:
+          total += 1
+        let (readStart, readStop) =
+          if paired: fragmentSpan(read)
+          else: (pos_t(read.start), pos_t(read.stop))
+        if read.tid notin regions:
+          continue
         for region in regions[read.tid]:
-          if overlapsRegion(pos_t(read.start), pos_t(read.stop), region, strict):
+          if overlapsRegion(readStart, readStop, region, strict):
             table[region.label].inc(read.flag.reverse)
   else:
     for read in bam:
-      total += 1
       if read.mapping_quality < mapq or ((read.flag and eflag) != 0):
         continue
       if paired and read.flag.read2:
         continue
       if properPairs and (read.flag and 1) != 0 and (read.flag and 2) == 0:
         continue
+      if not paired or (read.flag and 3) == 3:
+        total += 1
+      let (readStart, readStop) =
+        if paired: fragmentSpan(read)
+        else: (pos_t(read.start), pos_t(read.stop))
       if read.tid notin regions:
         continue
       for region in regions[read.tid]:
-        if overlapsRegion(pos_t(read.start), pos_t(read.stop), region, strict):
+        if overlapsRegion(readStart, readStop, region, strict):
           table[region.label].inc(read.flag.reverse)
   return total / READS_PER_MILLION.float
 
@@ -154,6 +164,26 @@ proc tpm(rpk: float, totalRpk: float): float =
   if totalRpk == 0:
     return 0.0
   (rpk / totalRpk) * READS_PER_MILLION.float
+
+proc fragmentSpan(read: Record): tuple[start, stop: pos_t] =
+  ## Full fragment span (leftmost mate start -> rightmost mate end) derived from
+  ## the kept read plus the insert size (TLEN), so in --paired mode a fragment
+  ## is counted when EITHER mate overlaps a feature -- fixing the case where R1
+  ## falls outside the feature but R2 falls inside. Falls back to the read's own
+  ## span when the mate is unmapped, on another contig, or TLEN is unset.
+  ## Trade-off: this credits the insert gap between mates as overlapping, the
+  ## intended "the fragment touched this feature" behaviour for DNA-seq, but it
+  ## can over-count for spliced RNA-seq (the gap may be an intron).
+  let isize = read.isize
+  if read.mate_tid == read.tid and isize != 0:
+    if isize > 0:
+      # this read is the leftmost mate: start anchors the span, +TLEN is the far end
+      result = (pos_t(read.start), pos_t(read.start) + pos_t(isize))
+    else:
+      # this read is the rightmost mate: stop anchors the span, +TLEN (negative) is the near end
+      result = (pos_t(read.stop) + pos_t(isize), pos_t(read.stop))
+  else:
+    result = (pos_t(read.start), pos_t(read.stop))
 
 proc add(s: var feature_coords_t, z: feature_coords_t) =
   # feature_coords_t = tuple[chrom, starts, stops, name: string, length: int]
@@ -306,7 +336,8 @@ Options:
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: $env_fasta]
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: $default_flags]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 1]
-  --paired                     Count read pairs rather than single reads
+  --paired                     Count fragments not reads: count each pair once over
+                               the full fragment span (either mate overlapping counts)
   --proper-pairs               Require reads from paired experiments to be properly paired
   --strict                     Read must be contained, not just overlap, with feature
   --stranded                   Print strand-specific counts
