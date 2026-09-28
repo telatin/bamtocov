@@ -51,6 +51,7 @@ type
     ## Command-line options affecting BAM processing
     mapq: uint8
     eflag: uint16
+    excludeMultimapping: bool  # Drop reads with NH tag > 1 (matches featureCounts' default)
     threads: int
     jobs: int          # Number of BAM files to process concurrently
     fasta: string
@@ -124,7 +125,7 @@ proc fragmentSpan(read: Record): tuple[start, stop: pos_t] =
   else:
     result = (pos_t(read.start), pos_t(read.stop))
 
-proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Bam, mapq: uint8, eflag: uint16, regions: target_t, strict = false, paired = false, properPairs = false): float =
+proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Bam, mapq: uint8, eflag: uint16, regions: target_t, strict = false, paired = false, properPairs = false, excludeMultimapping = false): float =
   var total: float = 0
   let useIndex = bam.idx != nil
   if useIndex:
@@ -136,6 +137,8 @@ proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Ba
         continue
       for read in bam.query(chrName.name):
         if read.mapping_quality < mapq or ((read.flag and eflag) != 0):
+          continue
+        if excludeMultimapping and tag[int](read, "NH").get(1) > 1:
           continue
         if paired and read.flag.read2:
           continue
@@ -155,6 +158,8 @@ proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Ba
     for read in bam:
       if read.mapping_quality < mapq or ((read.flag and eflag) != 0):
         continue
+      if excludeMultimapping and tag[int](read, "NH").get(1) > 1:
+        continue
       if paired and read.flag.read2:
         continue
       if properPairs and (read.flag and 1) != 0 and (read.flag and 2) == 0:
@@ -171,8 +176,8 @@ proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Ba
           table[region.label].inc(read.flag.reverse)
   return total / READS_PER_MILLION.float
 
-proc alignments_count(table: var OrderedTable[string, stranded_counts_t], bam: Bam, mapq: uint8, eflag: uint16, regions: target_t, strict = false, paired = false, properPairs = false): float =
-  makeCountsTable(table, bam, mapq, eflag, regions, strict, paired, properPairs)
+proc alignments_count(table: var OrderedTable[string, stranded_counts_t], bam: Bam, mapq: uint8, eflag: uint16, regions: target_t, strict = false, paired = false, properPairs = false, excludeMultimapping = false): float =
+  makeCountsTable(table, bam, mapq, eflag, regions, strict, paired, properPairs, excludeMultimapping)
 
 proc rpk(f: feature_coords_t, c: stranded_counts_t): float =
   let kb: float = f.length.float / BASES_PER_KILOBASE.float
@@ -314,7 +319,8 @@ proc processSample(bamPath: string, frozenTarget: frozen_target_t, opts: Process
     cookedTarget,
     opts.strict,
     opts.paired,
-    opts.properPairs
+    opts.properPairs,
+    opts.excludeMultimapping
   )
 
 proc main(argv: var seq[string]): int =
@@ -336,6 +342,9 @@ Options:
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: $env_fasta]
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: $default_flags]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 1]
+  --exclude-multimapping       Exclude reads with NH tag > 1 (matches featureCounts'
+                               default multi-mapping filter; no effect if the aligner
+                               does not write an NH tag)
   --paired                     Count fragments not reads: count each pair once over
                                the full fragment span (either mate overlapping counts)
   --proper-pairs               Require reads from paired experiments to be properly paired
@@ -365,6 +374,7 @@ Options:
   var opts = ProcessingOptions(
     mapq: uint8(parse_int($args["--mapq"])),
     eflag: uint16(parse_int($args["--flag"])),
+    excludeMultimapping: bool(args["--exclude-multimapping"]),
     threads: parse_int($args["--threads"]),
     jobs: parse_int($args["--jobs"]),
     fasta: if $args["--fasta"] != "nil": $args["--fasta"] else: "",
