@@ -1,5 +1,5 @@
 # Standard library
-import std/[os, strutils, tables, sequtils, cpuinfo, algorithm]
+import std/[os, strutils, tables, cpuinfo, algorithm]
 
 # External dependencies
 import docopt, hts
@@ -32,15 +32,15 @@ type
     sampleCoveredBases: seq[int]
     # Per-sample sum of squared depths for variance calculation
     sampleSumSquaredDepth: seq[int64]
-    # Per-sample normalized values (one per BAM file)
-    sampleRPKM: seq[float]
-    sampleTPM: seq[float]
-    sampleMean: seq[float]
-    sampleCoveredRatio: seq[float]
-    sampleVariance: seq[float]
+    # Per-sample values computed in the workers (derived metrics such as
+    # RPKM or TPM are computed row by row while writing the output)
     sampleTrimmedMean: seq[float]
-    sampleReadsPerBase: seq[float]
     sampleDiscov: seq[float]
+
+  Metric = enum
+    ## One output table; the order is the order of the output files
+    mCounts, mRPKM, mTPM, mMean, mTrimmedMean, mCoveredBases, mCoveredRatio,
+    mVariance, mReadsPerBase, mDiscov, mLength
 
   # Concurrency-safe types for parallel processing
   RefAggWithName = object
@@ -59,7 +59,7 @@ type
     ## Worker return value containing all metrics for one sample
     ## Uses sequences instead of Tables for thread-safety
     perRef: seq[RefAggWithName] # All reference metrics
-    mappedTotal: float # Total mapped reads for RPKM
+    countedReads: float # Reads passing filters, for RPKM
 
   WorkerOpts = object
     ## Immutable options passed to each worker thread
@@ -97,476 +97,137 @@ setControlCHook(handler)
 var
   debug = false
 
-proc calculateRPKM(totalMappedReads: seq[float]) =
-  # Calculate RPKM for all references and all samples
-  # RPKM = (reads × 1,000,000 × 1,000) / (total_mapped_reads × reference_length)
-  for refName, metrics in metricsTable.mpairs:
-    metrics.sampleRPKM = newSeqOfCap[float](metrics.sampleCounts.len)
-    let refLengthKb = metrics.length.float / BASES_PER_KILOBASE.float
+type
+  OutputContext = object
+    ## Per-sample totals needed by the normalized metrics
+    totalCountedReads: seq[float] # RPKM denominator (reads passing filters)
+    totalRPK: seq[float]         # TPM denominator (sum of reads per kilobase)
 
-    for sampleIdx in 0 ..< metrics.sampleCounts.len:
-      let reads = metrics.sampleCounts[sampleIdx].float
-      let mappedReadsMillions = totalMappedReads[sampleIdx] /
-          READS_PER_MILLION.float
-      let rpkm = reads / (refLengthKb * mappedReadsMillions)
-      metrics.sampleRPKM.add(rpkm)
+const
+  metricFileSuffix: array[Metric, string] = ["_counts.tsv", "_rpkm.tsv",
+      "_tpm.tsv", "_mean.tsv", "_trimmed_mean.tsv", "_covered_bases.tsv",
+      "_covered_fraction.tsv", "_variance.tsv", "_reads_per_base.tsv",
+      "_discov.tsv", "_length.tsv"]
 
-proc calculateTPM() =
-  # Calculate TPM for all references and all samples (two-pass algorithm)
-  # Pass 1: Calculate RPK (reads per kilobase) for each reference
-  # Pass 2: Normalize by sum of RPK and scale to million
-
-  let numSamples = if metricsTable.len > 0: metricsTable.values.toSeq[
-      0].sampleCounts.len else: 0
-  if numSamples == 0:
-    return
-
-  # For each sample, calculate TPM independently
-  for sampleIdx in 0 ..< numSamples:
-    # Pass 1: Calculate RPK for all references in this sample
-    var rpkValues = newSeq[float](metricsTable.len)
-    var totalRPK = 0.0
-    var refIdx = 0
-
-    for refName, metrics in metricsTable.pairs:
-      let reads = metrics.sampleCounts[sampleIdx].float
+proc newOutputContext(totalCountedReads: seq[float], doTPM: bool): OutputContext =
+  result.totalCountedReads = totalCountedReads
+  result.totalRPK = newSeq[float](totalCountedReads.len)
+  if doTPM:
+    # TPM = RPK / sum(RPK) * 1e6, summed in reference order for each sample
+    for metrics in metricsTable.values:
       let refLengthKb = metrics.length.float / BASES_PER_KILOBASE.float
-      let rpk = reads / refLengthKb
-      rpkValues[refIdx] = rpk
-      totalRPK += rpk
-      refIdx += 1
+      for sampleIdx in 0 ..< metrics.sampleCounts.len:
+        result.totalRPK[sampleIdx] += metrics.sampleCounts[sampleIdx].float / refLengthKb
 
-    # Pass 2: Normalize and scale to million
-    refIdx = 0
-    for refName, metrics in metricsTable.mpairs:
-      # Initialize TPM sequence on first sample
-      if sampleIdx == 0:
-        metrics.sampleTPM = newSeqOfCap[float](numSamples)
-
-      let tpm = if totalRPK > 0: (rpkValues[refIdx] / totalRPK) *
-          READS_PER_MILLION.float else: 0.0
-      metrics.sampleTPM.add(tpm)
-      refIdx += 1
-
-proc calculateMean() =
-  # Calculate mean coverage for all references and all samples
-  # Mean = total_depth / reference_length
-  # Using approximate method: total_depth = sum of alignment lengths
-  for refName, metrics in metricsTable.mpairs:
-    metrics.sampleMean = newSeqOfCap[float](metrics.sampleTotalDepth.len)
-
-    for sampleIdx in 0 ..< metrics.sampleTotalDepth.len:
-      let totalDepth = metrics.sampleTotalDepth[sampleIdx].float
-      let meanCoverage = totalDepth / metrics.length.float
-      metrics.sampleMean.add(meanCoverage)
-
-proc calculateCoveredRatio() =
-  # Calculate coverage breadth (covered bases ratio) for all references and all samples
-  # Ratio = covered_bases / reference_length
-  for refName, metrics in metricsTable.mpairs:
-    metrics.sampleCoveredRatio = newSeqOfCap[float](
-        metrics.sampleCoveredBases.len)
-
-    for sampleIdx in 0 ..< metrics.sampleCoveredBases.len:
-      let coveredBases = metrics.sampleCoveredBases[sampleIdx].float
-      let coveredRatio = coveredBases / metrics.length.float
-      metrics.sampleCoveredRatio.add(coveredRatio)
-
-proc calculateVariance() =
-  # Calculate coverage variance for all references and all samples
-  # Variance = E[X^2] - (E[X])^2
-  # Where E[X^2] = sum_squared_depth / length
-  # And E[X] = total_depth / length (mean coverage)
-  for refName, metrics in metricsTable.mpairs:
-    metrics.sampleVariance = newSeqOfCap[float](
-        metrics.sampleSumSquaredDepth.len)
-
-    for sampleIdx in 0 ..< metrics.sampleSumSquaredDepth.len:
-      let sumSquaredDepth = metrics.sampleSumSquaredDepth[sampleIdx].float
-      let totalDepth = metrics.sampleTotalDepth[sampleIdx].float
-      let length = metrics.length.float
-
-      # E[X^2] - (E[X])^2
-      let meanSquared = (totalDepth / length) * (totalDepth / length)
-      let meanOfSquares = sumSquaredDepth / length
-      let variance = meanOfSquares - meanSquared
-
-      # Variance should never be negative, but due to floating point errors it might be
-      metrics.sampleVariance.add(if variance >= 0: variance else: 0.0)
-
-proc calculateReadsPerBase() =
-  # Calculate reads per base for all references and all samples
-  # ReadsPerBase = count / length (normalized read density)
-  for refName, metrics in metricsTable.mpairs:
-    metrics.sampleReadsPerBase = newSeqOfCap[float](metrics.sampleCounts.len)
-
-    for sampleIdx in 0 ..< metrics.sampleCounts.len:
-      let count = metrics.sampleCounts[sampleIdx].float
-      let readsPerBase = count / metrics.length.float
-      metrics.sampleReadsPerBase.add(readsPerBase)
-
-proc writeTableToFile(filename: string, samples: seq[string], values: seq[seq[string]]) =
-  # Write a table to file with header
-  var file: File
-  if not open(file, filename, fmWrite):
-    stderr.writeLine("ERROR: Unable to write to file: ", filename)
-    quit(1)
-
-  # Write header
-  file.writeLine(samples.join("\t"))
-
-  # Write data rows (preserving order from metricsTable which is OrderedTable)
-  var rowIdx = 0
-  for refName in metricsTable.keys:
-    file.writeLine(refName, "\t", values[rowIdx].join("\t"))
-    rowIdx += 1
-
-  file.close()
-  if debug:
-    stderr.writeLine("[debug] Wrote output to: ", filename)
-
-proc writeMultiQCTableToFile(filename: string, samples: seq[string],
-    values: seq[seq[string]]) =
-  # Write a MultiQC-formatted table to file
-  var file: File
-  if not open(file, filename, fmWrite):
-    stderr.writeLine("ERROR: Unable to write to file: ", filename)
-    quit(1)
-
-  file.writeLine("# plot_type: 'table'")
-  file.writeLine("# section_name: 'BamToCov counts'")
-  file.writeLine("# description: 'Feature table: counts of mapped reads against contigs'")
-  file.writeLine(samples.join("\t"))
-
-  var rowIdx = 0
-  for refName in metricsTable.keys:
-    file.writeLine(refName, "\t", values[rowIdx].join("\t"))
-    rowIdx += 1
-
-  file.close()
-  if debug:
-    stderr.writeLine("[debug] Wrote output to: ", filename)
-
-proc outputMultiQCToFile(filename: string, samples: seq[string],
-    doRPKM: bool, doTPM: bool, doMean: bool, doTrimmedMean: bool,
-    doCoveredBases: bool, doCoveredRatio: bool, doVariance: bool,
-    doReadsPerBase: bool, doDiscov: bool, doLength: bool,
-    totalMappedReads: seq[float]) =
-  discard doLength
-  var outputValues = newSeq[seq[string]](metricsTable.len)
-  var idx = 0
-
-  if doRPKM:
-    calculateRPKM(totalMappedReads)
-    for refName, metrics in metricsTable.pairs:
-      outputValues[idx] = newSeq[string](metrics.sampleRPKM.len)
-      for i in 0 ..< metrics.sampleRPKM.len:
-        outputValues[idx][i] = formatFloat(metrics.sampleRPKM[i], ffDecimal, 6)
-      idx += 1
-  elif doTPM:
-    calculateTPM()
-    for refName, metrics in metricsTable.pairs:
-      outputValues[idx] = newSeq[string](metrics.sampleTPM.len)
-      for i in 0 ..< metrics.sampleTPM.len:
-        outputValues[idx][i] = formatFloat(metrics.sampleTPM[i], ffDecimal, 6)
-      idx += 1
-  elif doMean:
-    calculateMean()
-    for refName, metrics in metricsTable.pairs:
-      outputValues[idx] = newSeq[string](metrics.sampleMean.len)
-      for i in 0 ..< metrics.sampleMean.len:
-        outputValues[idx][i] = formatFloat(metrics.sampleMean[i], ffDecimal, 6)
-      idx += 1
-  elif doTrimmedMean:
-    for refName, metrics in metricsTable.pairs:
-      outputValues[idx] = newSeq[string](metrics.sampleTrimmedMean.len)
-      for i in 0 ..< metrics.sampleTrimmedMean.len:
-        outputValues[idx][i] = formatFloat(metrics.sampleTrimmedMean[i], ffDecimal, 6)
-      idx += 1
-  elif doCoveredRatio:
-    calculateCoveredRatio()
-    for refName, metrics in metricsTable.pairs:
-      outputValues[idx] = newSeq[string](metrics.sampleCoveredRatio.len)
-      for i in 0 ..< metrics.sampleCoveredRatio.len:
-        outputValues[idx][i] = formatFloat(metrics.sampleCoveredRatio[i], ffDecimal, 6)
-      idx += 1
-  elif doCoveredBases:
-    for refName, metrics in metricsTable.pairs:
-      outputValues[idx] = newSeq[string](metrics.sampleCoveredBases.len)
-      for i in 0 ..< metrics.sampleCoveredBases.len:
-        outputValues[idx][i] = $metrics.sampleCoveredBases[i]
-      idx += 1
-  elif doVariance:
-    calculateVariance()
-    for refName, metrics in metricsTable.pairs:
-      outputValues[idx] = newSeq[string](metrics.sampleVariance.len)
-      for i in 0 ..< metrics.sampleVariance.len:
-        outputValues[idx][i] = formatFloat(metrics.sampleVariance[i], ffDecimal, 6)
-      idx += 1
-  elif doReadsPerBase:
-    calculateReadsPerBase()
-    for refName, metrics in metricsTable.pairs:
-      outputValues[idx] = newSeq[string](metrics.sampleReadsPerBase.len)
-      for i in 0 ..< metrics.sampleReadsPerBase.len:
-        outputValues[idx][i] = formatFloat(metrics.sampleReadsPerBase[i], ffDecimal, 6)
-      idx += 1
-  elif doDiscov:
-    for refName, metrics in metricsTable.pairs:
-      outputValues[idx] = newSeq[string](metrics.sampleDiscov.len)
-      for i in 0 ..< metrics.sampleDiscov.len:
-        outputValues[idx][i] = formatFloat(metrics.sampleDiscov[i], ffDecimal, 6)
-      idx += 1
+proc formatValue(metrics: ReferenceMetrics, metric: Metric, sampleIdx: int,
+    ctx: OutputContext): string =
+  ## Format one cell of an output table
+  case metric
+  of mCounts:
+    $metrics.sampleCounts[sampleIdx]
+  of mCoveredBases:
+    $metrics.sampleCoveredBases[sampleIdx]
+  of mLength:
+    # Length is a property of the reference, so it is repeated for each sample
+    $metrics.length
   else:
-    for refName, metrics in metricsTable.pairs:
-      outputValues[idx] = newSeq[string](metrics.sampleCounts.len)
-      for i in 0 ..< metrics.sampleCounts.len:
-        outputValues[idx][i] = $metrics.sampleCounts[i]
-      idx += 1
+    let length = metrics.length.float
+    let value = case metric
+      of mRPKM:
+        # RPKM = (reads × 1,000,000 × 1,000) / (total_counted_reads × reference_length)
+        let refLengthKb = length / BASES_PER_KILOBASE.float
+        let countedReadsMillions = ctx.totalCountedReads[sampleIdx] /
+            READS_PER_MILLION.float
+        metrics.sampleCounts[sampleIdx].float / (refLengthKb * countedReadsMillions)
+      of mTPM:
+        let rpk = metrics.sampleCounts[sampleIdx].float /
+            (length / BASES_PER_KILOBASE.float)
+        if ctx.totalRPK[sampleIdx] > 0: (rpk / ctx.totalRPK[sampleIdx]) *
+            READS_PER_MILLION.float else: 0.0
+      of mMean:
+        # Approximate method: total_depth = sum of alignment lengths
+        metrics.sampleTotalDepth[sampleIdx].float / length
+      of mTrimmedMean:
+        metrics.sampleTrimmedMean[sampleIdx]
+      of mCoveredRatio:
+        metrics.sampleCoveredBases[sampleIdx].float / length
+      of mVariance:
+        # E[X^2] - (E[X])^2; clamp floating point errors below zero
+        let meanDepth = metrics.sampleTotalDepth[sampleIdx].float / length
+        let variance = metrics.sampleSumSquaredDepth[sampleIdx].float / length -
+            meanDepth * meanDepth
+        if variance >= 0: variance else: 0.0
+      of mReadsPerBase:
+        metrics.sampleCounts[sampleIdx].float / length
+      of mDiscov:
+        metrics.sampleDiscov[sampleIdx]
+      of mCounts, mCoveredBases, mLength:
+        0.0 # handled above
+    formatFloat(value, ffDecimal, 6)
 
-  writeMultiQCTableToFile(filename, samples, outputValues)
+proc writeTable(file: File, samples: seq[string], metric: Metric,
+    ctx: OutputContext) =
+  ## Write header and one row per reference, formatting each row as it is
+  ## written so memory does not grow with references × samples
+  file.writeLine(samples.join("\t"))
+  var line = newStringOfCap(1024)
+  for refName, metrics in metricsTable.pairs:
+    line.setLen(0)
+    line.add(refName)
+    for sampleIdx in 0 ..< metrics.sampleCounts.len:
+      line.add('\t')
+      line.add(formatValue(metrics, metric, sampleIdx, ctx))
+    file.writeLine(line)
 
-proc outputToStdout(samples: seq[string], multiqc: bool,
-                    doRPKM: bool, doTPM: bool, doMean: bool,
-                        doTrimmedMean: bool,
-                    doCoveredBases: bool, doCoveredRatio: bool,
-                        doVariance: bool,
-                    doReadsPerBase: bool, doDiscov: bool, doLength: bool,
-                    totalMappedReads: seq[float]) =
+proc openOutput(filename: string): File =
+  if not open(result, filename, fmWrite):
+    stderr.writeLine("ERROR: Unable to write to file: ", filename)
+    quit(1)
+
+proc multiqcMetric(doRPKM, doTPM, doMean, doTrimmedMean, doCoveredBases,
+    doCoveredRatio, doVariance, doReadsPerBase, doDiscov: bool): Metric =
+  ## MultiQC output holds a single table: the first requested metric
+  if doRPKM: mRPKM
+  elif doTPM: mTPM
+  elif doMean: mMean
+  elif doTrimmedMean: mTrimmedMean
+  elif doCoveredRatio: mCoveredRatio
+  elif doCoveredBases: mCoveredBases
+  elif doVariance: mVariance
+  elif doReadsPerBase: mReadsPerBase
+  elif doDiscov: mDiscov
+  else: mCounts
+
+proc outputToStdout(samples: seq[string], multiqc: bool, metric: Metric,
+    ctx: OutputContext) =
   # Legacy stdout output for backward compatibility
   if multiqc:
-    echo "# plot_type: 'table'"
-    echo "# section_name: 'BamToCov count'"
-    echo "# description: 'Feature table: counts of mapped reads against predicted viral sequences'"
+    stdout.writeLine("# plot_type: 'table'")
+    stdout.writeLine("# section_name: 'BamToCov count'")
+    stdout.writeLine("# description: 'Feature table: counts of mapped reads against predicted viral sequences'")
+  writeTable(stdout, samples, metric, ctx)
 
-  echo samples.join("\t")
-
-  if doRPKM:
-    # Output RPKM to stdout (both --rpkm and deprecated -n flag)
-    calculateRPKM(totalMappedReads)
-    for refName, metrics in metricsTable.pairs:
-      var rpkmStrings = newSeq[string](metrics.sampleRPKM.len)
-      for i in 0 ..< metrics.sampleRPKM.len:
-        rpkmStrings[i] = formatFloat(metrics.sampleRPKM[i], ffDecimal, 6)
-      echo refName, "\t", rpkmStrings.join("\t")
-  elif doTPM:
-    calculateTPM()
-    for refName, metrics in metricsTable.pairs:
-      var tpmStrings = newSeq[string](metrics.sampleTPM.len)
-      for i in 0 ..< metrics.sampleTPM.len:
-        tpmStrings[i] = formatFloat(metrics.sampleTPM[i], ffDecimal, 6)
-      echo refName, "\t", tpmStrings.join("\t")
-  elif doMean:
-    calculateMean()
-    for refName, metrics in metricsTable.pairs:
-      var meanStrings = newSeq[string](metrics.sampleMean.len)
-      for i in 0 ..< metrics.sampleMean.len:
-        meanStrings[i] = formatFloat(metrics.sampleMean[i], ffDecimal, 6)
-      echo refName, "\t", meanStrings.join("\t")
-  elif doTrimmedMean:
-    # Trimmed mean values are already calculated in worker threads
-    for refName, metrics in metricsTable.pairs:
-      var trimmedMeanStrings = newSeq[string](metrics.sampleTrimmedMean.len)
-      for i in 0 ..< metrics.sampleTrimmedMean.len:
-        trimmedMeanStrings[i] = formatFloat(metrics.sampleTrimmedMean[i],
-            ffDecimal, 6)
-      echo refName, "\t", trimmedMeanStrings.join("\t")
-  elif doCoveredRatio:
-    calculateCoveredRatio()
-    for refName, metrics in metricsTable.pairs:
-      var ratioStrings = newSeq[string](metrics.sampleCoveredRatio.len)
-      for i in 0 ..< metrics.sampleCoveredRatio.len:
-        ratioStrings[i] = formatFloat(metrics.sampleCoveredRatio[i], ffDecimal, 6)
-      echo refName, "\t", ratioStrings.join("\t")
-  elif doCoveredBases:
-    for refName, metrics in metricsTable.pairs:
-      var basesStrings = newSeq[string](metrics.sampleCoveredBases.len)
-      for i in 0 ..< metrics.sampleCoveredBases.len:
-        basesStrings[i] = $metrics.sampleCoveredBases[i]
-      echo refName, "\t", basesStrings.join("\t")
-  elif doVariance:
-    calculateVariance()
-    for refName, metrics in metricsTable.pairs:
-      var varianceStrings = newSeq[string](metrics.sampleVariance.len)
-      for i in 0 ..< metrics.sampleVariance.len:
-        varianceStrings[i] = formatFloat(metrics.sampleVariance[i], ffDecimal, 6)
-      echo refName, "\t", varianceStrings.join("\t")
-  elif doReadsPerBase:
-    calculateReadsPerBase()
-    for refName, metrics in metricsTable.pairs:
-      var rpbStrings = newSeq[string](metrics.sampleReadsPerBase.len)
-      for i in 0 ..< metrics.sampleReadsPerBase.len:
-        rpbStrings[i] = formatFloat(metrics.sampleReadsPerBase[i], ffDecimal, 6)
-      echo refName, "\t", rpbStrings.join("\t")
-  elif doDiscov:
-    for refName, metrics in metricsTable.pairs:
-      var discovStrings = newSeq[string](metrics.sampleDiscov.len)
-      for i in 0 ..< metrics.sampleDiscov.len:
-        discovStrings[i] = formatFloat(metrics.sampleDiscov[i], ffDecimal, 6)
-      echo refName, "\t", discovStrings.join("\t")
-  else:
-    # Default: output counts
-    for refName, metrics in metricsTable.pairs:
-      var countStrings = newSeq[string](metrics.sampleCounts.len)
-      for i in 0 ..< metrics.sampleCounts.len:
-        countStrings[i] = $metrics.sampleCounts[i]
-      echo refName, "\t", countStrings.join("\t")
-
-proc outputToFiles(basename: string, samples: seq[string], doRPKM: bool,
-    doTPM: bool, doMean: bool, doTrimmedMean: bool, doCoveredBases: bool,
-        doCoveredRatio: bool,
-    doVariance: bool, doReadsPerBase: bool, doDiscov: bool, doLength: bool,
-        multiqc: bool,
-        totalMappedReads: seq[float]) =
-  # Multi-file output: always write counts, optionally write requested metrics.
-
-  # Always write counts
-  var countsValues = newSeq[seq[string]](metricsTable.len)
-  var idx = 0
-  for refName, metrics in metricsTable.pairs:
-    countsValues[idx] = newSeq[string](metrics.sampleCounts.len)
-    for i in 0 ..< metrics.sampleCounts.len:
-      countsValues[idx][i] = $metrics.sampleCounts[i]
-    idx += 1
-
-  writeTableToFile(basename & "_counts.tsv", samples, countsValues)
-
-  # Optionally write RPKM
-  if doRPKM:
-    calculateRPKM(totalMappedReads)
-    var rpkmValues = newSeq[seq[string]](metricsTable.len)
-    idx = 0
-    for refName, metrics in metricsTable.pairs:
-      rpkmValues[idx] = newSeq[string](metrics.sampleRPKM.len)
-      for i in 0 ..< metrics.sampleRPKM.len:
-        rpkmValues[idx][i] = formatFloat(metrics.sampleRPKM[i], ffDecimal, 6)
-      idx += 1
-
-    writeTableToFile(basename & "_rpkm.tsv", samples, rpkmValues)
-
-  # Optionally write TPM
-  if doTPM:
-    calculateTPM()
-    var tpmValues = newSeq[seq[string]](metricsTable.len)
-    idx = 0
-    for refName, metrics in metricsTable.pairs:
-      tpmValues[idx] = newSeq[string](metrics.sampleTPM.len)
-      for i in 0 ..< metrics.sampleTPM.len:
-        tpmValues[idx][i] = formatFloat(metrics.sampleTPM[i], ffDecimal, 6)
-      idx += 1
-
-    writeTableToFile(basename & "_tpm.tsv", samples, tpmValues)
-
-  # Optionally write mean coverage
-  if doMean:
-    calculateMean()
-    var meanValues = newSeq[seq[string]](metricsTable.len)
-    idx = 0
-    for refName, metrics in metricsTable.pairs:
-      meanValues[idx] = newSeq[string](metrics.sampleMean.len)
-      for i in 0 ..< metrics.sampleMean.len:
-        meanValues[idx][i] = formatFloat(metrics.sampleMean[i], ffDecimal, 6)
-      idx += 1
-
-    writeTableToFile(basename & "_mean.tsv", samples, meanValues)
-
-  # Optionally write trimmed mean coverage
-  if doTrimmedMean:
-    # Trimmed mean values are already calculated in worker threads
-    var trimmedMeanValues = newSeq[seq[string]](metricsTable.len)
-    idx = 0
-    for refName, metrics in metricsTable.pairs:
-      trimmedMeanValues[idx] = newSeq[string](metrics.sampleTrimmedMean.len)
-      for i in 0 ..< metrics.sampleTrimmedMean.len:
-        trimmedMeanValues[idx][i] = formatFloat(metrics.sampleTrimmedMean[i],
-            ffDecimal, 6)
-      idx += 1
-
-    writeTableToFile(basename & "_trimmed_mean.tsv", samples, trimmedMeanValues)
-
-  # Optionally write covered bases (raw count)
-  if doCoveredBases:
-    var coveredBasesValues = newSeq[seq[string]](metricsTable.len)
-    idx = 0
-    for refName, metrics in metricsTable.pairs:
-      coveredBasesValues[idx] = newSeq[string](metrics.sampleCoveredBases.len)
-      for i in 0 ..< metrics.sampleCoveredBases.len:
-        coveredBasesValues[idx][i] = $metrics.sampleCoveredBases[i]
-      idx += 1
-
-    writeTableToFile(basename & "_covered_bases.tsv", samples, coveredBasesValues)
-
-  # Optionally write covered ratio (breadth as fraction)
-  if doCoveredRatio:
-    calculateCoveredRatio()
-    var coveredRatioValues = newSeq[seq[string]](metricsTable.len)
-    idx = 0
-    for refName, metrics in metricsTable.pairs:
-      coveredRatioValues[idx] = newSeq[string](metrics.sampleCoveredRatio.len)
-      for i in 0 ..< metrics.sampleCoveredRatio.len:
-        coveredRatioValues[idx][i] = formatFloat(metrics.sampleCoveredRatio[i],
-            ffDecimal, 6)
-      idx += 1
-
-    writeTableToFile(basename & "_covered_fraction.tsv", samples, coveredRatioValues)
-
-  # Optionally write variance
-  if doVariance:
-    calculateVariance()
-    var varianceValues = newSeq[seq[string]](metricsTable.len)
-    idx = 0
-    for refName, metrics in metricsTable.pairs:
-      varianceValues[idx] = newSeq[string](metrics.sampleVariance.len)
-      for i in 0 ..< metrics.sampleVariance.len:
-        varianceValues[idx][i] = formatFloat(metrics.sampleVariance[i],
-            ffDecimal, 6)
-      idx += 1
-
-    writeTableToFile(basename & "_variance.tsv", samples, varianceValues)
-
-  # Optionally write reads per base
-  if doReadsPerBase:
-    calculateReadsPerBase()
-    var readsPerBaseValues = newSeq[seq[string]](metricsTable.len)
-    idx = 0
-    for refName, metrics in metricsTable.pairs:
-      readsPerBaseValues[idx] = newSeq[string](metrics.sampleReadsPerBase.len)
-      for i in 0 ..< metrics.sampleReadsPerBase.len:
-        readsPerBaseValues[idx][i] = formatFloat(metrics.sampleReadsPerBase[i],
-            ffDecimal, 6)
-      idx += 1
-
-    writeTableToFile(basename & "_reads_per_base.tsv", samples, readsPerBaseValues)
-
-  # Optionally write DisCov
-  if doDiscov:
-    var discovValues = newSeq[seq[string]](metricsTable.len)
-    idx = 0
-    for refName, metrics in metricsTable.pairs:
-      discovValues[idx] = newSeq[string](metrics.sampleDiscov.len)
-      for i in 0 ..< metrics.sampleDiscov.len:
-        discovValues[idx][i] = formatFloat(metrics.sampleDiscov[i],
-            ffDecimal, 6)
-      idx += 1
-
-    writeTableToFile(basename & "_discov.tsv", samples, discovValues)
-
-  # Optionally write reference lengths
-  if doLength:
-    var lengthValues = newSeq[seq[string]](metricsTable.len)
-    idx = 0
-    for refName, metrics in metricsTable.pairs:
-      # Length is a property of the reference, so repeat it for each sample
-      lengthValues[idx] = newSeq[string](metrics.sampleCounts.len)
-      for i in 0 ..< metrics.sampleCounts.len:
-        lengthValues[idx][i] = $metrics.length
-      idx += 1
-
-    writeTableToFile(basename & "_length.tsv", samples, lengthValues)
+proc outputToFiles(basename: string, samples: seq[string], metrics: set[Metric],
+    multiqc: bool, multiqcMetric: Metric, ctx: OutputContext) =
+  # Multi-file output: one file per requested metric (counts are always written)
+  for metric in metrics:
+    let filename = basename & metricFileSuffix[metric]
+    var file = openOutput(filename)
+    writeTable(file, samples, metric, ctx)
+    file.close()
+    if debug:
+      stderr.writeLine("[debug] Wrote output to: ", filename)
 
   if multiqc:
-    outputMultiQCToFile(basename & ".mqc.txt", samples, doRPKM, doTPM, doMean,
-        doTrimmedMean, doCoveredBases, doCoveredRatio, doVariance,
-        doReadsPerBase, doDiscov, doLength, totalMappedReads)
+    let filename = basename & ".mqc.txt"
+    var file = openOutput(filename)
+    file.writeLine("# plot_type: 'table'")
+    file.writeLine("# section_name: 'BamToCov counts'")
+    file.writeLine("# description: 'Feature table: counts of mapped reads against contigs'")
+    writeTable(file, samples, multiqcMetric, ctx)
+    file.close()
+    if debug:
+      stderr.writeLine("[debug] Wrote output to: ", filename)
 
 proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
   ## Worker thread procedure: process a single BAM file and write results
@@ -584,21 +245,18 @@ proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
     stderr.writeLine("ERROR: BAM file requires index: ", task.bamPath)
     return
 
-  # Calculate total mapped reads for RPKM denominator
-  var totalMapped = 0'u64
-  for t in bam.hdr.targets:
-    totalMapped += stats(bam.idx, t.tid).mapped
-  task.result[].mappedTotal = float(totalMapped)
+  # hdr.targets builds a new seq (with name strings) on every call
+  let targets = bam.hdr.targets
 
   # Initialize per-reference sequence
-  task.result[].perRef = newSeq[RefAggWithName](bam.hdr.targets.len)
+  task.result[].perRef = newSeq[RefAggWithName](targets.len)
 
   # Determine if we can use fast index statistics
   let canUseIndexStats = (task.opts.mapq == 0'u8) and (task.opts.eflag ==
       4'u16) and (not task.opts.trackBreadth) and (not task.opts.trackDepths)
 
   # Process each reference sequence
-  for t in bam.hdr.targets:
+  for t in targets:
     var agg: RefAggWithName
     agg.name = t.name
     agg.length = int(t.length)
@@ -704,34 +362,55 @@ proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
 
     task.result[].perRef[t.tid] = agg
 
-proc applySample(res: SampleResult, sampleIdx: int, totalMappedReads: var seq[float]) =
+  # RPKM denominator: reads that passed the filters (-F, -Q, -P), not the
+  # index "mapped" total, which includes e.g. supplementary alignments
+  var countedReads = 0
+  for agg in task.result[].perRef:
+    countedReads += agg.count
+  task.result[].countedReads = float(countedReads)
+
+proc applySample(res: SampleResult, sampleIdx: int, totalCountedReads: var seq[float]) =
   ## Merge a worker's results into the global metricsTable
   ## This runs in the main thread only - no concurrency issues
-  totalMappedReads[sampleIdx] = res.mappedTotal
+  totalCountedReads[sampleIdx] = res.countedReads
 
-  # Create a lookup table for fast access
-  var refLookup = initTable[string, RefAggWithName]()
-  for agg in res.perRef:
-    refLookup[agg.name] = agg
+  # Fast path: when the BAM header has the same references in the same order
+  # as the first sample, perRef[i] is row i. Otherwise fall back to a name
+  # lookup (built once, on the first mismatch).
+  var refLookup: Table[string, int]
+  var useLookup = false
 
   # Process each reference in the global table order
-  for name in metricsTable.keys:
-    if refLookup.hasKey(name):
-      let agg = refLookup[name]
-      metricsTable[name].sampleCounts.add(agg.count)
-      metricsTable[name].sampleTotalDepth.add(agg.totalDepth)
-      metricsTable[name].sampleCoveredBases.add(agg.coveredBases)
-      metricsTable[name].sampleSumSquaredDepth.add(agg.sumSquaredDepth)
-      metricsTable[name].sampleTrimmedMean.add(agg.trimmedMean)
-      metricsTable[name].sampleDiscov.add(agg.discov)
+  var rowIdx = 0
+  for name, metrics in metricsTable.mpairs:
+    var aggIdx = -1
+    if not useLookup and rowIdx < res.perRef.len and res.perRef[rowIdx].name == name:
+      aggIdx = rowIdx
+    else:
+      if not useLookup:
+        useLookup = true
+        refLookup = initTable[string, int](res.perRef.len)
+        for i, agg in res.perRef:
+          refLookup[agg.name] = i
+      aggIdx = refLookup.getOrDefault(name, -1)
+    inc(rowIdx)
+
+    if aggIdx >= 0:
+      template agg: untyped = res.perRef[aggIdx]
+      metrics.sampleCounts.add(agg.count)
+      metrics.sampleTotalDepth.add(agg.totalDepth)
+      metrics.sampleCoveredBases.add(agg.coveredBases)
+      metrics.sampleSumSquaredDepth.add(agg.sumSquaredDepth)
+      metrics.sampleTrimmedMean.add(agg.trimmedMean)
+      metrics.sampleDiscov.add(agg.discov)
     else:
       # Reference not present in this sample - fill with zeros
-      metricsTable[name].sampleCounts.add(0)
-      metricsTable[name].sampleTotalDepth.add(0)
-      metricsTable[name].sampleCoveredBases.add(0)
-      metricsTable[name].sampleSumSquaredDepth.add(0)
-      metricsTable[name].sampleTrimmedMean.add(0.0)
-      metricsTable[name].sampleDiscov.add(0.0)
+      metrics.sampleCounts.add(0)
+      metrics.sampleTotalDepth.add(0)
+      metrics.sampleCoveredBases.add(0)
+      metrics.sampleSumSquaredDepth.add(0)
+      metrics.sampleTrimmedMean.add(0.0)
+      metrics.sampleDiscov.add(0.0)
 
 proc main(argv: var seq[string]): int =
   let env_fasta = getEnv("REF_PATH")
@@ -757,7 +436,7 @@ Output options:
   -o, --output <BASENAME>      Output file basename (generates multiple files: <BASENAME>_counts.tsv, etc.)
                                If not specified, outputs counts to stdout in TSV format
   -n                           [DEPRECATED: use --rpkm] Output RPKM values
-  --rpkm                       Calculate RPKM (reads per kilobase per million mapped reads)
+  --rpkm                       Calculate RPKM (reads per kilobase per million reads passing filters)
   --tpm                        Calculate TPM (transcripts per million)
   --mean                       Calculate mean coverage depth (approximate method, no extra memory)
   --trimmed-mean               Calculate trimmed mean coverage (robust against outliers) [requires extra memory]
@@ -929,18 +608,14 @@ Other options:
   for i in 0 ..< numBamFiles:
     results[i] = SampleResult(
       perRef: @[],
-      mappedTotal: 0.0
+      countedReads: 0.0
     )
 
-  # Create worker threads
+  # Create worker tasks
   var bamFiles = @(args["<BAM-or-CRAM>"])
   var workerThreads = newSeq[Thread[WorkerTask]](numBamFiles)
   var tasks = newSeq[WorkerTask](numBamFiles)
 
-  if debug:
-    stderr.writeLine("[debug] Starting worker threads...")
-
-  # Initialize tasks and start threads
   for i, bamFile in bamFiles:
     var sampleName = extractFilename(bamFile)
     let sampleBaseName = sampleName.split('.')[0]
@@ -952,78 +627,88 @@ Other options:
       opts: workerOpts,
       result: addr results[i]
     )
-    createThread(workerThreads[i], processOneFile, tasks[i])
 
-  # Wait for all threads to complete
+  # Allocate total counted reads array (RPKM denominators)
+  var totalCountedReads = newSeq[float](numBamFiles)
+
+  # Run at most numWorkers threads at a time (sliding window): results are
+  # merged in input order as each file finishes, then freed, so memory for
+  # per-sample results is bounded by the number of workers
+  if debug:
+    stderr.writeLine("[debug] Starting worker threads...")
+  var nextToStart = 0
+  while nextToStart < min(numWorkers, numBamFiles):
+    createThread(workerThreads[nextToStart], processOneFile, tasks[nextToStart])
+    inc(nextToStart)
+
   if debug:
     stderr.writeLine("[debug] Waiting for workers to complete...")
+    stderr.writeLine("[debug] Merging results from all workers...")
   for i in 0 ..< numBamFiles:
     if debug:
       stderr.writeLine("[debug]   Opening BAM/CRAM file ", i)
     joinThread(workerThreads[i])
+    if nextToStart < numBamFiles:
+      createThread(workerThreads[nextToStart], processOneFile, tasks[nextToStart])
+      inc(nextToStart)
 
-  # Use first result to establish master reference order
-  if debug:
-    stderr.writeLine("[debug] Establishing reference order from first sample...")
-    stderr.writeLine("[debug] First result has ", results[0].perRef.len, " references")
+    if i == 0:
+      # Use first result to establish master reference order
+      if debug:
+        stderr.writeLine("[debug] Establishing reference order from first sample...")
+        stderr.writeLine("[debug] First result has ", results[0].perRef.len, " references")
 
-  if results[0].perRef.len == 0:
-    stderr.writeLine("ERROR: First worker returned no references")
-    quit(1)
+      if results[0].perRef.len == 0:
+        stderr.writeLine("ERROR: First worker returned no references")
+        quit(1)
 
-  let firstRes = results[0]
+      # perRef is indexed by tid, so it is already in BAM header order
+      if debug:
+        stderr.writeLine("[debug] Initializing global metrics table with ",
+            results[0].perRef.len, " references")
+      metricsTable = initOrderedTable[string, ReferenceMetrics](results[0].perRef.len)
+      for agg in results[0].perRef:
+        metricsTable[agg.name] = ReferenceMetrics(
+          refName: agg.name,
+          order: agg.order,
+          length: agg.length,
+          sampleCounts: newSeqOfCap[int](numBamFiles),
+          sampleTotalDepth: newSeqOfCap[int64](numBamFiles),
+          sampleCoveredBases: newSeqOfCap[int](numBamFiles),
+          sampleSumSquaredDepth: newSeqOfCap[int64](numBamFiles),
+          sampleTrimmedMean: newSeqOfCap[float](numBamFiles),
+          sampleDiscov: newSeqOfCap[float](numBamFiles)
+        )
 
-  # Sort references by BAM order (tid) and initialize global metricsTable
-  var sortedRefs = firstRes.perRef
-  algorithm.sort(sortedRefs, proc(a, b: RefAggWithName): int = cmp(a.order, b.order))
-
-  if debug:
-    stderr.writeLine("[debug] Initializing global metrics table with ",
-        sortedRefs.len, " references")
-  metricsTable = initOrderedTable[string, ReferenceMetrics]()
-  for agg in sortedRefs:
-    metricsTable[agg.name] = ReferenceMetrics(
-      refName: agg.name,
-      order: agg.order,
-      length: agg.length,
-      sampleCounts: newSeqOfCap[int](numBamFiles),
-      sampleTotalDepth: newSeqOfCap[int64](numBamFiles),
-      sampleCoveredBases: newSeqOfCap[int](numBamFiles),
-      sampleSumSquaredDepth: newSeqOfCap[int64](numBamFiles),
-      sampleRPKM: @[],
-      sampleTPM: @[],
-      sampleMean: @[],
-      sampleCoveredRatio: @[],
-      sampleVariance: @[],
-      sampleTrimmedMean: @[],
-      sampleReadsPerBase: @[],
-      sampleDiscov: @[]
-    )
-
-  # Allocate total mapped reads array
-  var totalMappedReads = newSeq[float](numBamFiles)
-
-  # Apply all sample results
-  if debug:
-    stderr.writeLine("[debug] Merging results from all workers...")
-  for i in 0 ..< numBamFiles:
     if debug:
       stderr.writeLine("[debug]    merging results for sample: \"", samples[
           i+1], "\"")
-    applySample(results[i], i, totalMappedReads)
+    applySample(results[i], i, totalCountedReads)
+    results[i] = SampleResult() # free this sample's per-reference results
 
   # Output results
+  let
+    ctx = newOutputContext(totalCountedReads, doTPM)
+    singleMetric = multiqcMetric(doRPKM, doTPM, doMean, doTrimmedMean,
+        doCoveredBases, doCoveredRatio, doVariance, doReadsPerBase, doDiscov)
   if useStdout:
-    # Legacy stdout output (backward compatible)
-    # Support both --rpkm and deprecated -n flag for stdout RPKM output
-    outputToStdout(samples, args["--multiqc"], doRPKM, doTPM, doMean,
-        doTrimmedMean, doCoveredBases, doCoveredRatio, doVariance,
-            doReadsPerBase, doDiscov, doLength, totalMappedReads)
+    # Legacy stdout output (backward compatible): a single metric
+    outputToStdout(samples, args["--multiqc"], singleMetric, ctx)
   else:
     # Multi-file output
-    outputToFiles(outputBasename, samples, doRPKM, doTPM, doMean, doTrimmedMean,
-        doCoveredBases, doCoveredRatio, doVariance, doReadsPerBase, doDiscov,
-        doLength, args["--multiqc"], totalMappedReads)
+    var metrics = {mCounts}
+    if doRPKM: metrics.incl(mRPKM)
+    if doTPM: metrics.incl(mTPM)
+    if doMean: metrics.incl(mMean)
+    if doTrimmedMean: metrics.incl(mTrimmedMean)
+    if doCoveredBases: metrics.incl(mCoveredBases)
+    if doCoveredRatio: metrics.incl(mCoveredRatio)
+    if doVariance: metrics.incl(mVariance)
+    if doReadsPerBase: metrics.incl(mReadsPerBase)
+    if doDiscov: metrics.incl(mDiscov)
+    if doLength: metrics.incl(mLength)
+    outputToFiles(outputBasename, samples, metrics, args["--multiqc"],
+        singleMetric, ctx)
 
   return 0
 
