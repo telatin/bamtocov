@@ -18,6 +18,7 @@ reimplementing the core algorithm in Nim.
   - Bug fixes since 2.9 (grouped under 2.10.0)
     - `bamtocounts`: fixed overlap predicate for exact matches and boundary cases
     - `bamtocounts`: fixed RPKM denominator to account for MAPQ/flag/paired-read filtering
+    - `bamcountrefs`: fixed RPKM denominator to count only reads passing the filters (it used the index mapped total, including supplementary alignments)
     - `bamtocov`: fails gracefully when target contigs are missing from BAM/CRAM headers
     - `bamtocov`: preserves target-file order in reports
     - `bamtocov`: fixed extra empty column in stranded quantized BED output

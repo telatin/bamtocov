@@ -59,7 +59,7 @@ type
     ## Worker return value containing all metrics for one sample
     ## Uses sequences instead of Tables for thread-safety
     perRef: seq[RefAggWithName] # All reference metrics
-    mappedTotal: float # Total mapped reads for RPKM
+    countedReads: float # Reads passing filters, for RPKM
 
   WorkerOpts = object
     ## Immutable options passed to each worker thread
@@ -100,7 +100,7 @@ var
 type
   OutputContext = object
     ## Per-sample totals needed by the normalized metrics
-    totalMappedReads: seq[float] # RPKM denominator
+    totalCountedReads: seq[float] # RPKM denominator (reads passing filters)
     totalRPK: seq[float]         # TPM denominator (sum of reads per kilobase)
 
 const
@@ -109,9 +109,9 @@ const
       "_covered_fraction.tsv", "_variance.tsv", "_reads_per_base.tsv",
       "_discov.tsv", "_length.tsv"]
 
-proc newOutputContext(totalMappedReads: seq[float], doTPM: bool): OutputContext =
-  result.totalMappedReads = totalMappedReads
-  result.totalRPK = newSeq[float](totalMappedReads.len)
+proc newOutputContext(totalCountedReads: seq[float], doTPM: bool): OutputContext =
+  result.totalCountedReads = totalCountedReads
+  result.totalRPK = newSeq[float](totalCountedReads.len)
   if doTPM:
     # TPM = RPK / sum(RPK) * 1e6, summed in reference order for each sample
     for metrics in metricsTable.values:
@@ -134,11 +134,11 @@ proc formatValue(metrics: ReferenceMetrics, metric: Metric, sampleIdx: int,
     let length = metrics.length.float
     let value = case metric
       of mRPKM:
-        # RPKM = (reads × 1,000,000 × 1,000) / (total_mapped_reads × reference_length)
+        # RPKM = (reads × 1,000,000 × 1,000) / (total_counted_reads × reference_length)
         let refLengthKb = length / BASES_PER_KILOBASE.float
-        let mappedReadsMillions = ctx.totalMappedReads[sampleIdx] /
+        let countedReadsMillions = ctx.totalCountedReads[sampleIdx] /
             READS_PER_MILLION.float
-        metrics.sampleCounts[sampleIdx].float / (refLengthKb * mappedReadsMillions)
+        metrics.sampleCounts[sampleIdx].float / (refLengthKb * countedReadsMillions)
       of mTPM:
         let rpk = metrics.sampleCounts[sampleIdx].float /
             (length / BASES_PER_KILOBASE.float)
@@ -247,12 +247,6 @@ proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
 
   # hdr.targets builds a new seq (with name strings) on every call
   let targets = bam.hdr.targets
-
-  # Calculate total mapped reads for RPKM denominator
-  var totalMapped = 0'u64
-  for t in targets:
-    totalMapped += stats(bam.idx, t.tid).mapped
-  task.result[].mappedTotal = float(totalMapped)
 
   # Initialize per-reference sequence
   task.result[].perRef = newSeq[RefAggWithName](targets.len)
@@ -368,10 +362,17 @@ proc processOneFile(task: WorkerTask) {.thread, gcsafe.} =
 
     task.result[].perRef[t.tid] = agg
 
-proc applySample(res: SampleResult, sampleIdx: int, totalMappedReads: var seq[float]) =
+  # RPKM denominator: reads that passed the filters (-F, -Q, -P), not the
+  # index "mapped" total, which includes e.g. supplementary alignments
+  var countedReads = 0
+  for agg in task.result[].perRef:
+    countedReads += agg.count
+  task.result[].countedReads = float(countedReads)
+
+proc applySample(res: SampleResult, sampleIdx: int, totalCountedReads: var seq[float]) =
   ## Merge a worker's results into the global metricsTable
   ## This runs in the main thread only - no concurrency issues
-  totalMappedReads[sampleIdx] = res.mappedTotal
+  totalCountedReads[sampleIdx] = res.countedReads
 
   # Fast path: when the BAM header has the same references in the same order
   # as the first sample, perRef[i] is row i. Otherwise fall back to a name
@@ -435,7 +436,7 @@ Output options:
   -o, --output <BASENAME>      Output file basename (generates multiple files: <BASENAME>_counts.tsv, etc.)
                                If not specified, outputs counts to stdout in TSV format
   -n                           [DEPRECATED: use --rpkm] Output RPKM values
-  --rpkm                       Calculate RPKM (reads per kilobase per million mapped reads)
+  --rpkm                       Calculate RPKM (reads per kilobase per million reads passing filters)
   --tpm                        Calculate TPM (transcripts per million)
   --mean                       Calculate mean coverage depth (approximate method, no extra memory)
   --trimmed-mean               Calculate trimmed mean coverage (robust against outliers) [requires extra memory]
@@ -607,7 +608,7 @@ Other options:
   for i in 0 ..< numBamFiles:
     results[i] = SampleResult(
       perRef: @[],
-      mappedTotal: 0.0
+      countedReads: 0.0
     )
 
   # Create worker tasks
@@ -627,8 +628,8 @@ Other options:
       result: addr results[i]
     )
 
-  # Allocate total mapped reads array
-  var totalMappedReads = newSeq[float](numBamFiles)
+  # Allocate total counted reads array (RPKM denominators)
+  var totalCountedReads = newSeq[float](numBamFiles)
 
   # Run at most numWorkers threads at a time (sliding window): results are
   # merged in input order as each file finishes, then freed, so memory for
@@ -682,12 +683,12 @@ Other options:
     if debug:
       stderr.writeLine("[debug]    merging results for sample: \"", samples[
           i+1], "\"")
-    applySample(results[i], i, totalMappedReads)
+    applySample(results[i], i, totalCountedReads)
     results[i] = SampleResult() # free this sample's per-reference results
 
   # Output results
   let
-    ctx = newOutputContext(totalMappedReads, doTPM)
+    ctx = newOutputContext(totalCountedReads, doTPM)
     singleMetric = multiqcMetric(doRPKM, doTPM, doMean, doTrimmedMean,
         doCoveredBases, doCoveredRatio, doVariance, doReadsPerBase, doDiscov)
   if useStdout:

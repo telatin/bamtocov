@@ -30,7 +30,7 @@ Output options:
   -o, --output <BASENAME>      Output file basename (generates multiple files: <BASENAME>_counts.tsv, etc.)
                                If not specified, outputs counts to stdout in TSV format
   -n                           [DEPRECATED: use --rpkm] Output RPKM values
-  --rpkm                       Calculate RPKM (reads per kilobase per million mapped reads)
+  --rpkm                       Calculate RPKM (reads per kilobase per million reads passing filters)
   --tpm                        Calculate TPM (transcripts per million)
   --mean                       Calculate mean coverage depth (approximate method, no extra memory)
   --trimmed-mean               Calculate trimmed mean coverage (robust against outliers) [requires extra memory]

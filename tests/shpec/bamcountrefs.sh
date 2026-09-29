@@ -120,6 +120,12 @@ describe "BamCountRefs - Count reads per reference"
       assert glob "$RPKM2" "*.*"
     end
 
+    it "RPKM denominator uses only reads passing filters (single reference: RPKM = 1e9/length)"
+      # shotgun.bam has 8 supplementary alignments, excluded by the default -F 3844
+      RPKM=$("$BINDIR"/bamcountrefs --rpkm "$DATADIR"/phi/shotgun.bam | grep "^NC_001422" | cut -f 2)
+      assert equal "$RPKM" "$(awk 'BEGIN{printf "%.6f", 1e9/5386}')"
+    end
+
     it "Deprecated -n flag still works with warning"
       OUTPUT=$("$BINDIR"/bamcountrefs -n "$DATADIR"/mini.bam 2>&1)
       # Check for deprecation warning
