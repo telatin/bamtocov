@@ -1,5 +1,5 @@
 ---
-title: BamToCov 3.0
+title: BamToCov
 description: "A suite of utilities for BAM file coverage analysis"
 tags: [bamtocov, bam, coverage, bioinformatics, sequence]
 permalink: /
@@ -9,6 +9,10 @@ permalink: /
 ![Conda Downloads](https://img.shields.io/conda/dn/bioconda/bamtocov) | 😺 **[Repository](https://github.com/telatin/bamtocov)** | 📦 **[Releases](https://github.com/telatin/bamtocov/releases)** | 📃 **[Paper](https://academic.oup.com/bioinformatics/article/38/9/2617/6535233)**
 
 ![bamtocov logo]({{ '/assets/img/bamtocov-banner.png' | relative_url }})
+
+:::note
+BamToCov 3.0 is under development and will bring some breaking changes in the command line interface
+:::
 
 BamToCov is inspired by the [UNIX Phylosophy](https://en.wikipedia.org/wiki/Unix_philosophy) and the tools are designed for efficient computation
 of a very specific task. 
