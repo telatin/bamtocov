@@ -637,6 +637,78 @@ describe "BamCountRefs - Count reads per reference"
       exitstatus=$?
       assert gt $exitstatus 0
     end
+
+    it "Fails when a later BAM file is missing"
+      "$BINDIR"/bamcountrefs "$DATADIR"/mini.bam /nonexistent/file.bam > /dev/null 2>&1
+      exitstatus=$?
+      assert gt $exitstatus 0
+    end
+
+    it "Fails when a later BAM file has no index"
+      "$BINDIR"/bamcountrefs "$DATADIR"/mini.bam "$DATADIR"/mini-unsorted.bam > /dev/null 2>&1
+      exitstatus=$?
+      assert gt $exitstatus 0
+    end
+
+    it "Error message names the failing file"
+      MSG=$("$BINDIR"/bamcountrefs "$DATADIR"/mini.bam /nonexistent/file.bam 2>&1 > /dev/null | grep "^ERROR")
+      assert glob "$MSG" "*/nonexistent/file.bam*"
+    end
+
+    it "Rejects out-of-range mapping quality"
+      "$BINDIR"/bamcountrefs -Q 300 "$DATADIR"/mini.bam > /dev/null 2>&1
+      exitstatus=$?
+      assert gt $exitstatus 0
+    end
+
+    it "Rejects non-numeric thread count"
+      "$BINDIR"/bamcountrefs -T x "$DATADIR"/mini.bam > /dev/null 2>&1
+      exitstatus=$?
+      assert gt $exitstatus 0
+    end
+
+    it "Rejects inverted trimmed mean bounds"
+      "$BINDIR"/bamcountrefs --trimmed-mean --trim-min 50 --trim-max 10 "$DATADIR"/mini.bam > /dev/null 2>&1
+      exitstatus=$?
+      assert gt $exitstatus 0
+    end
+  end
+
+  describe "Robustness"
+    it "Index fast path honours --proper-pairs (-F 4 -P)"
+      COUNT=$("$BINDIR"/bamcountrefs -F 4 -P "$DATADIR"/phi/shotgun.bam | grep "^NC_001422" | cut -f 2)
+      assert equal $((COUNT+0)) 896
+    end
+
+    it "Index fast path does not zero --mean (-F 4)"
+      MEAN=$("$BINDIR"/bamcountrefs -F 4 --mean "$DATADIR"/mini.bam | grep "^seq1" | cut -f 2)
+      assert equal "$MEAN" "1.500000"
+    end
+
+    it "Counts CRAM reads (no index statistics)"
+      COUNT=$("$BINDIR"/bamcountrefs -r "$DATADIR"/mini.fa "$DATADIR"/mini.cram | grep "^seq1" | cut -f 2)
+      assert equal $((COUNT+0)) 15
+    end
+
+    it "Counts CRAM reads with -F 4"
+      COUNT=$("$BINDIR"/bamcountrefs -F 4 -r "$DATADIR"/mini.fa "$DATADIR"/mini.cram | grep "^seq2" | cut -f 2)
+      assert equal $((COUNT+0)) 10
+    end
+
+    it "Counts references whose names look like regions"
+      COUNT=$("$BINDIR"/bamcountrefs "$DATADIR"/refnames.bam | grep -F "seq1:1-10" | cut -f 2)
+      assert equal $((COUNT+0)) 10
+    end
+
+    it "Warns when sample headers differ"
+      WARN=$("$BINDIR"/bamcountrefs "$DATADIR"/mini.bam "$DATADIR"/phi/shotgun.bam 2>&1 > /dev/null | grep -c "^WARNING")
+      assert equal $((WARN+0)) 2
+    end
+
+    it "Makes duplicate sample names unique"
+      HEADER=$("$BINDIR"/bamcountrefs "$DATADIR"/mini.bam "$DATADIR"/mini.bam 2> /dev/null | head -n 1)
+      assert equal "$HEADER" "$(printf 'Contig\tmini\tmini_2')"
+    end
   end
 
   describe "PhiX Dataset Tests"
