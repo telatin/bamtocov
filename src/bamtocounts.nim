@@ -1,5 +1,5 @@
 # Standard library
-import std/[os, strutils, tables]
+import std/[os, strutils, tables, math]
 
 # External dependencies
 import docopt, hts
@@ -24,7 +24,11 @@ type
   EKeyboardInterrupt = object of CatchableError
 
   # Basic type definitions for internal use
-  stranded_counts_t = tuple[fwd, rev: int]
+  # fwd/rev are float, not int, so that --fraction can credit an ambiguous
+  # fragment with 1/n instead of 1 per overlapping region; ordinary (non-
+  # ambiguous, non---fraction) counts are always whole numbers and are
+  # printed without a decimal point by countsToString/formatCount below.
+  stranded_counts_t = tuple[fwd, rev: float]
   feature_coords_t  = tuple[chrom, starts, stops, name: string, length: int]
   counts_t*         = TableRef[interval_t[string], int]
   frozen_region_t   = object
@@ -52,6 +56,9 @@ type
     mapq: uint8
     eflag: uint16
     excludeMultimapping: bool  # Drop reads with NH tag > 1 (matches featureCounts' default)
+    bothMapped: bool           # Require mate mapped (matches featureCounts' -B; mate_unmapped flag bit 0x8)
+    fraction: bool             # Split an ambiguous fragment's credit 1/n across its n overlapping regions
+    excludeAmbiguous: bool     # Drop a fragment entirely if it overlaps more than one region
     threads: int
     jobs: int          # Number of BAM files to process concurrently
     fasta: string
@@ -84,20 +91,31 @@ proc handler() {.noconv.} =
 setControlCHook(handler)
 
 # Helper procedures for stranded counts
-proc inc(c: var stranded_counts_t, reverse=false) =
+proc inc(c: var stranded_counts_t, reverse=false, weight=1.0) =
   if reverse == false:
-    c.fwd += 1
+    c.fwd += weight
   else:
-    c.rev += 1
+    c.rev += weight
 
-proc counts(c: stranded_counts_t): int =
+proc counts(c: stranded_counts_t): float =
   c.fwd + c.rev
 
-proc countsToString(c: stranded_counts_t, stranded: bool): string =
-  if stranded:
-    $(c.fwd) & "\t" & $(c.rev)
+proc formatCount(v: float, digitsPrecision: int): string =
+  ## Whole-number counts (the only possibility unless --fraction is used)
+  ## print exactly as before (no decimal point); only a genuine fractional
+  ## credit from --fraction gets decimals. The epsilon guards against sums
+  ## of inexact fractions (e.g. three lots of 1/3) landing a hair off a
+  ## whole number.
+  if abs(v - round(v)) < 1e-9:
+    $(int(round(v)))
   else:
-    $(c.fwd + c.rev)
+    v.formatBiggestFloat(ffDecimal, digitsPrecision)
+
+proc countsToString(c: stranded_counts_t, stranded: bool, digitsPrecision: int): string =
+  if stranded:
+    formatCount(c.fwd, digitsPrecision) & "\t" & formatCount(c.rev, digitsPrecision)
+  else:
+    formatCount(c.fwd + c.rev, digitsPrecision)
 
 proc overlapsRegion(readStart, readStop: pos_t, region: interval_t[string], strict = false): bool =
   if strict:
@@ -125,7 +143,24 @@ proc fragmentSpan(read: Record): tuple[start, stop: pos_t] =
   else:
     result = (pos_t(read.start), pos_t(read.stop))
 
-proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Bam, mapq: uint8, eflag: uint16, regions: target_t, strict = false, paired = false, properPairs = false, excludeMultimapping = false): float =
+proc assignToRegions(table: var OrderedTable[string, stranded_counts_t], matches: seq[string], reverse: bool, fraction: bool, excludeAmbiguous: bool) =
+  ## Credit a fragment to the region(s) it overlaps.
+  ##   0 matches: nothing to do.
+  ##   1 match:   full credit, as always.
+  ##   >1 matches (ambiguous): default is still full credit to every region
+  ##     (bamtocounts' long-standing behaviour); --exclude-ambiguous drops
+  ##     the fragment entirely instead (matches featureCounts' own default);
+  ##     --fraction splits credit 1/n across the n regions instead (matches
+  ##     featureCounts -O --fraction) so the fragment isn't double-spent.
+  if matches.len == 0:
+    return
+  if matches.len > 1 and excludeAmbiguous:
+    return
+  let weight = if matches.len > 1 and fraction: 1.0 / matches.len.float else: 1.0
+  for label in matches:
+    table[label].inc(reverse, weight)
+
+proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Bam, mapq: uint8, eflag: uint16, regions: target_t, strict = false, paired = false, properPairs = false, excludeMultimapping = false, bothMapped = false, fraction = false, excludeAmbiguous = false): float =
   var total: float = 0
   let useIndex = bam.idx != nil
   if useIndex:
@@ -140,6 +175,8 @@ proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Ba
           continue
         if excludeMultimapping and tag[int](read, "NH").get(1) > 1:
           continue
+        if paired and bothMapped and (read.flag and 8) != 0:
+          continue
         if paired and read.flag.read2:
           continue
         if properPairs and (read.flag and 1) != 0 and (read.flag and 2) == 0:
@@ -151,14 +188,18 @@ proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Ba
           else: (pos_t(read.start), pos_t(read.stop))
         if read.tid notin regions:
           continue
+        var matches: seq[string] = @[]
         for region in regions[read.tid]:
           if overlapsRegion(readStart, readStop, region, strict):
-            table[region.label].inc(read.flag.reverse)
+            matches.add(region.label)
+        assignToRegions(table, matches, read.flag.reverse, fraction, excludeAmbiguous)
   else:
     for read in bam:
       if read.mapping_quality < mapq or ((read.flag and eflag) != 0):
         continue
       if excludeMultimapping and tag[int](read, "NH").get(1) > 1:
+        continue
+      if paired and bothMapped and (read.flag and 8) != 0:
         continue
       if paired and read.flag.read2:
         continue
@@ -171,13 +212,15 @@ proc makeCountsTable(table: var OrderedTable[string, stranded_counts_t], bam: Ba
         else: (pos_t(read.start), pos_t(read.stop))
       if read.tid notin regions:
         continue
+      var matches: seq[string] = @[]
       for region in regions[read.tid]:
         if overlapsRegion(readStart, readStop, region, strict):
-          table[region.label].inc(read.flag.reverse)
+          matches.add(region.label)
+      assignToRegions(table, matches, read.flag.reverse, fraction, excludeAmbiguous)
   return total / READS_PER_MILLION.float
 
-proc alignments_count(table: var OrderedTable[string, stranded_counts_t], bam: Bam, mapq: uint8, eflag: uint16, regions: target_t, strict = false, paired = false, properPairs = false, excludeMultimapping = false): float =
-  makeCountsTable(table, bam, mapq, eflag, regions, strict, paired, properPairs, excludeMultimapping)
+proc alignments_count(table: var OrderedTable[string, stranded_counts_t], bam: Bam, mapq: uint8, eflag: uint16, regions: target_t, strict = false, paired = false, properPairs = false, excludeMultimapping = false, bothMapped = false, fraction = false, excludeAmbiguous = false): float =
+  makeCountsTable(table, bam, mapq, eflag, regions, strict, paired, properPairs, excludeMultimapping, bothMapped, fraction, excludeAmbiguous)
 
 proc rpk(f: feature_coords_t, c: stranded_counts_t): float =
   let kb: float = f.length.float / BASES_PER_KILOBASE.float
@@ -310,7 +353,7 @@ proc processSample(bamPath: string, frozenTarget: frozen_target_t, opts: Process
 
   for _, intervals in cookedTarget:
     for interval in intervals:
-      result.counts[interval.label] = (fwd: 0, rev: 0)
+      result.counts[interval.label] = (fwd: 0.0, rev: 0.0)
 
   result.perMillion = result.counts.alignments_count(
     bam,
@@ -320,7 +363,10 @@ proc processSample(bamPath: string, frozenTarget: frozen_target_t, opts: Process
     opts.strict,
     opts.paired,
     opts.properPairs,
-    opts.excludeMultimapping
+    opts.excludeMultimapping,
+    opts.bothMapped,
+    opts.fraction,
+    opts.excludeAmbiguous
   )
 
 proc main(argv: var seq[string]): int =
@@ -347,7 +393,18 @@ Options:
                                does not write an NH tag)
   --paired                     Count fragments not reads: count each pair once over
                                the full fragment span (either mate overlapping counts)
+  -B, --both-mapped            Require the mate to be mapped (matches featureCounts' -B;
+                               only excludes mate_unmapped reads, unlike --proper-pairs
+                               which also excludes discordant-but-both-mapped pairs)
   --proper-pairs               Require reads from paired experiments to be properly paired
+  --fraction                   Split an ambiguous fragment's credit 1/n across the n
+                               regions it overlaps, instead of crediting each with a
+                               full 1 (matches featureCounts -O --fraction). Mutually
+                               exclusive with --exclude-ambiguous.
+  --exclude-ambiguous          Drop a fragment entirely if it overlaps more than one
+                               region, instead of crediting every region it overlaps
+                               (matches featureCounts' own default, without -O).
+                               Mutually exclusive with --fraction.
   --strict                     Read must be contained, not just overlap, with feature
   --stranded                   Print strand-specific counts
   --coords                     Also print coordinates of each feature
@@ -375,6 +432,9 @@ Options:
     mapq: uint8(parse_int($args["--mapq"])),
     eflag: uint16(parse_int($args["--flag"])),
     excludeMultimapping: bool(args["--exclude-multimapping"]),
+    bothMapped: bool(args["--both-mapped"]),
+    fraction: bool(args["--fraction"]),
+    excludeAmbiguous: bool(args["--exclude-ambiguous"]),
     threads: parse_int($args["--threads"]),
     jobs: parse_int($args["--jobs"]),
     fasta: if $args["--fasta"] != "nil": $args["--fasta"] else: "",
@@ -389,6 +449,10 @@ Options:
     debug: bool(args["--debug"]),
     verbose: bool(args["--verbose"])
   )
+
+  if opts.fraction and opts.excludeAmbiguous:
+    stderr.writeLine("ERROR: --fraction and --exclude-ambiguous are mutually exclusive")
+    quit(1)
 
   if opts.debug:
     stderr.writeLine("args:", args)
@@ -538,8 +602,8 @@ Options:
                  else: ""
     var row = feature & "\t" & coords
     for sample in sampleResults:
-      let rawcounts = sample.counts.getOrDefault(feature, (fwd: 0, rev: 0))
-      row &= countsToString(rawcounts, opts.stranded)
+      let rawcounts = sample.counts.getOrDefault(feature, (fwd: 0.0, rev: 0.0))
+      row &= countsToString(rawcounts, opts.stranded, digitsPrecision)
       if opts.do_rpkm:
         row &= "\t" & rpkm(targetCoords[feature], sample.perMillion, rawcounts).formatBiggestFloat(ffDecimal, digitsPrecision)
       if opts.do_tpm:
@@ -548,7 +612,7 @@ Options:
         else:
           row &= "\t0.0"
       if opts.do_norm:
-        row &= "\t" & (counts(rawcounts) / targetCoords[feature].length).formatBiggestFloat(ffDecimal, digitsPrecision)
+        row &= "\t" & (counts(rawcounts) / targetCoords[feature].length.float).formatBiggestFloat(ffDecimal, digitsPrecision)
       row &= "\t"
     echo row[0 .. ^2]
     if opts.do_tpm: tpmIdx.inc()

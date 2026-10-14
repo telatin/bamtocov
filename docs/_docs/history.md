@@ -7,6 +7,24 @@ tags: [bamtocov, history, development]
 This project extends [covtobed](https://github.com/telatin/covtobed),
 reimplementing the core algorithm in Nim.
 
+* 2.11.0
+  - `bamtocounts`: new options to match featureCounts behaviour
+    - `--exclude-multimapping` drops reads with an `NH` tag > 1
+    - `-B/--both-mapped` (with `--paired`) requires the mate to be mapped
+    - `--fraction` splits an ambiguous fragment's credit 1/n across the n regions it overlaps (like `featureCounts -O --fraction`)
+    - `--exclude-ambiguous` drops fragments overlapping more than one region (featureCounts' default); mutually exclusive with `--fraction`
+  - `bamcountrefs`: `--debug` prints the version and build features (e.g. libdeflate) of the htslib loaded at run time
+  - `bamcountrefs`: much lower memory use with identical output: tables are streamed row by row, per-sample results are freed after merging, and only the metrics actually written are computed (e.g. 1 M contigs × 12 BAMs: 5.4 GB → 2.6 GB peak)
+  - `bamcountrefs`: `-W/--workers` is now honoured (it was parsed but ignored, starting one thread per BAM)
+  - Bug fixes
+    - `bamcountrefs`: **RPKM** denominator is now the number of reads passing the filters (`-F`, `-Q`, `-P`), not the index "mapped" total; values now match coverm. RPKM changes wherever filters remove reads; other metrics are unchanged
+    - `bamcountrefs`: **CRAM** counts were all zero (missing CRAM index statistics were read as "no reads")
+    - `bamcountrefs`: `-P/--proper-pairs` and `--mean` were ignored by the index-count shortcut used with `-F 4 -Q 0`
+    - `bamcountrefs`: references are queried by id, so a reference named like a region (e.g. `seq1:1-10`) is no longer reported as 0
+    - `bamcountrefs`: unreadable, unindexed or corrupted input files stop the run with an error naming the file (instead of a silent column of zeros)
+    - `bamcountrefs`: warns when samples have different references; duplicate sample names are made unique (`name_2`, ...)
+    - `bamcountrefs`: invalid numeric options are rejected (e.g. `-Q 300`, `--trim-min` >= `--trim-max`)
+
 * 2.10.0
   - `bamcountrefs` now supports multithreading
   - Added `--length` output option to `bamcountrefs`

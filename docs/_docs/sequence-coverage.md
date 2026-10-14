@@ -6,7 +6,7 @@ tags: [coverage, depth, bam, physical-coverage]
 
 Sequence coverage, or sequencing depth, is the number of aligned reads that include a given nucleotide of a reference genome. It is usually displayed as a coverage track above the read alignments: peaks indicate heavily sequenced positions, while drops highlight poorly supported regions.
 
-![Sequence coverage and physical coverage]({{ '/assets/img/cov-sketch.png' | relative_url }})
+![Sequence coverage and physical coverage]({{ '/assets/img/coverage.svg' | relative_url }})
 
 <sub>Sequence coverage counts bases directly covered by reads. Physical coverage counts bases covered or spanned by paired-end fragments.</sub>
 
