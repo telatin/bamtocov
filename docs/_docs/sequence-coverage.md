@@ -23,7 +23,7 @@ This distinction matters when the bases in a region are not sequenced uniformly,
 
 Coverage tracks become more useful when they are converted into intervals. Instead of inspecting one nucleotide at a time, you can collapse the profile into BED features and mark regions above or below a threshold.
 
-![Coverage threshold converted to BED]({{ '/assets/img/threshold.png' | relative_url }})
+![Coverage threshold converted to BED]({{ '/assets/img/coverage-ths.svg' | relative_url }})
 
 <sub>A coverage profile can be summarized as BED intervals, for example to report regions above or below a chosen threshold.</sub>
 
