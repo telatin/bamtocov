@@ -8,9 +8,17 @@ nav_order: 2
 A program that counts the number of reads per target in
 a BAM file. The BAM file does not need to be sorted.
 
-Overlapping features will be reported each with all the
+By default, overlapping features will be reported each with all the
 counts, so a read mapped in a shared interval will be counted
-more than once.
+more than once. This can be changed with `--exclude-ambiguous`
+(drop reads/fragments overlapping more than one feature, as
+featureCounts does by default) or `--fraction` (split the credit
+1/n across the n overlapping features, as `featureCounts -O --fraction`).
+The two options are mutually exclusive.
+
+Other options to reproduce featureCounts filters are
+`--exclude-multimapping` (drop reads with `NH` tag > 1) and,
+with `--paired`, `-B/--both-mapped` (require the mate to be mapped).
 
 ## Help screen
 
@@ -19,7 +27,7 @@ BamToCounts
 
   Usage: bamtocounts [options] <Target> <BAM-or-CRAM>...
 
-Arguments:                                                                                                                                                 
+Arguments:
 
   <Target>       the BED (or GFF) file containing regions in which to count reads
   <BAM-or-CRAM>  the alignment file for which to calculate depth
@@ -31,7 +39,23 @@ Options:
   -r, --fasta <fasta>          FASTA file for use with CRAM files [default: ]
   -F, --flag <FLAG>            Exclude reads with any of the bits in FLAG set [default: 1796]
   -Q, --mapq <mapq>            Mapping quality threshold [default: 1]
-  --paired                     Count read pairs rather than single reads
+  --exclude-multimapping       Exclude reads with NH tag > 1 (matches featureCounts'
+                               default multi-mapping filter; no effect if the aligner
+                               does not write an NH tag)
+  --paired                     Count fragments not reads: count each pair once over
+                               the full fragment span (either mate overlapping counts)
+  -B, --both-mapped            Require the mate to be mapped (matches featureCounts' -B;
+                               only excludes mate_unmapped reads, unlike --proper-pairs
+                               which also excludes discordant-but-both-mapped pairs)
+  --proper-pairs               Require reads from paired experiments to be properly paired
+  --fraction                   Split an ambiguous fragment's credit 1/n across the n
+                               regions it overlaps, instead of crediting each with a
+                               full 1 (matches featureCounts -O --fraction). Mutually
+                               exclusive with --exclude-ambiguous.
+  --exclude-ambiguous          Drop a fragment entirely if it overlaps more than one
+                               region, instead of crediting every region it overlaps
+                               (matches featureCounts' own default, without -O).
+                               Mutually exclusive with --fraction.
   --strict                     Read must be contained, not just overlap, with feature
   --stranded                   Print strand-specific counts
   --coords                     Also print coordinates of each feature
@@ -41,6 +65,7 @@ Options:
   -i, --id <ID>                GFF identifier [default: ID]
 
   -n, --rpkm                   Add a RPKM column
+  -m, --tpm                    Add a TPM (Transcripts Per Million) column
   -l, --norm-len               Add a counts/length column (after RPKM when both used)
   -p, --precision INT          Digits for floating point precision [default: 3]
   --header                     Print header
@@ -72,9 +97,14 @@ Otherwise
 If `--rpkm`:
 * RPKM (Reads Per Kilobase per Million)
 
+If `--tpm`:
+* TPM (Transcripts Per Million)
 
-If `--norm`:
+If `--norm-len`:
 * Normalized counts (per target length)
+
+Counts are integers, unless `--fraction` is used: fractional
+credits are then printed with `--precision` decimal digits.
 
 ### Examples
 

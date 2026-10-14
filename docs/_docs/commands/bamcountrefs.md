@@ -70,9 +70,20 @@ Different metrics have different memory requirements:
 
 For large reference sequences or many samples, high-memory metrics will require RAM proportional to reference length. The algorithm implements several optimizations:
 
-- Zero-coverage references are detected early and skip expensive computations
+- Only the metrics that are written are computed (without `-o`, stdout holds a single table, so other requested metrics are skipped)
+- Per-base arrays are only allocated for references with reads passing the filters
 - Depth arrays are shared between variance and trimmed-mean calculations
-- Processing is parallelized across multiple BAM files
+- Output tables are streamed row by row, and per-sample results are freed as soon as they are merged
+- Up to `-W/--workers` BAM files are processed in parallel: raise it to trade memory for speed
+
+## Notes
+
+- **RPKM** uses as denominator the number of reads passing the filters (`-F`, `-Q`, `-P`), so values match tools like coverm. Releases before 2.11.0 used the BAM index "mapped" total, which also includes supplementary, secondary, duplicate and QC-fail alignments.
+- **CRAM** files are supported (pass the reference with `-r/--fasta`, which defaults to `$REF_PATH`). Since CRAM indices lack per-reference statistics, the alignments are always scanned.
+- Without `-o`, a single table is printed to stdout: the first requested metric among rpkm, tpm, mean, trimmed-mean, covered-ratio, covered-bases, variance, reads-per-base and discov (counts if none).
+- All input files should be aligned against the same reference: a warning is printed if a sample's references differ from the first one (missing references are reported as 0, extra ones dropped). Duplicate sample names are made unique (`name_2`, ...).
+- A file that cannot be opened, has no index, or fails to decompress stops the run with an error naming the file.
+- `--debug` prints the version and build features of the htslib loaded at run time. A build without libdeflate (`libdeflate=no`) is typically about twice as slow at decoding BAM files.
 
 ## Examples
 
