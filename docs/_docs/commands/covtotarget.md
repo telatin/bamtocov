@@ -9,9 +9,11 @@ This tool produce a coverage per feature report based on
 a *target* (annotation file in BED or GFF3 format) and the output
 of *[covtobed 1.0](https://github.com/telatin/covtobed)*.
 
-:warning: Note that while [bamtocov](bamtocov.md) produces an
+:::warning
+Note that while [bamtocov](bamtocov.md) produces an
 identical coverage output, it also includes the built-in
 feature to restrict the analysis to the target.
+:::
 
 ## Help screen
 

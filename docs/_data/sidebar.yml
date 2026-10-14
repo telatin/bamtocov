@@ -39,5 +39,7 @@
   items:
     - title: First steps
       url: "/tutorial/first/"
+    - title: Metagenome read counts
+      url: "/tutorial/metagenome/"
 - title: Frequently Asked Questions
   url: "/faq/"
