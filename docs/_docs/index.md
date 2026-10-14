@@ -6,7 +6,7 @@ permalink: /
 ---
  
  
-😺 **[Repository](https://github.com/telatin/bamtocov)** | 📦 **[Releases](https://github.com/telatin/bamtocov/releases)** | 📃 **[Paper](https://academic.oup.com/bioinformatics/article/38/9/2617/6535233)**
+![Conda Downloads](https://img.shields.io/conda/dn/bioconda/bamtocov) | 😺 **[Repository](https://github.com/telatin/bamtocov)** | 📦 **[Releases](https://github.com/telatin/bamtocov/releases)** | 📃 **[Paper](https://academic.oup.com/bioinformatics/article/38/9/2617/6535233)**
 
 ![bamtocov logo]({{ '/assets/img/bamtocov-banner.png' | relative_url }})
 
