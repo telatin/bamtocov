@@ -558,14 +558,16 @@ Output options:
   --covered-ratio              Calculate coverage breadth (fraction of reference covered) [requires extra memory]
   --variance                   Calculate variance of coverage depth [requires extra memory]
   --reads-per-base             Calculate reads per base (count / length, normalized read density)
+  --length                     Output reference sequence lengths
+  -a, --all-metrics            Enable all available metrics
+
+DisCov [EXPERIMENTAL]:
   --discov                     Calculate Distribution of Coverage score [requires extra memory]
   --discov-window <INT>        Window length for DisCov spread component [default: 1000]
   --discov-fold-lower <FLOAT>  Lower fold range around median nonzero coverage [default: 0.5]
   --discov-fold-upper <FLOAT>  Upper fold range around median nonzero coverage [default: 2.0]
   --discov-alpha <FLOAT>       Weight on DisCov spread component [default: 0.5]
   --discov-formula <FORMULA>   DisCov formula: linear or geometric [default: linear]
-  --length                     Output reference sequence lengths
-  -a, --all-metrics            Enable all available metrics
 
 Other options:
   --tag STR                    First column name [default: Contig]
@@ -652,6 +654,7 @@ Other options:
     doReadsPerBase = true
 
   if args["--discov"]:
+    stderr.writeLine("Warning: DisCov metrics is experimental and under development")
     doDiscov = true
 
   discovParams = DiscovParams(
@@ -675,8 +678,8 @@ Other options:
     doCoveredRatio = true
     doVariance = true
     doReadsPerBase = true
-    doDiscov = true
     doLength = true
+    # --discov is experimental and excluded from --all-metrics on purpose
 
   debug = args["--debug"]
 
