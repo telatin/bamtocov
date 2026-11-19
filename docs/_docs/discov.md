@@ -8,6 +8,11 @@ DisCov, short for *Distribution of Coverage*, summarises whether coverage across
 This new metric was introduced by [Anvi'o team](https://www.anvio.org)
 (and in particular [Iva Veseli](https://anvio.org/people/ivagljiva/), see [this PR](https://github.com/merenlab/anvio/pull/2563)).
 
+:::warning
+DisCov is an experimental feature and is expected to change. A stable implemenation of DisCov will be implemented in version 3.0
+:::
+
+
 ![Coverage unevenness example]({{ '/assets/img/discov-image.png' | relative_url }})
 
 Average coverage is useful, but it can hide important structure, as shown in the figure where 13 reads mapped against the same contig can offer different levels of confidence of the detection of the contig itself (*left*) or spurious mappings from other sources (*right*).
