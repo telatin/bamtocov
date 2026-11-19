@@ -520,7 +520,8 @@ describe "BamCountRefs - Count reads per reference"
     it "Creates all output files"
       "$BINDIR"/bamcountrefs -o "$TMPDIR"/all --all-metrics "$DATADIR"/mini.bam
       FILE_COUNT=$(ls "$TMPDIR"/all_*.tsv 2>/dev/null | wc -l)
-      assert equal $((FILE_COUNT+0)) 11
+      # --discov is experimental and intentionally excluded from --all-metrics
+      assert equal $((FILE_COUNT+0)) 10
     end
 
     it "All files have same number of data rows"
@@ -534,7 +535,6 @@ describe "BamCountRefs - Count reads per reference"
       COVERED_FRACTION_LINES=$(tail -n +2 "$TMPDIR"/all_covered_fraction.tsv | wc -l)
       VARIANCE_LINES=$(tail -n +2 "$TMPDIR"/all_variance.tsv | wc -l)
       RPB_LINES=$(tail -n +2 "$TMPDIR"/all_reads_per_base.tsv | wc -l)
-      DISCOV_LINES=$(tail -n +2 "$TMPDIR"/all_discov.tsv | wc -l)
       LENGTH_LINES=$(tail -n +2 "$TMPDIR"/all_length.tsv | wc -l)
       assert equal $COUNTS_LINES $RPKM_LINES
       assert equal $RPKM_LINES $TPM_LINES
@@ -544,8 +544,7 @@ describe "BamCountRefs - Count reads per reference"
       assert equal $COVERED_BASES_LINES $COVERED_FRACTION_LINES
       assert equal $COVERED_FRACTION_LINES $VARIANCE_LINES
       assert equal $VARIANCE_LINES $RPB_LINES
-      assert equal $RPB_LINES $DISCOV_LINES
-      assert equal $DISCOV_LINES $LENGTH_LINES
+      assert equal $RPB_LINES $LENGTH_LINES
     end
 
     it "All files have same reference order"
@@ -559,7 +558,6 @@ describe "BamCountRefs - Count reads per reference"
       COVERED_FRACTION_REFS=$(tail -n +2 "$TMPDIR"/all_covered_fraction.tsv | cut -f 1)
       VARIANCE_REFS=$(tail -n +2 "$TMPDIR"/all_variance.tsv | cut -f 1)
       RPB_REFS=$(tail -n +2 "$TMPDIR"/all_reads_per_base.tsv | cut -f 1)
-      DISCOV_REFS=$(tail -n +2 "$TMPDIR"/all_discov.tsv | cut -f 1)
       LENGTH_REFS=$(tail -n +2 "$TMPDIR"/all_length.tsv | cut -f 1)
       assert equal "$COUNTS_REFS" "$RPKM_REFS"
       assert equal "$RPKM_REFS" "$TPM_REFS"
@@ -569,8 +567,7 @@ describe "BamCountRefs - Count reads per reference"
       assert equal "$COVERED_BASES_REFS" "$COVERED_FRACTION_REFS"
       assert equal "$COVERED_FRACTION_REFS" "$VARIANCE_REFS"
       assert equal "$VARIANCE_REFS" "$RPB_REFS"
-      assert equal "$RPB_REFS" "$DISCOV_REFS"
-      assert equal "$DISCOV_REFS" "$LENGTH_REFS"
+      assert equal "$RPB_REFS" "$LENGTH_REFS"
     end
 
     rm -rf "$TMPDIR"
