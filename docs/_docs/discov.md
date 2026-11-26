@@ -24,6 +24,8 @@ DisCov adds two checks that average depth does not answer:
 
 The final score ranges from `0` to `1`. Higher values mean the coverage is both broader and more even.
 
+[Open the DisCov playground]({{ '/discov-playground/' | relative_url }}) to place reads on a reference and see how the score changes.
+
 ## Components
 
 DisCov is built from two component scores, `S` and `E`.

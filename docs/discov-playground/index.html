@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore how aligned reads affect the BamToCov DisCov score.">
+  <title>DisCov playground | BamToCov</title>
+  <script>
+    (() => {
+      let savedTheme;
+      try { savedTheme = localStorage.getItem("theme"); } catch {}
+      const systemTheme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      const root = document.documentElement;
+      root.dataset.theme = savedTheme === "light" || savedTheme === "dark" ? savedTheme : systemTheme;
+      document.addEventListener("DOMContentLoaded", () => {
+        const toggle = document.querySelector(".dark-mode-toggle");
+        const update = () => toggle.setAttribute("aria-pressed", root.dataset.theme === "dark");
+        toggle.addEventListener("click", () => {
+          root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
+          update();
+          try { localStorage.setItem("theme", root.dataset.theme); } catch {}
+        });
+        update();
+      });
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="playground.css">
+  <script src="playground.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="header-logo" href="../">
+        <img class="logo-img" src="../assets/img/logo-fusion.svg" alt="Fusion">
+        <span class="logo-text">BamToCov <span class="logo-description">- coverage from BAM files</span></span>
+      </a>
+      <div class="header-actions">
+        <button class="dark-mode-toggle" type="button" aria-label="Dark mode" aria-pressed="false" title="Toggle dark mode">
+          <svg class="icon-sun" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>
+          </svg>
+          <svg class="icon-moon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.99 13.3A9 9 0 0 1 10.7 3.01 9 9 0 1 0 20.99 13.3Z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+  <main>
+    <article class="markdown-body">
+    <nav aria-label="Breadcrumb">
+      <ol class="breadcrumb-list">
+        <li><a href="../">BamToCov</a></li>
+        <li><a href="../discov/">DisCov metric</a></li>
+        <li aria-current="page">Playground</li>
+      </ol>
+    </nav>
+    <h1>DisCov playground</h1>
+    <section aria-labelledby="track-title">
+      <div class="section-heading">
+        <h2 id="track-title">Reference and alignments</h2>
+        <span id="read-count"></span>
+      </div>
+      <p id="track-help">Click the track to add a read. Drag a read horizontally to move it, or double-click to remove it. With a read focused, use the arrow keys to move it and Delete to remove it.</p>
+      <form id="add-form" class="controls">
+        <label>New read length (bp)<input id="read-length" type="number" min="50" max="10000" step="1" value="500" required></label>
+        <label>Start (bp)<input id="read-start" type="number" min="0" max="9500" step="1" value="0" required></label>
+        <button type="submit" class="primary">Add read</button>
+      </form>
+      <div class="track">
+        <div class="track-label"><strong>Aligned reads</strong><span>Reference length: 10,000 bp</span></div>
+        <div id="track-scroll">
+          <div id="alignments" role="group" aria-label="Aligned reads" aria-describedby="track-help"></div>
+        </div>
+        <div id="reference" aria-label="Reference coordinates in kilobases">
+          <span>0 kb</span><span>2.5 kb</span><span>5 kb</span><span>7.5 kb</span><span>10 kb</span>
+        </div>
+        <div class="track-label depth-label"><strong>Depth by legacy window</strong><span id="max-depth"></span></div>
+        <canvas id="depth" role="img" aria-label="Per-base depth, with DisCov windows shaded"></canvas>
+        <div class="legend"><span><i class="covered"></i> Covered window</span><span><i class="uncovered"></i> Uncovered window</span><span><i class="ignored"></i> Ignored tail</span></div>
+      </div>
+      <div class="controls presets" aria-label="Alignment presets">
+        <button id="spread" type="button">Spread reads</button>
+        <button id="pileup" type="button">Pile up reads</button>
+        <button id="clear" type="button">Clear reads</button>
+      </div>
+    </section>
+    <section aria-labelledby="score-title">
+      <div class="section-heading"><h2 id="score-title">spread-evenness score (DisCov legacy)</h2></div>
+      <form id="parameters" class="controls">
+        <label>Window (bp)<input id="window" type="number" min="1" step="1" value="1000" required></label>
+        <label>Lower fold<input id="lower" type="number" min="0" step="any" value="0.5" required></label>
+        <label>Upper fold<input id="upper" type="number" min="0" step="any" value="2" required></label>
+        <label>Spread weight<input id="alpha" type="number" min="0" max="1" step="any" value="0.5" required></label>
+        <label>Formula<select id="formula"><option value="linear">Linear</option><option value="geometric">Geometric</option></select></label>
+        <button type="reset">Reset parameters</button>
+      </form>
+      <p id="parameter-error" role="status" hidden>Enter valid parameters. The upper fold must be greater than the lower fold.</p>
+      <dl id="results" class="score-results" aria-live="polite" aria-atomic="true">
+        <div><dt>Spread (S)</dt><dd id="spread-value"></dd><dd id="spread-detail"></dd></div>
+        <div><dt>Evenness (E)</dt><dd id="evenness-value"></dd><dd id="evenness-detail"></dd></div>
+        <div><dt>Legacy score</dt><dd id="score"></dd><dd id="equation"></dd></div>
+      </dl>
+      <p id="depth-detail"></p>
+      <p id="tail-detail" hidden></p>
+    </section>
+    <section aria-labelledby="score2-title">
+      <div class="section-heading"><h2 id="score2-title">DisCov 2 calculation</h2></div>
+      <form id="parameters2" class="controls">
+        <label>Window mode<select id="window-mode2"><option value="fixed">Fixed length</option><option value="percentage">Percentage</option></select></label>
+        <label id="fixed-options2">Window (bp)<input id="window2" type="number" min="1" step="1" value="1000" required></label>
+        <label id="percentage-options2" hidden>Window (%)<input id="percentage2" type="number" min="0" max="100" step="any" value="10" required disabled></label>
+        <label id="minimum-options2" hidden>Minimum (bp)<input id="minimum2" type="number" min="1" step="1" value="1" required disabled></label>
+        <label>Spread weight<input id="alpha2" type="number" min="0" max="1" step="any" value="0.5" required></label>
+        <label>Formula<select id="formula2"><option value="linear">Linear</option><option value="geometric">Geometric</option></select></label>
+        <button type="reset">Reset parameters</button>
+      </form>
+      <p id="parameter-error2" role="status" hidden>Enter valid DisCov 2 parameters.</p>
+      <dl id="results2" class="score-results" aria-live="polite" aria-atomic="true">
+        <div><dt>Observed spread (S)</dt><dd id="observed2"></dd><dd id="windows2"></dd></div>
+        <div><dt>Expected spread (S<sub>exp</sub>)</dt><dd id="expected2"></dd><dd><code>1 &minus; exp(&minus;(B + Nw) / G)</code></dd></div>
+        <div><dt>Normalized spread (S<sub>norm</sub>)</dt><dd id="normalized2"></dd><dd><code>min(1, S / S<sub>exp</sub>)</code> when S<sub>exp</sub> &gt; 0</dd></div>
+        <div><dt>Window-depth evenness (E)</dt><dd id="evenness2"></dd><dd id="cv2"></dd></div>
+        <div><dt>Detection (D)</dt><dd id="detection2"></dd><dd id="covered-bases2"></dd></div>
+        <div><dt>Detection bonus (D<sup>2</sup>)</dt><dd id="bonus2"></dd></div>
+        <div><dt>Spread-evenness (C)</dt><dd id="combined2"></dd><dd><code id="equation2"></code></dd></div>
+        <div><dt>DisCov 2</dt><dd id="score2"></dd><dd><code>min(1, C + D<sup>2</sup>)</code></dd></div>
+      </dl>
+      <p id="inputs2"></p>
+      <p id="tail-detail2" hidden></p>
+    </section>
+    <noscript>JavaScript is required to edit reads and calculate DisCov.</noscript>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <nav class="footer-links" aria-label="Footer">
+        <a href="https://github.com/telatin/bamtocov">GitHub Repository</a>
+        <a href="https://www.quadram.ac.uk/">Quadram Institute Bioscience</a>
+        <a href="https://telatin.github.io">Andrea Telatin</a>
+      </nav>
+      <p class="footer-copyright">&copy; Quadram Institute Bioscience. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>
